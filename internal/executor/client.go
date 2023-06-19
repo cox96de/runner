@@ -78,6 +78,8 @@ type StartCommandRequest struct {
 }
 
 // StartCommand starts a command.
+// `id` is the unique id of the command, and it's unique in the executor.
+// Use that id to get logs and status.
 func (c *Client) StartCommand(ctx context.Context, id string, opt *StartCommandRequest) error {
 	ctx, cancel := context.WithTimeout(ctx, defaultAPITimeout)
 	defer cancel()

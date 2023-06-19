@@ -13,13 +13,16 @@ func TestNewRingBuffer(t *testing.T) {
 		data := util.RandomBytes(5000)
 		rb := NewRingBuffer(1024)
 		go func() {
-			data := data
+			data := data[:]
 			for {
 				randInt := util.RandomInt(1, 512)
 				if randInt >= int64(len(data)) {
-					_, err := rb.Write(data[:])
+					n, err := rb.Write(data[:])
 					assert.NilError(t, err)
-					break
+					if n == len(data) {
+						break
+					}
+					continue
 				}
 				n, err := rb.Write(data[:randInt])
 				assert.NilError(t, err, "write %d bytes", randInt)
