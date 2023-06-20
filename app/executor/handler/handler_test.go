@@ -10,12 +10,19 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestHandler_pingHandler(t *testing.T) {
+func setupHandler(t *testing.T) (*httptest.Server, *Handler) {
 	engine := gin.New()
 	handler := NewHandler()
 	handler.RegisterRoutes(engine)
 	testServer := httptest.NewServer(engine)
-	defer testServer.Close()
+	t.Cleanup(func() {
+		testServer.Close()
+	})
+	return testServer, handler
+}
+
+func TestHandler_pingHandler(t *testing.T) {
+	testServer, _ := setupHandler(t)
 	client := executor.NewClient(testServer.URL)
 	err := client.Ping(context.Background())
 	assert.NilError(t, err)
