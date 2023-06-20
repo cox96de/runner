@@ -14,13 +14,10 @@ type App struct {
 func NewApp() *App {
 	r := gin.Default()
 	app := &App{
-		server: r,
+		server:  r,
+		handler: handler.NewHandler(),
 	}
-
-	h := handler.NewHandler()
-
-	h.RegisterRoutes(r)
-
+	app.handler.RegisterRoutes(r)
 	return app
 }
 
