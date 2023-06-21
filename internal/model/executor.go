@@ -9,3 +9,8 @@ type StartCommandRequest struct {
 	// TODO: implement it
 	// User    string            `json:"user"`
 }
+
+// GetCommandLogRequest is used to get command log from executor.
+type GetCommandLogRequest struct {
+	ID string `path:"id"`
+}

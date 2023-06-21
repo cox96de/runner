@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"gotest.tools/v3/fs"
 
 	"github.com/cox96de/runner/internal/executor"
 	"gotest.tools/v3/assert"
@@ -63,4 +66,28 @@ func TestHandler_startCommandHandler(t *testing.T) {
 			})
 		assert.ErrorContains(t, err, "command cannot be empty")
 	})
+}
+
+func TestHandler_getCommandLogHandler(t *testing.T) {
+	testServer, _ := setupHandler(t)
+	client := executor.NewClient(testServer.URL)
+	logs := `go: downloading gotest.tools/v3 v3.4.0
+go: downloading github.com/google/go-cmp v0.5.5
+?   	github.com/cox96de/runner/app/executor	[no test files]
+ok  	github.com/cox96de/runner/app/executor/handler	1.053s	coverage: 63.6% of statements in ./...
+?   	github.com/cox96de/runner/cmd/executor	[no test files]
+ok  	github.com/cox96de/runner/internal/executor	0.028s	coverage: 22.4% of statements in ./...
+?   	github.com/cox96de/runner/internal/model	[no test files]
+?   	github.com/cox96de/runner/util	[no test files]`
+	testDir := fs.NewDir(t, "test", fs.WithFile("test.log", logs, fs.WithMode(0o644)))
+	err := client.StartCommand(context.Background(), t.Name(), &executor.StartCommandRequest{
+		Command: []string{"cat", testDir.Join("test.log")},
+		Dir:     os.TempDir(),
+	})
+	assert.Assert(t, err)
+	l := client.GetCommandLogs(context.Background(), t.Name())
+	buf := &bytes.Buffer{}
+	_, err = io.Copy(buf, l)
+	assert.NilError(t, err)
+	assert.DeepEqual(t, buf.String(), logs)
 }
