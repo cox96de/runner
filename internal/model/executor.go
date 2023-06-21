@@ -14,3 +14,18 @@ type StartCommandRequest struct {
 type GetCommandLogRequest struct {
 	ID string `path:"id"`
 }
+
+// GetCommandStatusRequest is used to get command status from executor.
+type GetCommandStatusRequest = GetCommandLogRequest
+
+// GetCommandStatusResponse presents command status.
+type GetCommandStatusResponse struct {
+	// ExitCode is the exit code of the command.
+	// When Exit is false, this value is meaningless.
+	ExitCode int `json:"exit_code"`
+	// Exit is true when the command is finished.
+	// Get exit code from ExitCode.
+	Exit bool `json:"exit"`
+	// Error is the error message from command.Wait().
+	Error string `json:"error"`
+}

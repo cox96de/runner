@@ -110,11 +110,48 @@ func (h *Handler) getCommandLogHandler(c *gin.Context) {
 	})
 }
 
+// getCommandLogHandler gets commands stdout and stderr.
+func (h *Handler) getCommandStatusHandler(c *gin.Context) {
+	req := &internalmodel.GetCommandStatusRequest{}
+	if err := util.BindAndValidate(c, req); err != nil {
+		c.JSON(http.StatusBadRequest, &internalmodel.Message{
+			Message: err.Error(),
+		})
+		return
+	}
+	h.commandLock.Lock()
+	cmd, exists := h.commands[req.ID]
+	h.commandLock.Unlock()
+	if !exists {
+		c.JSON(http.StatusNotFound, &internalmodel.Message{
+			Message: "command not found",
+		})
+		return
+	}
+	if !cmd.Exited() {
+		// Not completed yet.
+		c.JSON(http.StatusOK, &internalmodel.GetCommandStatusResponse{
+			Exit: false,
+		})
+		return
+	}
+	var waitError string
+	if cmd.waitError != nil {
+		waitError = cmd.waitError.Error()
+	}
+	processState := cmd.ProcessState
+	c.JSON(http.StatusOK, &internalmodel.GetCommandStatusResponse{
+		ExitCode: processState.ExitCode(),
+		Exit:     processState.Exited(),
+		Error:    waitError,
+	})
+}
+
 type command struct {
 	*exec.Cmd
 	logWriter io.ReadWriteCloser
-	err       error
 	runningCh chan struct{}
+	waitError error
 }
 
 func newCommand(cmd *exec.Cmd, logWriter io.ReadWriteCloser) *command {
@@ -123,13 +160,17 @@ func newCommand(cmd *exec.Cmd, logWriter io.ReadWriteCloser) *command {
 
 // Wait waits for the command to exit.
 func (c *command) Wait() {
-	c.err = c.Cmd.Wait()
+	c.waitError = c.Cmd.Wait()
 	_ = c.logWriter.Close()
 	close(c.runningCh)
 }
 
 // Exited returns true if the command has exited.
 func (c *command) Exited() bool {
-	_, ok := <-c.runningCh
-	return !ok
+	select {
+	case _, chanOpen := <-c.runningCh:
+		return !chanOpen
+	default:
+		return false
+	}
 }
