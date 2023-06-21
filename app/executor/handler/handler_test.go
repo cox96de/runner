@@ -2,11 +2,12 @@ package handler
 
 import (
 	"context"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/cox96de/runner/internal/executor"
 	"github.com/gin-gonic/gin"
 	"gotest.tools/v3/assert"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestHandler_pingHandler(t *testing.T) {

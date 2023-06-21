@@ -1,14 +1,14 @@
 package handler
 
 import (
+	"net/http"
+
 	internalmodel "github.com/cox96de/runner/internal/model"
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
 // Handler is the API set of the executor.
-type Handler struct {
-}
+type Handler struct{}
 
 // NewHandler creates a new Handler.
 func NewHandler() *Handler {
