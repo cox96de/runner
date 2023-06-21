@@ -2,13 +2,14 @@ package executor
 
 import (
 	"context"
-	internalmodel "github.com/cox96de/runner/internal/model"
-	"github.com/gin-gonic/gin"
-	"gotest.tools/v3/assert"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
 	"testing"
+
+	internalmodel "github.com/cox96de/runner/internal/model"
+	"github.com/gin-gonic/gin"
+	"gotest.tools/v3/assert"
 )
 
 func TestClient_Ping(t *testing.T) {

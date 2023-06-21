@@ -1,10 +1,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/cox96de/runner/app/executor"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
-	"os"
 )
 
 type Config struct {
