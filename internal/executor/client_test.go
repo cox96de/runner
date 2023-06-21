@@ -7,6 +7,7 @@ import (
 	"gotest.tools/v3/assert"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"testing"
 )
 
@@ -37,6 +38,10 @@ func TestClient_Ping(t *testing.T) {
 	t.Run("connection_refuse", func(t *testing.T) {
 		client := NewClient("http://localhost:1234")
 		err := client.Ping(context.Background())
-		assert.ErrorContains(t, err, "connection refused")
+		if runtime.GOOS == "windows" {
+			assert.ErrorContains(t, err, "target machine actively refused it")
+		} else {
+			assert.ErrorContains(t, err, "connection refused")
+		}
 	})
 }
