@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	internalmodel "github.com/cox96de/runner/internal/model"
 	"io"
 	"net/http"
 	"net/url"
@@ -161,6 +162,40 @@ func (c *Client) GetCommandLogs(ctx context.Context, id string) io.ReadCloser {
 		}
 	}()
 	return reader
+}
+
+func (c *Client) GetCommandStatus(ctx context.Context, id string) (*internalmodel.GetCommandStatusResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultAPITimeout)
+	defer cancel()
+	request, err := c.newRPCRequest(ctx, http.MethodGet, fmt.Sprintf(startCommandEndpoint, url.PathEscape(id)),
+		nil)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	request.Header.Add("Content-Type", "application/json")
+	response, err := c.c.Do(request)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	defer func() {
+		_, _ = io.Copy(io.Discard, response.Body)
+		_ = response.Body.Close()
+	}()
+	if response.StatusCode != http.StatusOK {
+		// Ignore too much payload.
+		body, _ := io.ReadAll(io.LimitReader(response.Body, limitReaderSize))
+		return nil, errors.Errorf("invalid status code: %d with payload: %s", response.StatusCode, string(body))
+	}
+	resp := &internalmodel.GetCommandStatusResponse{}
+	all, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	err = json.Unmarshal(all, resp)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return resp, nil
 }
 
 func (c *Client) newRPCRequest(ctx context.Context, method string, path string, body any) (*http.Request, error) {

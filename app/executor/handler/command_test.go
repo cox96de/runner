@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"context"
+	internalmodel "github.com/cox96de/runner/internal/model"
 	"io"
 	"os"
 	"strings"
@@ -90,4 +91,54 @@ ok  	github.com/cox96de/runner/internal/executor	0.028s	coverage: 22.4% of state
 	_, err = io.Copy(buf, l)
 	assert.NilError(t, err)
 	assert.DeepEqual(t, buf.String(), logs)
+}
+
+func TestHandler_getCommandStatusHandler(t *testing.T) {
+	testServer, _ := setupHandler(t)
+	client := executor.NewClient(testServer.URL)
+	t.Run("running", func(t *testing.T) {
+		err := client.StartCommand(context.Background(), t.Name(), &executor.StartCommandRequest{
+			Command: []string{"sleep", "1"},
+			Dir:     os.TempDir(),
+		})
+		assert.NilError(t, err)
+		response, err := client.GetCommandStatus(context.Background(), t.Name())
+		assert.NilError(t, err)
+		assert.DeepEqual(t, response, &internalmodel.GetCommandStatusResponse{
+			ExitCode: 0,
+			Exit:     false,
+		})
+		time.Sleep(time.Second * 2)
+		response, err = client.GetCommandStatus(context.Background(), t.Name())
+		assert.NilError(t, err)
+		assert.DeepEqual(t, response, &internalmodel.GetCommandStatusResponse{
+			ExitCode: 0,
+			Exit:     true,
+		})
+	})
+	t.Run("exit_code", func(t *testing.T) {
+		err := client.StartCommand(context.Background(), t.Name(), &executor.StartCommandRequest{
+			Command: []string{"bash", "-c", "exit 2"},
+			Dir:     os.TempDir(),
+		})
+		assert.NilError(t, err)
+		for i := 0; i < 10; i++ {
+			response, err := client.GetCommandStatus(context.Background(), t.Name())
+			assert.NilError(t, err)
+			if !response.Exit {
+				t.Logf("not exited yet, retrying")
+				time.Sleep(time.Millisecond * 10)
+				continue
+			}
+			assert.DeepEqual(t, response, &internalmodel.GetCommandStatusResponse{
+				ExitCode: 2,
+				Exit:     true,
+				Error:    "exit status 2",
+			})
+		}
+	})
+	t.Run("not_found", func(t *testing.T) {
+		_, err := client.GetCommandStatus(context.Background(), t.Name())
+		assert.ErrorContains(t, err, "command not found")
+	})
 }

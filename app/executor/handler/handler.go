@@ -29,6 +29,7 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	r.Any("/ping", h.pingHandler)
 	r.POST("/commands/:id", h.startCommandHandler)
 	r.GET("/commands/:id/logs", h.getCommandLogHandler)
+	r.GET("/commands/:id", h.getCommandStatusHandler)
 }
 
 // pingHandler is a simple ping handler, uses to validate the executor is ready.
