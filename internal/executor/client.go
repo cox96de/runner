@@ -2,11 +2,12 @@ package executor
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 const (
