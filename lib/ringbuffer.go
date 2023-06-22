@@ -12,13 +12,19 @@ import (
 type RingBuffer struct {
 	r      *ringbuffer.RingBuffer
 	closed atomic.Bool
+	// writeChan is used to notify the reader that there is data to read.
+	writeChan chan struct{}
+	// readChan is used to notify the writer that there is space to write.
+	readChan chan struct{}
 }
 
 // NewRingBuffer creates a new ring buffer with given size.
 func NewRingBuffer(size int) *RingBuffer {
 	return &RingBuffer{
-		closed: atomic.Bool{},
-		r:      ringbuffer.New(size),
+		closed:    atomic.Bool{},
+		r:         ringbuffer.New(size),
+		writeChan: make(chan struct{}, 1),
+		readChan:  make(chan struct{}, 1),
 	}
 }
 
@@ -30,26 +36,43 @@ func (r *RingBuffer) Close() error {
 
 // Write writes data to the ring buffer.
 func (r *RingBuffer) Write(p []byte) (n int, err error) {
-	// TODO: block if buffer is full
 	if r.closed.Load() {
 		return 0, errors.Errorf("ring buffer is closed")
 	}
-	write, err := r.r.Write(p)
-	if err == ringbuffer.ErrTooManyDataToWrite {
+	if len(p) > r.r.Capacity() {
+		p = p[:r.r.Capacity()]
+	}
+	for {
+		write, err := r.r.Write(p)
+		if write == 0 && (err == ringbuffer.ErrIsFull || err == ringbuffer.ErrTooManyDataToWrite) {
+			<-r.readChan
+			continue
+		}
+		notify(r.writeChan)
 		return write, nil
 	}
-	return write, err
 }
 
 // Read reads data from the ring buffer.
 func (r *RingBuffer) Read(p []byte) (n int, err error) {
-	// TODO: block if buffer is empty
-	n, err = r.r.Read(p)
-	if n == 0 && err == ringbuffer.ErrIsEmpty {
-		if r.closed.Load() {
-			return n, io.EOF
+	for {
+		n, err = r.r.Read(p)
+		if n == 0 && err == ringbuffer.ErrIsEmpty {
+			if r.closed.Load() {
+				return n, io.EOF
+			}
+			<-r.writeChan
+			continue
 		}
-		return n, nil
+		notify(r.readChan)
+		return n, err
 	}
-	return n, err
+}
+
+func notify(c chan<- struct{}) {
+	select {
+	case c <- struct{}{}:
+	default:
+
+	}
 }
