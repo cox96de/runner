@@ -35,5 +35,17 @@ func (e *Engine) Ping(ctx context.Context) error {
 }
 
 func (e *Engine) CreateRunner(ctx context.Context, spec *engine.RunnerSpec) (engine.Runner, error) {
-	return nil, errors.New("not implemented")
+	if spec.Kube == nil {
+		return nil, errors.New("kube spec is nil")
+	}
+	c := newCompiler(e.executorImage, e.executorPath)
+	compile, err := c.Compile(spec.ID, spec.Kube)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return &Runner{
+		client:    e.client,
+		pod:       compile.pod,
+		namespace: e.namespace,
+	}, nil
 }
