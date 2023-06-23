@@ -31,6 +31,8 @@ func NewRingBuffer(size int) *RingBuffer {
 // Close closes the ring buffer.
 func (r *RingBuffer) Close() error {
 	r.closed.Store(true)
+	// Might a routine be blocked in Read().
+	close(r.writeChan)
 	return nil
 }
 

@@ -3,12 +3,32 @@ package engine
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/cox96de/runner/internal/executor"
 )
 
 // RunnerSpec defines a environment to run job (compile job, ci job, etc).
 type RunnerSpec struct {
-	ID string
+	ID   string
+	Kube *KubeSpec
+}
+
+type KubeSpec struct {
+	Containers []*Container
+	Volumes    []corev1.Volume
+}
+
+type Container struct {
+	Name         string
+	Image        string
+	VolumeMounts []corev1.VolumeMount
+}
+
+type VolumeMount struct {
+	Name      string
+	ReadOnly  bool
+	MountPath string
 }
 
 type Engine interface {
