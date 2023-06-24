@@ -13,6 +13,6 @@ func RandomBytes(size int) []byte {
 }
 
 // RandomInt returns a random int64 in [0, max).
-func RandomInt(max int64) int64 {
-	return mrand.Int63n(max)
+func RandomInt(min, max int64) int64 {
+	return mrand.Int63n(max-min) + min
 }

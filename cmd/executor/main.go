@@ -1,7 +1,11 @@
 package main
 
 import (
+	"net"
 	"os"
+	"strconv"
+
+	"github.com/pkg/errors"
 
 	"github.com/cox96de/runner/app/executor"
 	log "github.com/sirupsen/logrus"
@@ -9,7 +13,8 @@ import (
 )
 
 type Config struct {
-	Port int
+	Port       int
+	SocketPath string
 }
 
 func main() {
@@ -18,18 +23,21 @@ func main() {
 	}
 	config, err := loadConfig(os.Args)
 	checkError(err)
+	listener, err := composeListener(config)
+	checkError(err)
 	app := executor.NewApp()
-	if err := app.Run(config.Port); err != nil {
+	if err := app.Run(listener); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func loadConfig(arguments []string) (*Config, error) {
-	flagSet := pflag.NewFlagSet("executor", pflag.ExitOnError)
+	flagSet := pflag.NewFlagSet("executor", pflag.ContinueOnError)
 	c := &Config{}
 	flagSet.IntVarP(&c.Port, "port", "", 8080, "port to listen on")
+	flagSet.StringVarP(&c.SocketPath, "socket-path", "", "", "path to unix socket")
 	if err := flagSet.Parse(arguments); err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	return c, nil
 }
@@ -39,4 +47,19 @@ func checkError(err error) {
 		return
 	}
 	log.Fatal(err)
+}
+
+func composeListener(c *Config) (net.Listener, error) {
+	switch {
+	case c.SocketPath != "":
+		listener, err := net.ListenUnix("unix", &net.UnixAddr{
+			Name: c.SocketPath,
+			Net:  "unix",
+		})
+		return listener, err
+	case c.Port != 0:
+		listener, err := net.Listen("tcp", ":"+strconv.Itoa(c.Port))
+		return listener, err
+	}
+	return nil, errors.Errorf("no listener configured")
 }

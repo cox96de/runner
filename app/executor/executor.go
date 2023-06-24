@@ -1,7 +1,7 @@
 package executor
 
 import (
-	"fmt"
+	"net"
 
 	"github.com/cox96de/runner/app/executor/handler"
 	"github.com/gin-gonic/gin"
@@ -23,6 +23,6 @@ func NewApp() *App {
 }
 
 // Run starts the server.
-func (app *App) Run(port int) error {
-	return app.server.Run(fmt.Sprintf(":%d", port))
+func (app *App) Run(listener net.Listener) error {
+	return app.server.RunListener(listener)
 }
