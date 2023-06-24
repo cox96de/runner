@@ -1,10 +1,11 @@
 package lib
 
 import (
-	"github.com/cox96de/runner/util"
-	"gotest.tools/v3/assert"
 	"io"
 	"testing"
+
+	"github.com/cox96de/runner/util"
+	"gotest.tools/v3/assert"
 )
 
 func TestNewRingBuffer(t *testing.T) {
@@ -14,7 +15,7 @@ func TestNewRingBuffer(t *testing.T) {
 		go func() {
 			data := data
 			for {
-				randInt := util.RandomInt(512)
+				randInt := util.RandomInt(1, 512)
 				if randInt >= int64(len(data)) {
 					_, err := rb.Write(data[:])
 					assert.NilError(t, err)
