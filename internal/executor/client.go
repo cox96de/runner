@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	internalmodel "github.com/cox96de/runner/internal/model"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
+
+	internalmodel "github.com/cox96de/runner/internal/model"
 
 	"github.com/pkg/errors"
 )

@@ -1,10 +1,11 @@
 package lib
 
 import (
-	"github.com/cox96de/runner/util"
-	"gotest.tools/v3/assert"
 	"io"
 	"testing"
+
+	"github.com/cox96de/runner/util"
+	"gotest.tools/v3/assert"
 )
 
 func TestNewRingBuffer(t *testing.T) {

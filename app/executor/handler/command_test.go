@@ -3,12 +3,13 @@ package handler
 import (
 	"bytes"
 	"context"
-	internalmodel "github.com/cox96de/runner/internal/model"
 	"io"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	internalmodel "github.com/cox96de/runner/internal/model"
 
 	"gotest.tools/v3/fs"
 
