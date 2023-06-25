@@ -27,6 +27,9 @@ jobs:
 
       - name: Lint
         run: make lint
+
+      - name: Check
+        run: git diff --exit-code
   build:
     strategy:
       matrix:
