@@ -1,0 +1,14 @@
+runner:
+  kube:
+    containers:
+      - name: test
+        image: golang:1.20
+        volumemounts: []
+    volumes: []
+defaultcontainername: test
+steps:
+  - workdir: ""
+    commands:
+      - go env -w GOPROXY=https://goproxy.cn,direct
+      - go install github.com/go-delve/delve/cmd/dlv@latest
+    containername: ""
