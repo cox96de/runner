@@ -82,3 +82,8 @@ jobs:
 
       - name: Test
         run: go test -tags kube_integration -race -coverprofile cover.out -coverpkg=./... ./engine/kube/...
+
+      - name: Example
+        run: |
+          cd example/cmd/runner
+          python run.py

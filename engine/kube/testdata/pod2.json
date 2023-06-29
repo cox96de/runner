@@ -39,7 +39,8 @@
             "name": "runner-executor",
             "mountPath": "/executor-bin"
           }
-        ]
+        ],
+        "imagePullPolicy": "Always"
       }
     ],
     "containers": [
