@@ -72,7 +72,6 @@ func (c *Client) Ping(ctx context.Context) error {
 
 type StartCommandRequest struct {
 	Dir     string            `json:"dir"`
-	Path    string            `json:"path"`
 	Command []string          `json:"command"`
 	Env     map[string]string `json:"env"`
 }
@@ -167,6 +166,7 @@ func (c *Client) GetCommandLogs(ctx context.Context, id string) io.ReadCloser {
 	return reader
 }
 
+// GetCommandStatus gets command status.
 func (c *Client) GetCommandStatus(ctx context.Context, id string) (*internalmodel.GetCommandStatusResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultAPITimeout)
 	defer cancel()
