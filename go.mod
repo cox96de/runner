@@ -12,6 +12,7 @@ require (
 	github.com/smallnest/ringbuffer v0.0.0-20210227121335-0a58434b36f2
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/mock v0.2.0
+	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17
 	gotest.tools/v3 v3.4.0
 	k8s.io/api v0.27.3
 	k8s.io/apimachinery v0.27.3
@@ -62,7 +63,6 @@ require (
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
-	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
 	golang.org/x/sys v0.8.0 // indirect
