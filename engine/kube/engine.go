@@ -44,8 +44,9 @@ func (e *Engine) CreateRunner(ctx context.Context, spec *engine.RunnerSpec) (eng
 		return nil, errors.WithStack(err)
 	}
 	return &Runner{
-		client:    e.client,
-		pod:       compile.pod,
-		namespace: e.namespace,
+		client:          e.client,
+		pod:             compile.pod,
+		executorPortMap: c.executorPortMap,
+		namespace:       e.namespace,
 	}, nil
 }
