@@ -32,7 +32,7 @@ type compileResult struct {
 	pod *corev1.Pod
 }
 
-func (c *compiler) Compile(id string, spec *engine.KubeSpec) (*compileResult, error) {
+func (c *compiler) Compile(id string, spec *engine.KubeSpec) *compileResult {
 	result := &compileResult{
 		pod: &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -45,7 +45,7 @@ func (c *compiler) Compile(id string, spec *engine.KubeSpec) (*compileResult, er
 			},
 		},
 	}
-	return result, nil
+	return result
 }
 
 func (c *compiler) compileContainers(containers []*engine.Container) []corev1.Container {

@@ -1,0 +1,10 @@
+{
+  "metadata": {
+    "name": "test",
+    "creationTimestamp": null
+  },
+  "spec": {
+    "containers": null
+  },
+  "status": {}
+}

@@ -11,6 +11,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/smallnest/ringbuffer v0.0.0-20210227121335-0a58434b36f2
 	github.com/spf13/pflag v1.0.5
+	go.uber.org/mock v0.2.0
 	gotest.tools/v3 v3.4.0
 	k8s.io/api v0.27.3
 	k8s.io/apimachinery v0.27.3
@@ -24,6 +25,7 @@ require (
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
+	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect

@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "name": "test",
+    "creationTimestamp": null
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "test",
+        "emptyDir": {}
+      },
+      {
+        "name": "runner-executor",
+        "emptyDir": {}
+      }
+    ],
+    "initContainers": [
+      {
+        "name": "executor",
+        "image": "executor_image",
+        "command": [
+          "/bin/sh",
+          "-c",
+          "cp ${EXECUTOR_SOURCE_PATH} ${EXECUTOR_TARGET_PATH} \u0026\u0026 chmod +x ${EXECUTOR_TARGET_PATH}"
+        ],
+        "env": [
+          {
+            "name": "EXECUTOR_SOURCE_PATH",
+            "value": "/path/executor"
+          },
+          {
+            "name": "EXECUTOR_TARGET_PATH",
+            "value": "/executor-bin/executor"
+          }
+        ],
+        "resources": {},
+        "volumeMounts": [
+          {
+            "name": "runner-executor",
+            "mountPath": "/executor-bin"
+          }
+        ]
+      }
+    ],
+    "containers": [
+      {
+        "name": "test",
+        "image": "debian",
+        "command": [
+          "/executor-bin/executor",
+          "--port",
+          "1235"
+        ],
+        "resources": {},
+        "volumeMounts": [
+          {
+            "name": "test",
+            "mountPath": "/test"
+          },
+          {
+            "name": "runner-executor",
+            "mountPath": "/executor-bin"
+          }
+        ]
+      }
+    ]
+  },
+  "status": {}
+}
