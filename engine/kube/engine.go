@@ -39,10 +39,7 @@ func (e *Engine) CreateRunner(ctx context.Context, spec *engine.RunnerSpec) (eng
 		return nil, errors.New("kube spec is nil")
 	}
 	c := newCompiler(e.executorImage, e.executorPath)
-	compile, err := c.Compile(spec.ID, spec.Kube)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+	compile := c.Compile(spec.ID, spec.Kube)
 	return &Runner{
 		client:          e.client,
 		pod:             compile.pod,
