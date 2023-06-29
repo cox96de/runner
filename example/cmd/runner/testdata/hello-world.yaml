@@ -1,0 +1,13 @@
+runner:
+  kube:
+    containers:
+      - name: test
+        image: debian
+        volumemounts: []
+    volumes: []
+defaultcontainername: test
+steps:
+  - workdir: ""
+    commands:
+      - echo hello
+    containername: ""

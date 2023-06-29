@@ -2,6 +2,8 @@ package dsl
 
 import (
 	"github.com/cox96de/runner/engine"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 // Job is the job to run.
@@ -32,4 +34,14 @@ type Step struct {
 	// ContainerName is the container name to run the commands.
 	// If it's empty, the DefaultContainerName of the job will be used.
 	ContainerName string
+}
+
+// ParseDSL parses the DSL content to a job.
+func ParseDSL(content []byte) (*Job, error) {
+	j := &Job{}
+	err := yaml.Unmarshal(content, j)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return j, nil
 }

@@ -1,0 +1,24 @@
+{
+  "Runner": {
+    "Kube": {
+      "Containers": [
+        {
+          "Name": "test",
+          "Image": "debian",
+          "VolumeMounts": []
+        }
+      ],
+      "Volumes": []
+    }
+  },
+  "DefaultContainerName": "test",
+  "Steps": [
+    {
+      "Workdir": "",
+      "Commands": [
+        "echo hello"
+      ],
+      "ContainerName": ""
+    }
+  ]
+}

@@ -16,7 +16,9 @@ def main():
          '--kube-config=$HOME/.kube/config '
          '--kube-use-port-forward=true '
          '--kube-executor-image docker.io/cox96de/runner-executor:master '
-         '--kube-namespace kube-engine-test-executor'])
+         '--kube-namespace kube-engine-test-executor '
+         ' testdata/hello-world.yaml testdata/gobuild.yaml'
+         ])
 
 
 if __name__ == '__main__':

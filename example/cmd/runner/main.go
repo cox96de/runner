@@ -36,38 +36,24 @@ func main() {
 	checkErr(err)
 	e, err := composeEngine(c)
 	checkErr(err)
+	jobPaths := flagSet.Args()
 	ctx := context.Background()
-	for idx, job := range getJobs() {
+	for _, path := range jobPaths {
+		log.Infof("start to run job '%s'", path)
+		fileContent, err := os.ReadFile(path)
+		if err != nil {
+			log.Errorf("failed to read file %q: %v", path, err)
+			continue
+		}
+		job, err := dsl.ParseDSL(fileContent)
+		if err != nil {
+			log.Errorf("failed to parse file %q: %v", path, err)
+			continue
+		}
 		err = runJob(ctx, e, job)
 		if err != nil {
-			log.Errorf("failed to run job %d: %v", idx, err)
+			log.Errorf("failed to run job %s: %v", path, err)
 		}
-
-	}
-}
-
-func getJobs() []*dsl.Job {
-	return []*dsl.Job{
-		{
-			Runner: &dsl.Runner{Kube: &engine.KubeSpec{
-				Containers: []*engine.Container{{
-					Name:  "test",
-					Image: "debian",
-				}},
-			}},
-			DefaultContainerName: "test",
-			Steps:                []*dsl.Step{{Commands: []string{"echo hello"}}},
-		},
-		{
-			Runner: &dsl.Runner{Kube: &engine.KubeSpec{
-				Containers: []*engine.Container{{
-					Name:  "test",
-					Image: "golang:1.20",
-				}},
-			}},
-			DefaultContainerName: "test",
-			Steps:                []*dsl.Step{{Commands: []string{"go env -w GOPROXY=https://goproxy.cn,direct", "go install github.com/go-delve/delve/cmd/dlv@latest"}}},
-		},
 	}
 }
 
