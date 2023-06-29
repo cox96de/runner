@@ -55,6 +55,7 @@ func (h *Handler) startCommandHandler(c *gin.Context) {
 	}
 	go func() {
 		command.Wait()
+		log.Infof("command %s exited", req.ID)
 	}()
 	c.Status(http.StatusOK)
 }
