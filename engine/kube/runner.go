@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/cox96de/runner/engine"
 	"github.com/cox96de/runner/internal/executor"
 	"github.com/pkg/errors"
@@ -31,6 +33,12 @@ func (r *Runner) Start(ctx context.Context) error {
 	}
 	r.pod = createdPod
 	err = r.waitPodReady(ctx)
+	if err != nil {
+		// Clean up the created kube resources if about to fail to avoid resource leak.
+		if cleanErr := r.clean(ctx); cleanErr != nil {
+			err = multierror.Append(err, cleanErr)
+		}
+	}
 	return err
 }
 
@@ -82,9 +90,16 @@ func (r *Runner) GetExecutor(ctx context.Context, name string) (engine.Executor,
 }
 
 func (r *Runner) Stop(ctx context.Context) error {
-	err := r.client.CoreV1().Pods(r.namespace).Delete(ctx, r.pod.Name, metav1.DeleteOptions{})
-	if err != nil {
-		return errors.WithStack(err)
+	return r.clean(ctx)
+}
+
+func (r *Runner) clean(ctx context.Context) error {
+	var multierr *multierror.Error
+	if r.pod != nil {
+		err := r.client.CoreV1().Pods(r.namespace).Delete(ctx, r.pod.Name, metav1.DeleteOptions{})
+		if err != nil {
+			multierr = multierror.Append(multierr, err)
+		}
 	}
-	return nil
+	return multierr.ErrorOrNil()
 }
