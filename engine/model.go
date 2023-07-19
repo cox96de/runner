@@ -11,6 +11,8 @@ import (
 	"github.com/cox96de/runner/internal/executor"
 )
 
+//go:generate mockgen -destination mockgen_test.go -package engine . Engine,Runner,Executor
+
 // RunnerSpec defines a environment to run job (compile job, ci job, etc).
 type RunnerSpec struct {
 	ID   string
