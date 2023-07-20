@@ -47,6 +47,7 @@ func (r *RingBuffer) Write(p []byte) (n int, err error) {
 	for {
 		write, err := r.r.Write(p)
 		if write == 0 && (err == ringbuffer.ErrIsFull || err == ringbuffer.ErrTooManyDataToWrite) {
+			// Block here until some data is read.
 			<-r.readChan
 			continue
 		}
@@ -61,8 +62,14 @@ func (r *RingBuffer) Read(p []byte) (n int, err error) {
 		n, err = r.r.Read(p)
 		if n == 0 && err == ringbuffer.ErrIsEmpty {
 			if r.closed.Load() {
-				return n, io.EOF
+				// Double check before returning EOF.
+				// Some data might be written and closed the ring buffer after the previous read.
+				if r.r.Length() == 0 {
+					return 0, io.EOF
+				}
+				continue
 			}
+			// Block here until some data is written.
 			<-r.writeChan
 			continue
 		}

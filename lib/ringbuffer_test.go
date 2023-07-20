@@ -22,6 +22,7 @@ func TestNewRingBuffer(t *testing.T) {
 					if n == len(data) {
 						break
 					}
+					data = data[n:]
 					continue
 				}
 				n, err := rb.Write(data[:randInt])
