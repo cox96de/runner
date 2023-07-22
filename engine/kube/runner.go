@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 
+	"k8s.io/client-go/tools/portforward"
+
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/cox96de/runner/engine"
@@ -20,13 +22,16 @@ import (
 )
 
 type Runner struct {
-	client          kubernetes.Interface
-	pod             *v1.Pod
-	executorPortMap map[string]int32
-	namespace       string
+	client             kubernetes.Interface
+	pod                *v1.Pod
+	executorPortMap    map[string]int32
+	portForwardPortMap map[string]int32
+	namespace          string
+	portForwarder      *portforward.PortForwarder
+	portForwardStop    chan struct{}
 }
 
-func (r *Runner) Start(ctx context.Context) error {
+func (r *Runner) Start(ctx context.Context) (startErr error) {
 	createdPod, err := r.client.CoreV1().Pods(r.namespace).Create(ctx, r.pod, metav1.CreateOptions{})
 	if err != nil {
 		return errors.WithStack(err)
@@ -36,10 +41,44 @@ func (r *Runner) Start(ctx context.Context) error {
 	if err != nil {
 		// Clean up the created kube resources if about to fail to avoid resource leak.
 		if cleanErr := r.clean(ctx); cleanErr != nil {
-			err = multierror.Append(err, cleanErr)
+			startErr = multierror.Append(startErr, cleanErr)
 		}
 	}
-	return err
+	if r.portForwarder != nil {
+		err := r.waitPortForwarderReady(ctx)
+		if err != nil {
+			// Clean up the created kube resources if about to fail to avoid resource leak.
+			if cleanErr := r.clean(ctx); cleanErr != nil {
+				startErr = multierror.Append(startErr, cleanErr)
+			}
+		}
+	}
+	return startErr
+}
+
+func (r *Runner) waitPortForwarderReady(ctx context.Context) error {
+	go func() {
+		_ = r.portForwarder.ForwardPorts() // TODO: handle error
+	}()
+	r.portForwardPortMap = make(map[string]int32)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-r.portForwarder.Ready:
+		ports, err := r.portForwarder.GetPorts()
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		for _, port := range ports {
+			for k, p := range r.executorPortMap {
+				if int32(port.Remote) == p {
+					r.portForwardPortMap[k] = int32(port.Local)
+					break
+				}
+			}
+		}
+		return nil
+	}
 }
 
 func (r *Runner) waitPodReady(ctx context.Context) error {
@@ -80,11 +119,24 @@ func (r *Runner) waitPodReady(ctx context.Context) error {
 }
 
 func (r *Runner) GetExecutor(ctx context.Context, name string) (engine.Executor, error) {
+	if r.portForwarder != nil {
+		return r.getExecutorFromPortForward(name)
+	}
 	port, ok := r.executorPortMap[name]
 	if !ok {
 		return nil, errors.Errorf("the runner container %s not found", name)
 	}
 	client := executor.NewClient(fmt.Sprintf("http://%s", net.JoinHostPort(r.pod.Status.PodIP,
+		fmt.Sprintf("%d", port))))
+	return client, nil
+}
+
+func (r *Runner) getExecutorFromPortForward(name string) (engine.Executor, error) {
+	port, ok := r.portForwardPortMap[name]
+	if !ok {
+		return nil, errors.Errorf("the runner container %s not found", name)
+	}
+	client := executor.NewClient(fmt.Sprintf("http://%s", net.JoinHostPort("127.0.0.1",
 		fmt.Sprintf("%d", port))))
 	return client, nil
 }
@@ -100,6 +152,9 @@ func (r *Runner) clean(ctx context.Context) error {
 		if err != nil {
 			multierr = multierror.Append(multierr, err)
 		}
+	}
+	if r.portForwarder != nil {
+		close(r.portForwardStop)
 	}
 	return multierr.ErrorOrNil()
 }

@@ -29,7 +29,9 @@ func TestEngine_Ping(t *testing.T) {
 		Spec:   corev1.NamespaceSpec{},
 		Status: corev1.NamespaceStatus{},
 	})
-	err := NewEngine(clientset, &Option{Namespace: namespace}).Ping(context.Background())
+	e, err := NewEngine(clientset, &Option{Namespace: namespace})
+	assert.NilError(t, err)
+	err = e.Ping(context.Background())
 	assert.NilError(t, err)
 }
 
@@ -40,11 +42,12 @@ func TestEngine_CreateRunner(t *testing.T) {
 	}
 	namespace := "kube"
 	clientset := fake.NewSimpleClientset()
-	e := NewEngine(clientset, &Option{
+	e, err := NewEngine(clientset, &Option{
 		ExecutorImage: "executor_image",
 		ExecutorPath:  "/path/executor",
 		Namespace:     namespace,
 	})
+	assert.NilError(t, err)
 	t.Run("no_spec", func(t *testing.T) {
 		_, err := e.CreateRunner(context.Background(), &engine.RunnerSpec{
 			ID:   "test",
@@ -52,7 +55,7 @@ func TestEngine_CreateRunner(t *testing.T) {
 		})
 		assert.ErrorContains(t, err, "kube spec is nil")
 	})
-	t.Run("no_spec", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		r, err := e.CreateRunner(context.Background(), &engine.RunnerSpec{
 			ID: "test",
 			Kube: &engine.KubeSpec{
@@ -71,5 +74,15 @@ func TestEngine_CreateRunner(t *testing.T) {
 		runner := r.(*Runner)
 		assert.DeepEqual(t, runner.namespace, namespace)
 		testtool.DeepEqualObject(t, runner.pod, "testdata/pod.json")
+	})
+	t.Run("port_forward", func(t *testing.T) {
+		// TODO: hard to mock RESTClient
+	})
+}
+
+func TestNewEngine(t *testing.T) {
+	t.Run("port_forward", func(t *testing.T) {
+		_, err := NewEngine(nil, &Option{UsePortForward: true})
+		assert.ErrorContains(t, err, "kube config is nil, it is required when UsePortForward is true")
 	})
 }
