@@ -33,18 +33,6 @@ func (m *MockTestingT) EXPECT() *MockTestingTMockRecorder {
 	return m.recorder
 }
 
-// Fail mocks base method.
-func (m *MockTestingT) Fail() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Fail")
-}
-
-// Fail indicates an expected call of Fail.
-func (mr *MockTestingTMockRecorder) Fail() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Fail", reflect.TypeOf((*MockTestingT)(nil).Fail))
-}
-
 // FailNow mocks base method.
 func (m *MockTestingT) FailNow() {
 	m.ctrl.T.Helper()
@@ -69,18 +57,19 @@ func (mr *MockTestingTMockRecorder) Helper() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Helper", reflect.TypeOf((*MockTestingT)(nil).Helper))
 }
 
-// Log mocks base method.
-func (m *MockTestingT) Log(arg0 ...interface{}) {
+// Logf mocks base method.
+func (m *MockTestingT) Logf(arg0 string, arg1 ...interface{}) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range arg0 {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
 		varargs = append(varargs, a)
 	}
-	m.ctrl.Call(m, "Log", varargs...)
+	m.ctrl.Call(m, "Logf", varargs...)
 }
 
-// Log indicates an expected call of Log.
-func (mr *MockTestingTMockRecorder) Log(arg0 ...interface{}) *gomock.Call {
+// Logf indicates an expected call of Logf.
+func (mr *MockTestingTMockRecorder) Logf(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockTestingT)(nil).Log), arg0...)
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Logf", reflect.TypeOf((*MockTestingT)(nil).Logf), varargs...)
 }
