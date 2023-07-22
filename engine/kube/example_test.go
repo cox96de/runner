@@ -16,7 +16,7 @@ func ExampleEngine() {
 	if len(kubeconfig) == 0 {
 		kubeconfig = os.Getenv("HOME") + "/.kube/config"
 	}
-	clientset, err := ComposeKubeClientFromFile(kubeconfig)
+	clientset, _, err := ComposeKubeClientFromFile(kubeconfig)
 	checkError(err)
 	namespace := "runner"
 	// Create namespace, it should be created by the user.
@@ -25,11 +25,12 @@ func ExampleEngine() {
 			Name: namespace,
 		},
 	}, metav1.CreateOptions{})
-	engine := NewEngine(clientset, &Option{
+	engine, err := NewEngine(clientset, &Option{
 		ExecutorImage: "docker.io/cox96de/runner-executor:master",
 		ExecutorPath:  "/executor",
 		Namespace:     namespace,
 	})
+	checkError(err)
 	err = engine.Ping(context.Background())
 	checkError(err)
 	// Output:
