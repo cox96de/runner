@@ -46,6 +46,14 @@ jobs:
 
       - name: Build
         run: go build ./...
+
+      - name: Prepare
+        run: |
+          echo "prepare"
+          if [[ ${{ matrix.os }} == 'ubuntu-latest' ]]; then
+            sudo apt-get update && sudo apt-get install -y genisoimage
+          fi
+
       - name: Test
         run: go test -race -coverprofile cover.out -coverpkg=./... ./...
   build_windows:
@@ -80,8 +88,15 @@ jobs:
       - name: Try the cluster
         run: kubectl get pods -A
 
-      - name: Test
+      - name: Test Kube
         run: go test -tags kube_integration -race -coverprofile cover.out -coverpkg=./... ./engine/kube/...
+
+      - name: Test VM Runtime
+        run: |
+          sudo apt-get update && sudo apt-get install -y genisoimage
+          cd ./engine/vm/runtime/
+          wget -q -O debian-11-amd64.qcow2 'https://cloud.debian.org/images/cloud/bullseye/20230802-1460/debian-11-genericcloud-amd64-20230802-1460.qcow2'
+          go test -tags vm_runtime_integration ./...
 
       - name: Example
         run: |
