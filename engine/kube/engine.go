@@ -22,15 +22,18 @@ type Engine struct {
 }
 
 type Option struct {
+	// ExecutorImage is the image of contains the executor binary.
 	ExecutorImage string
-	ExecutorPath  string
+	// ExecutorPath is the path of the executor binary in the executor image.
+	ExecutorPath string
 	// KubeConfig is the kube config used to connect to the kubernetes cluster.
 	// It's required when UsePortForward is true.
 	KubeConfig *rest.Config
 	// UsePortForward is true, the runner will use port-forward to connect to the executor.
 	// It is useful when the runner is running outside the kubernetes cluster.
 	UsePortForward bool
-	Namespace      string
+	// Namespace is the namespace to create the runner pod.
+	Namespace string
 }
 
 func NewEngine(client kubernetes.Interface, opt *Option) (*Engine, error) {
