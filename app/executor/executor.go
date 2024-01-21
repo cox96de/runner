@@ -3,26 +3,27 @@ package executor
 import (
 	"net"
 
+	"github.com/cox96de/runner/app/executor/executorpb"
+	"google.golang.org/grpc"
+
 	"github.com/cox96de/runner/app/executor/handler"
-	"github.com/gin-gonic/gin"
 )
 
 type App struct {
-	server  *gin.Engine
 	handler *handler.Handler
+	server  *grpc.Server
 }
 
 func NewApp() *App {
-	r := gin.Default()
 	app := &App{
-		server:  r,
 		handler: handler.NewHandler(),
+		server:  grpc.NewServer(),
 	}
-	app.handler.RegisterRoutes(r)
+	executorpb.RegisterExecutorServer(app.server, app.handler)
 	return app
 }
 
 // Run starts the server.
 func (app *App) Run(listener net.Listener) error {
-	return app.server.RunListener(listener)
+	return app.server.Serve(listener)
 }

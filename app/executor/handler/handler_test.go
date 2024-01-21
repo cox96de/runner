@@ -1,29 +1,26 @@
 package handler
 
 import (
-	"context"
-	"net/http/httptest"
+	"net"
 	"testing"
 
-	"github.com/cox96de/runner/internal/executor"
-	"github.com/gin-gonic/gin"
+	"github.com/cox96de/runner/app/executor/executorpb"
+	"google.golang.org/grpc"
+
 	"gotest.tools/v3/assert"
 )
 
-func setupHandler(t *testing.T) (*httptest.Server, *Handler) {
-	engine := gin.New()
+func setupHandler(t *testing.T) (*Handler, string) {
 	handler := NewHandler()
-	handler.RegisterRoutes(engine)
-	testServer := httptest.NewServer(engine)
+	testServer := grpc.NewServer()
+	executorpb.RegisterExecutorServer(testServer, handler)
 	t.Cleanup(func() {
-		testServer.Close()
+		testServer.Stop()
 	})
-	return testServer, handler
-}
-
-func TestHandler_pingHandler(t *testing.T) {
-	testServer, _ := setupHandler(t)
-	client := executor.NewClient(testServer.URL)
-	err := client.Ping(context.Background())
+	listener, err := net.Listen("tcp", ":0")
 	assert.NilError(t, err)
+	go func() {
+		_ = testServer.Serve(listener)
+	}()
+	return handler, listener.Addr().String()
 }

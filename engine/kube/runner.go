@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/cox96de/runner/app/executor/executorpb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
 	"k8s.io/client-go/tools/portforward"
 
 	"github.com/hashicorp/go-multierror"
 
-	"github.com/cox96de/runner/engine"
-	"github.com/cox96de/runner/internal/executor"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -118,7 +120,7 @@ func (r *Runner) waitPodReady(ctx context.Context) error {
 	}
 }
 
-func (r *Runner) GetExecutor(ctx context.Context, name string) (engine.Executor, error) {
+func (r *Runner) GetExecutor(ctx context.Context, name string) (executorpb.ExecutorClient, error) {
 	if r.portForwarder != nil {
 		return r.getExecutorFromPortForward(name)
 	}
@@ -126,18 +128,28 @@ func (r *Runner) GetExecutor(ctx context.Context, name string) (engine.Executor,
 	if !ok {
 		return nil, errors.Errorf("the runner container %s not found", name)
 	}
-	client := executor.NewClient(fmt.Sprintf("http://%s", net.JoinHostPort(r.pod.Status.PodIP,
-		fmt.Sprintf("%d", port))))
+	addr := net.JoinHostPort(r.pod.Status.PodIP,
+		fmt.Sprintf("%d", port))
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to connect to executor")
+	}
+	client := executorpb.NewExecutorClient(conn)
 	return client, nil
 }
 
-func (r *Runner) getExecutorFromPortForward(name string) (engine.Executor, error) {
+func (r *Runner) getExecutorFromPortForward(name string) (executorpb.ExecutorClient, error) {
 	port, ok := r.portForwardPortMap[name]
 	if !ok {
 		return nil, errors.Errorf("the runner container %s not found", name)
 	}
-	client := executor.NewClient(fmt.Sprintf("http://%s", net.JoinHostPort("127.0.0.1",
-		fmt.Sprintf("%d", port))))
+	addr := net.JoinHostPort("127.0.0.1",
+		fmt.Sprintf("%d", port))
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to connect to executor")
+	}
+	client := executorpb.NewExecutorClient(conn)
 	return client, nil
 }
 

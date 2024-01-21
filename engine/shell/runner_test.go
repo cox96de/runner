@@ -2,13 +2,12 @@ package shell
 
 import (
 	"context"
-	"io"
 	"runtime"
 	"testing"
 
-	"gotest.tools/v3/assert"
+	"github.com/cox96de/runner/app/executor/executorpb"
 
-	"github.com/cox96de/runner/internal/executor"
+	"gotest.tools/v3/assert"
 )
 
 func TestRunner_Start(t *testing.T) {
@@ -18,24 +17,26 @@ func TestRunner_Start(t *testing.T) {
 	assert.NilError(t, err)
 	e, err := r.GetExecutor(ctx, "")
 	assert.NilError(t, err)
-	err = e.Ping(ctx)
+	_, err = e.Ping(ctx, &executorpb.PingRequest{})
 	assert.NilError(t, err)
+	var startCommandResp *executorpb.StartCommandResponse
 	if runtime.GOOS == "windows" {
-		err = e.StartCommand(ctx, "a", &executor.StartCommandRequest{
-			Dir:     "C:\\",
-			Command: []string{"cmd", "/c", "dir"},
+		startCommandResp, err = e.StartCommand(ctx, &executorpb.StartCommandRequest{
+			Dir:      "C:\\",
+			Commands: []string{"cmd", "/c", "dir"},
 		})
 	} else {
-		err = e.StartCommand(ctx, "a", &executor.StartCommandRequest{
-			Dir:     "/tmp",
-			Command: []string{"ls"},
+		startCommandResp, err = e.StartCommand(ctx, &executorpb.StartCommandRequest{
+			Dir:      "/tmp",
+			Commands: []string{"ls"},
 		})
 	}
 	assert.NilError(t, err)
-	logReader := e.GetCommandLogs(ctx, "a")
-	all, err := io.ReadAll(logReader)
+	getCommandLogResp, err := e.GetCommandLog(ctx, &executorpb.GetCommandLogRequest{Pid: startCommandResp.Status.Pid})
 	assert.NilError(t, err)
-	t.Logf("%s", string(all))
+	all, err := executorpb.ReadAllFromCommandLog(getCommandLogResp)
+	assert.NilError(t, err)
+	t.Logf("%s", all)
 	t.Run("stop", func(t *testing.T) {
 		err := r.Stop(ctx)
 		assert.NilError(t, err)

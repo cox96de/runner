@@ -20,7 +20,7 @@ func ExampleEngine() {
 	checkError(err)
 	namespace := "runner"
 	// Create namespace, it should be created by the user.
-	clientset.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{
+	_, _ = clientset.CoreV1().Namespaces().Create(context.Background(), &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namespace,
 		},
