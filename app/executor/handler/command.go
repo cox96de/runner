@@ -1,151 +1,121 @@
 package handler
 
 import (
+	"context"
 	"io"
-	"net/http"
-	"os"
 	"os/exec"
 	"time"
 
+	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/lib"
-	log "github.com/sirupsen/logrus"
-
-	internalmodel "github.com/cox96de/runner/internal/model"
-	"github.com/cox96de/runner/util"
-	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
-const defaultRingBufferSize = 1 << 20
+const (
+	defaultRingBufferSize = 1 << 20
+	flushLogInterval      = time.Millisecond * 100
+)
 
-// startCommandHandler is a simple ping handler, uses to validate the executor is ready.
-func (h *Handler) startCommandHandler(c *gin.Context) {
-	req := &internalmodel.StartCommandRequest{}
-	if err := util.BindAndValidate(c, req); err != nil {
-		c.JSON(http.StatusBadRequest, &internalmodel.Message{
-			Message: err.Error(),
-		})
-		return
+func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server executorpb.Executor_GetCommandLogServer) error {
+	c, ok := h.commands[int(request.Pid)]
+	if !ok {
+		return errors.Errorf("command with pid %d not found", request.Pid)
 	}
-	rb := lib.NewRingBuffer(defaultRingBufferSize)
-
-	cmd := exec.Command(req.Command[0], req.Command[1:]...)
-	cmd.Dir = req.Dir
-	cmd.Stdout = rb
-	cmd.Stderr = rb
-	// TODO: add an option to inherit system environment variables
-	cmd.Env = append(os.Environ(), util.MakeEnvPairs(req.Env)...)
-	command := newCommand(cmd, rb)
-	h.commandLock.Lock()
-	_, exists := h.commands[req.ID]
-	if exists {
-		h.commandLock.Unlock()
-		c.JSON(http.StatusBadRequest, &internalmodel.Message{
-			Message: "command already exists",
-		})
-		return
-	}
-	h.commands[req.ID] = command
-	h.commandLock.Unlock()
-	if err := command.Start(); err != nil {
-		c.JSON(http.StatusInternalServerError, &internalmodel.Message{
-			Message: err.Error(),
-		})
-		return
-	}
-	go func() {
-		command.Wait()
-		log.Infof("command %s exited", req.ID)
-	}()
-	c.Status(http.StatusOK)
-}
-
-const flushLogInterval = time.Millisecond * 100
-
-// getCommandLogHandler gets commands stdout and stderr.
-func (h *Handler) getCommandLogHandler(c *gin.Context) {
-	req := &internalmodel.GetCommandLogRequest{}
-	if err := util.BindAndValidate(c, req); err != nil {
-		c.JSON(http.StatusBadRequest, &internalmodel.Message{
-			Message: err.Error(),
-		})
-		return
-	}
-	logger := log.WithFields(log.Fields{"id": req.ID})
-	h.commandLock.Lock()
-	cmd, exists := h.commands[req.ID]
-	h.commandLock.Unlock()
-	if !exists {
-		c.JSON(http.StatusNotFound, &internalmodel.Message{
-			Message: "command not found",
-		})
-		return
-	}
-	if cmd.Exited() {
-		c.Status(http.StatusOK)
-	} else {
-		c.Status(http.StatusPartialContent)
-	}
-	c.Writer.Flush()
 	bufSize := 1024
 	logBuf := make([]byte, bufSize)
-	c.Stream(func(wr io.Writer) bool {
-		n, readErr := cmd.logWriter.Read(logBuf)
-		_, err := wr.Write(logBuf[:n])
-		if err != nil {
-			logger.Errorf("failed to write to http writer: %v", err)
-			return false
+	for {
+		select {
+		case <-server.Context().Done():
+			return nil
+		default:
+
 		}
+		n, readErr := c.logWriter.Read(logBuf)
 		if readErr != nil {
 			if errors.Is(readErr, io.EOF) {
-				return false
+				return nil
 			}
-			logger.Infof("failed to read from log writer: %v", readErr)
-			return false
+			return errors.WithMessage(readErr, "failed to read from log buffer")
+		}
+		sendErr := server.Send(&executorpb.Log{
+			Output: logBuf[:n],
+		})
+		if sendErr != nil {
+			return errors.WithMessage(sendErr, "failed to send log")
 		}
 		if n < bufSize {
 			// Cool down a bit.
 			time.Sleep(flushLogInterval)
 		}
-		return true
-	})
+	}
 }
 
-// getCommandLogHandler gets commands stdout and stderr.
-func (h *Handler) getCommandStatusHandler(c *gin.Context) {
-	req := &internalmodel.GetCommandStatusRequest{}
-	if err := util.BindAndValidate(c, req); err != nil {
-		c.JSON(http.StatusBadRequest, &internalmodel.Message{
-			Message: err.Error(),
-		})
-		return
+func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCommandRequest) (*executorpb.StartCommandResponse, error) {
+	rb := lib.NewRingBuffer(defaultRingBufferSize)
+	if len(request.Commands) == 0 {
+		return nil, errors.Errorf("no command provided")
+	}
+	cmd := exec.Command(request.Commands[0], request.Commands[1:]...)
+	cmd.Dir = request.Dir
+	if len(request.Env) > 0 {
+		cmd.Env = request.Env
+	}
+	cmd.Stdout = rb
+	cmd.Stdout = rb
+	c := newCommand(cmd, rb)
+	if err := c.Start(); err != nil {
+		return nil, errors.WithMessage(err, "failed to start command")
 	}
 	h.commandLock.Lock()
-	cmd, exists := h.commands[req.ID]
+	h.commands[cmd.Process.Pid] = c
 	h.commandLock.Unlock()
-	if !exists {
-		c.JSON(http.StatusNotFound, &internalmodel.Message{
-			Message: "command not found",
-		})
-		return
+	go func() {
+		c.Wait()
+		log.Infof("process %d exited", c.Process.Pid)
+	}()
+	return &executorpb.StartCommandResponse{
+		Status: &executorpb.ProcessStatus{
+			Pid:   int32(cmd.Process.Pid),
+			Exit:  false,
+			Error: "",
+		},
+	}, nil
+}
+
+func (h *Handler) WaitCommand(ctx context.Context, request *executorpb.WaitCommandRequest) (*executorpb.WaitCommandResponse, error) {
+	c, ok := h.commands[int(request.Pid)]
+	if !ok {
+		return nil, errors.Errorf("command with pid %d not found", request.Pid)
 	}
-	if !cmd.Exited() {
-		// Not completed yet.
-		c.JSON(http.StatusOK, &internalmodel.GetCommandStatusResponse{
-			Exit: false,
-		})
-		return
+	select {
+	case <-time.After(time.Duration(request.Timeout)):
+		return &executorpb.WaitCommandResponse{
+			Status: &executorpb.ProcessStatus{
+				Pid:      int32(c.Process.Pid),
+				ExitCode: 0,
+				Exit:     false,
+				Error:    "",
+			},
+		}, nil
+	case <-c.runningCh:
+		s := &executorpb.WaitCommandResponse{
+			Status: &executorpb.ProcessStatus{
+				Pid:      int32(c.Process.Pid),
+				ExitCode: int32(c.ProcessState.ExitCode()),
+				Exit:     c.ProcessState.Exited(),
+			},
+		}
+		if c.waitError != nil {
+			s.Status.Error = c.waitError.Error()
+		}
+		// Just like linux does.
+		h.commandLock.Lock()
+		delete(h.commands, int(request.Pid))
+		h.commandLock.Unlock()
+		return s, nil
+
 	}
-	var waitError string
-	if cmd.waitError != nil {
-		waitError = cmd.waitError.Error()
-	}
-	processState := cmd.ProcessState
-	c.JSON(http.StatusOK, &internalmodel.GetCommandStatusResponse{
-		ExitCode: processState.ExitCode(),
-		Exit:     processState.Exited(),
-		Error:    waitError,
-	})
 }
 
 type command struct {

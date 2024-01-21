@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"bytes"
 	"context"
-	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -12,70 +10,103 @@ import (
 
 	"github.com/cox96de/runner/util"
 
-	internalmodel "github.com/cox96de/runner/internal/model"
+	"github.com/cox96de/runner/app/executor/executorpb"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"gotest.tools/v3/fs"
 
-	"github.com/cox96de/runner/internal/executor"
 	"gotest.tools/v3/assert"
 )
 
-func TestHandler_startCommandHandler(t *testing.T) {
-	testServer, handler := setupHandler(t)
-	client := executor.NewClient(testServer.URL)
-	dir := os.TempDir()
+func TestHandler_StartCommand(t *testing.T) {
+	handler, addr := setupHandler(t)
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	assert.NilError(t, err)
+	client := executorpb.NewExecutorClient(conn)
+
 	t.Run("shot-run", func(t *testing.T) {
-		id := t.Name()
-		err := client.StartCommand(context.Background(), id,
-			&executor.StartCommandRequest{
-				Command: []string{"ls", "-alh"},
-				Dir:     dir,
+		var (
+			dir      string
+			commands []string
+		)
+		if runtime.GOOS == "windows" {
+			dir = "c:\\"
+			commands = []string{"powershell", "-Command", "Write-Host hello"}
+		} else {
+			dir = "/tmp"
+			commands = []string{"echo", "hello"}
+		}
+		resp, err := client.StartCommand(context.Background(),
+			&executorpb.StartCommandRequest{
+				Commands: commands,
+				Dir:      dir,
 			})
 		assert.NilError(t, err)
 		// TODO: wait for the command to finish
 		time.Sleep(time.Second)
-		log, _ := io.ReadAll(handler.commands[id].logWriter)
-		assert.Assert(t, strings.Contains(string(log), "total"))
-		t.Run("duplicate", func(t *testing.T) {
-			err := client.StartCommand(context.Background(), id,
-				&executor.StartCommandRequest{
-					Command: []string{"ls", "-alh"},
-					Dir:     dir,
-				})
-			assert.ErrorContains(t, err, "command already exists")
+		pid := resp.Status.Pid
+		assert.Assert(t, pid > 0)
+		t.Run("get_log", func(t *testing.T) {
+			commandLogResp, err := client.GetCommandLog(context.Background(), &executorpb.GetCommandLogRequest{
+				Pid: pid,
+			})
+			assert.NilError(t, err)
+			log, err := executorpb.ReadAllFromCommandLog(commandLogResp)
+			assert.NilError(t, err)
+			if runtime.GOOS == "windows" {
+			} else {
+				assert.Assert(t, strings.Contains(log, "hello"), log)
+			}
 		})
 	})
 	t.Run("long-run", func(t *testing.T) {
-		err := client.StartCommand(context.Background(), t.Name(),
-			&executor.StartCommandRequest{
-				Command: []string{"tail", "-f", "/dev/null"},
-				Dir:     dir,
+		var (
+			dir      string
+			commands []string
+		)
+		if runtime.GOOS == "windows" {
+			dir = "c:\\"
+			commands = []string{"powershell", "-Command", "ping 0.0.0.0 -t"}
+		} else {
+			dir = "/tmp"
+			commands = []string{"tail", "-f", "/dev/null"}
+		}
+		resp, err := client.StartCommand(context.Background(),
+			&executorpb.StartCommandRequest{
+				Commands: commands,
+				Dir:      dir,
 			})
 		assert.NilError(t, err)
+		pid := resp.Status.Pid
+		assert.Assert(t, pid > 0)
 		time.Sleep(time.Millisecond * 10)
-		_ = handler.commands[t.Name()].Process.Kill()
+		_ = handler.commands[int(pid)].Process.Kill()
 	})
 	t.Run("invalid-command", func(t *testing.T) {
-		err := client.StartCommand(context.Background(), t.Name(),
-			&executor.StartCommandRequest{
-				Command: []string{"non-exists"},
-				Dir:     dir,
+		_, err := client.StartCommand(context.Background(),
+			&executorpb.StartCommandRequest{
+				Commands: []string{"non-exists"},
+				Dir:      "/tmp",
 			})
 		assert.ErrorContains(t, err, "not found")
 	})
-	t.Run("bad_request", func(t *testing.T) {
-		err := client.StartCommand(context.Background(), t.Name(),
-			&executor.StartCommandRequest{
-				Command: []string{},
-				Dir:     dir,
+	t.Run("emtpy_command", func(t *testing.T) {
+		_, err := client.StartCommand(context.Background(),
+			&executorpb.StartCommandRequest{
+				Commands: []string{},
+				Dir:      "/tmp",
 			})
-		assert.ErrorContains(t, err, "command cannot be empty")
+		assert.ErrorContains(t, err, "no command provided")
 	})
 }
 
-func TestHandler_getCommandLogHandler(t *testing.T) {
-	testServer, _ := setupHandler(t)
-	client := executor.NewClient(testServer.URL)
+func TestHandler_GetCommandLog(t *testing.T) {
+	_, addr := setupHandler(t)
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	assert.NilError(t, err)
+	client := executorpb.NewExecutorClient(conn)
 	t.Run("fast", func(t *testing.T) {
 		logs := `go: downloading gotest.tools/v3 v3.4.0
 go: downloading github.com/google/go-cmp v0.5.5
@@ -84,83 +115,107 @@ ok  	github.com/cox96de/runner/app/executor/handler	1.053s	coverage: 63.6% of st
 ?   	github.com/cox96de/runner/cmd/executor	[no test files]
 ok  	github.com/cox96de/runner/internal/executor	0.028s	coverage: 22.4% of statements in ./...
 ?   	github.com/cox96de/runner/internal/model	[no test files]
-?   	github.com/cox96de/runner/util	[no test files]`
+?   	github.com/cox96de/runner/util	[no test files]
+`
 		testDir := fs.NewDir(t, "test", fs.WithFile("test.log", logs, fs.WithMode(0o644)))
-		err := client.StartCommand(context.Background(), t.Name(), &executor.StartCommandRequest{
-			Command: []string{"cat", testDir.Join("test.log")},
-			Dir:     os.TempDir(),
+		var (
+			dir      string
+			commands []string
+		)
+		if runtime.GOOS == "windows" {
+			dir = "c:\\"
+			commands = []string{"powershell", "-Command", "Get-Content", "-Path", testDir.Join("test.log")}
+		} else {
+			dir = "/tmp"
+			commands = []string{"cat", testDir.Join("test.log")}
+		}
+		resp, err := client.StartCommand(context.Background(), &executorpb.StartCommandRequest{
+			Commands: commands,
+			Dir:      dir,
 		})
 		assert.Assert(t, err)
-		l := client.GetCommandLogs(context.Background(), t.Name())
-		buf := &bytes.Buffer{}
-		_, err = io.Copy(buf, l)
+		getLogResp, err := client.GetCommandLog(context.Background(), &executorpb.GetCommandLogRequest{
+			Pid: resp.Status.Pid,
+		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, buf.String(), logs)
+		log, err := executorpb.ReadAllFromCommandLog(getLogResp)
+		assert.NilError(t, err)
+		if runtime.GOOS == "windows" {
+			log = strings.Replace(log, "\r\n", "\n", -1)
+		}
+		assert.DeepEqual(t, log, logs)
 	})
 	t.Run("slow", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
 			t.Skip("skip slow test on windows")
 		}
-		commands := []string{"docker run --rm golang:1.20 bash -c \"go env -w GOPROXY=https://goproxy.cn,direct && go install github.com/go-delve/delve/cmd/dlv@latest\""}
+		commands := []string{"echo 1", "sleep 1", "echo 2"}
 		commandsEnv := util.CompileUnixScript(commands)
-		err := client.StartCommand(context.Background(), t.Name(), &executor.StartCommandRequest{
-			Command: []string{"/bin/sh", "-c", "printf '%s' \"$COMMANDS\" | /bin/sh"},
-			Env:     map[string]string{"COMMANDS": commandsEnv},
+		resp, err := client.StartCommand(context.Background(), &executorpb.StartCommandRequest{
+			Commands: []string{"/bin/sh", "-c", "printf '%s' \"$COMMANDS\" | /bin/sh"},
+			Env:      []string{"COMMANDS=" + commandsEnv},
 		})
 		assert.Assert(t, err)
-		l := client.GetCommandLogs(context.Background(), t.Name())
-		buf := &bytes.Buffer{}
-		_, err = io.Copy(buf, l)
+		getLogResp, err := client.GetCommandLog(context.Background(), &executorpb.GetCommandLogRequest{
+			Pid: resp.Status.Pid,
+		})
 		assert.NilError(t, err)
+		log, err := executorpb.ReadAllFromCommandLog(getLogResp)
+		assert.NilError(t, err)
+		assert.Assert(t, strings.Contains(log, "echo 1"))
+		assert.Assert(t, strings.Contains(log, "echo 2"))
 	})
 }
 
-func TestHandler_getCommandStatusHandler(t *testing.T) {
-	testServer, _ := setupHandler(t)
-	client := executor.NewClient(testServer.URL)
-	t.Run("running", func(t *testing.T) {
-		err := client.StartCommand(context.Background(), t.Name(), &executor.StartCommandRequest{
-			Command: []string{"sleep", "1"},
-			Dir:     os.TempDir(),
+func TestHandler_WaitCommand(t *testing.T) {
+	_, addr := setupHandler(t)
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	assert.NilError(t, err)
+	client := executorpb.NewExecutorClient(conn)
+	t.Run("wait", func(t *testing.T) {
+		var commands []string
+		if runtime.GOOS == "windows" {
+			commands = []string{"powershell", "-Command", "sleep 1"}
+		} else {
+			commands = []string{"sleep", "1"}
+		}
+		resp, err := client.StartCommand(context.Background(), &executorpb.StartCommandRequest{
+			Commands: commands,
+			Dir:      os.TempDir(),
 		})
 		assert.NilError(t, err)
-		response, err := client.GetCommandStatus(context.Background(), t.Name())
-		assert.NilError(t, err)
-		assert.DeepEqual(t, response, &internalmodel.GetCommandStatusResponse{
-			ExitCode: 0,
-			Exit:     false,
+		response, err := client.WaitCommand(context.Background(), &executorpb.WaitCommandRequest{
+			Pid:     resp.Status.Pid,
+			Timeout: int64(time.Millisecond * 10),
 		})
-		time.Sleep(time.Second * 2)
-		response, err = client.GetCommandStatus(context.Background(), t.Name())
 		assert.NilError(t, err)
-		assert.DeepEqual(t, response, &internalmodel.GetCommandStatusResponse{
-			ExitCode: 0,
-			Exit:     true,
+		assert.DeepEqual(t, response.Status.Exit, false)
+		response, err = client.WaitCommand(context.Background(), &executorpb.WaitCommandRequest{
+			Pid:     resp.Status.Pid,
+			Timeout: int64(time.Second * 2),
 		})
+		assert.NilError(t, err)
+		assert.DeepEqual(t, response.Status.Exit, true)
 	})
 	t.Run("exit_code", func(t *testing.T) {
-		err := client.StartCommand(context.Background(), t.Name(), &executor.StartCommandRequest{
-			Command: []string{"bash", "-c", "exit 2"},
-			Dir:     os.TempDir(),
+		if runtime.GOOS == "windows" {
+			t.Skip("skip on windows")
+		}
+		resp, err := client.StartCommand(context.Background(), &executorpb.StartCommandRequest{
+			Commands: []string{"bash", "-c", "exit 2"},
+			Dir:      os.TempDir(),
 		})
 		assert.NilError(t, err)
-		for i := 0; i < 10; i++ {
-			response, err := client.GetCommandStatus(context.Background(), t.Name())
-			assert.NilError(t, err)
-			if !response.Exit {
-				t.Logf("not exited yet, retrying")
-				time.Sleep(time.Millisecond * 10)
-				continue
-			}
-			assert.DeepEqual(t, response, &internalmodel.GetCommandStatusResponse{
-				ExitCode: 2,
-				Exit:     true,
-				Error:    "exit status 2",
-			})
-		}
-	})
-	t.Run("not_found", func(t *testing.T) {
-		_, err := client.GetCommandStatus(context.Background(), t.Name())
-		assert.ErrorContains(t, err, "command not found")
+		response, err := client.WaitCommand(context.Background(), &executorpb.WaitCommandRequest{
+			Pid:     resp.Status.Pid,
+			Timeout: int64(time.Second),
+		})
+		assert.NilError(t, err)
+		assert.DeepEqual(t, response.Status, &executorpb.ProcessStatus{
+			Pid:      resp.Status.Pid,
+			ExitCode: 2,
+			Exit:     true,
+			Error:    "exit status 2",
+		}, cmpopts.IgnoreUnexported(executorpb.ProcessStatus{}))
 	})
 }

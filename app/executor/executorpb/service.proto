@@ -1,0 +1,57 @@
+syntax = "proto3";
+option go_package = "code.byted.org/pipeline/leafboat/executor/executorpb";
+service Executor {
+  rpc Ping(PingRequest)returns(PingResponse);
+  rpc Environment(EnvironmentRequest)returns(EnvironmentResponse);
+  rpc StartCommand(StartCommandRequest)returns(StartCommandResponse) {}
+  rpc WaitCommand(WaitCommandRequest)returns(WaitCommandResponse){}
+  rpc GetCommandLog(GetCommandLogRequest)returns(stream Log){}
+}
+message PingRequest{
+}
+message PingResponse{
+}
+message EnvironmentRequest{
+
+}
+message EnvironmentResponse{
+  repeated string Environment = 1;
+}
+
+message StartCommandRequest {
+  repeated string Commands = 1;
+  string Dir = 2;
+  repeated string Env = 3;
+}
+
+message StartCommandResponse {
+  ProcessStatus status = 1;
+}
+
+message ProcessStatus{
+  int32 Pid = 1;
+  int32 ExitCode = 2;
+  bool  Exit = 3;
+  string Error = 4;
+}
+
+message WaitCommandRequest{
+  int32 Pid = 1;
+  int64 Timeout = 2;
+}
+message WaitCommandResponse{
+  ProcessStatus status = 1;
+}
+
+message GetCommandLogRequest{
+  int32 Pid = 1;
+}
+
+message Log{
+  LogSource source = 1;
+  bytes Output = 2;
+}
+enum LogSource{
+  STDOUT = 0;
+  STDERR = 1;
+}
