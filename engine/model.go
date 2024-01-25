@@ -4,46 +4,20 @@ import (
 	"context"
 	"io"
 
-	internalmodel "github.com/cox96de/runner/internal/model"
+	"github.com/cox96de/runner/entity"
 
-	corev1 "k8s.io/api/core/v1"
+	internalmodel "github.com/cox96de/runner/internal/model"
 
 	"github.com/cox96de/runner/internal/executor"
 )
 
-//go:generate mockgen -destination mockgen_test.go -package engine . Engine,Runner,Executor
-
-// RunnerSpec defines a environment to run job (compile job, ci job, etc).
-type RunnerSpec struct {
-	ID   string
-	Kube *KubeSpec
-}
-
-// KubeSpec defines a environment to run job in kubernetes.
-// It's a subset of kubernetes pod spec.
-type KubeSpec struct {
-	// Containers defines the containers to run in the runner.
-	Containers []*Container
-	Volumes    []corev1.Volume
-}
-
-type Container struct {
-	Name         string
-	Image        string
-	VolumeMounts []corev1.VolumeMount
-}
-
-type VolumeMount struct {
-	Name      string
-	ReadOnly  bool
-	MountPath string
-}
+//go:generate mockgen -destination mockgen_test.go -source model.go -package engine . Engine,Runner,Executor
 
 type Engine interface {
 	// Ping checks the engine is working.
 	Ping(ctx context.Context) error
 	// CreateRunner creates a runner by RunnerSpec.
-	CreateRunner(ctx context.Context, option *RunnerSpec) (Runner, error)
+	CreateRunner(ctx context.Context, option *entity.Job) (Runner, error)
 }
 
 // Runner is an environment to run job (compile job, ci job, etc).

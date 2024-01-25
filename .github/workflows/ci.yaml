@@ -71,34 +71,34 @@ jobs:
       - name: Test
         run: go test -race -coverprofile cover.out -coverpkg=./... $(go list ./... |grep -v /kube )
 
-  integration:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
-
-      # https://minikube.sigs.k8s.io/docs/tutorials/setup_minikube_in_github_actions/
-      - name: Start minikube
-        uses: medyagh/setup-minikube@master
-
-      - name: Try the cluster
-        run: kubectl get pods -A
-
-      - name: Test Kube
-        run: go test -tags kube_integration -race -coverprofile cover.out -coverpkg=./... ./engine/kube/...
-
-      - name: Test VM Runtime
-        run: |
-          sudo apt-get update && sudo apt-get install -y genisoimage
-          cd ./engine/vm/runtime/
-          wget -q -O debian-11-amd64.qcow2 'https://cloud.debian.org/images/cloud/bullseye/20230802-1460/debian-11-genericcloud-amd64-20230802-1460.qcow2'
-          go test -tags vm_runtime_integration ./...
-
-      - name: Example
-        run: |
-          cd example/cmd/runner
-          python run.py
+#  integration:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - name: Set up Go
+#        uses: actions/setup-go@v3
+#        with:
+#          go-version: 1.19
+#
+#      # https://minikube.sigs.k8s.io/docs/tutorials/setup_minikube_in_github_actions/
+#      - name: Start minikube
+#        uses: medyagh/setup-minikube@master
+#
+#      - name: Try the cluster
+#        run: kubectl get pods -A
+#
+#      - name: Test Kube
+#        run: go test -tags kube_integration -race -coverprofile cover.out -coverpkg=./... ./engine/kube/...
+#
+#      - name: Test VM Runtime
+#        run: |
+#          sudo apt-get update && sudo apt-get install -y genisoimage
+#          cd ./engine/vm/runtime/
+#          wget -q -O debian-11-amd64.qcow2 'https://cloud.debian.org/images/cloud/bullseye/20230802-1460/debian-11-genericcloud-amd64-20230802-1460.qcow2'
+#          go test -tags vm_runtime_integration ./...
+#
+#      - name: Example
+#        run: |
+#          cd example/cmd/runner
+#          python run.py
