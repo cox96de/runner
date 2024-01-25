@@ -6,9 +6,9 @@ type RunsOn struct {
 }
 
 type Docker struct {
-	Containers       []Container `json:"containers"`
-	Volumes          []Volume    `json:"volumes"`
-	DefaultContainer string      `json:"default_container"`
+	Containers       []*Container `json:"containers"`
+	Volumes          []*Volume    `json:"volumes"`
+	DefaultContainer string       `json:"default_container"`
 }
 
 type Container struct {

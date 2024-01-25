@@ -5,7 +5,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/cox96de/runner/engine"
+	"github.com/cox96de/runner/entity"
+
 	"github.com/cox96de/runner/testtool"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -49,25 +50,25 @@ func TestEngine_CreateRunner(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	t.Run("no_spec", func(t *testing.T) {
-		_, err := e.CreateRunner(context.Background(), &engine.RunnerSpec{
-			ID:   "test",
-			Kube: nil,
+		_, err := e.CreateRunner(context.Background(), &entity.Job{
+			ID:     1,
+			RunsOn: &entity.RunsOn{},
 		})
-		assert.ErrorContains(t, err, "kube spec is nil")
+		assert.ErrorContains(t, err, "is nil")
 	})
 	t.Run("success", func(t *testing.T) {
-		r, err := e.CreateRunner(context.Background(), &engine.RunnerSpec{
-			ID: "test",
-			Kube: &engine.KubeSpec{
-				Containers: []*engine.Container{
-					{Image: "debian", Name: "test", VolumeMounts: []corev1.VolumeMount{{Name: "test", MountPath: "/test"}}},
-				},
-				Volumes: []corev1.Volume{{
-					Name: "test",
-					VolumeSource: corev1.VolumeSource{
-						EmptyDir: &corev1.EmptyDirVolumeSource{},
+		r, err := e.CreateRunner(context.Background(), &entity.Job{
+			ID: 1,
+			RunsOn: &entity.RunsOn{
+				Docker: &entity.Docker{
+					Containers: []*entity.Container{
+						{Image: "debian", Name: "test", VolumeMounts: []*entity.VolumeMount{{Name: "test", MountPath: "/test"}}},
 					},
-				}},
+					Volumes: []*entity.Volume{{
+						Name:     "test",
+						EmptyDir: &entity.EmptyDirVolumeSource{},
+					}},
+				},
 			},
 		})
 		assert.NilError(t, err)

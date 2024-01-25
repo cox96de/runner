@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/cox96de/runner/engine"
+	"github.com/cox96de/runner/entity"
 
 	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
@@ -32,7 +32,7 @@ type compileResult struct {
 	pod *corev1.Pod
 }
 
-func (c *compiler) Compile(id string, spec *engine.KubeSpec) *compileResult {
+func (c *compiler) Compile(id string, spec *entity.RunsOn) *compileResult {
 	result := &compileResult{
 		pod: &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -40,21 +40,21 @@ func (c *compiler) Compile(id string, spec *engine.KubeSpec) *compileResult {
 			},
 			Spec: corev1.PodSpec{
 				InitContainers: []corev1.Container{c.compileInitContainer()},
-				Containers:     c.compileContainers(spec.Containers),
-				Volumes:        c.compileVolumes(spec.Volumes),
+				Containers:     c.compileContainers(spec.Docker.Containers),
+				Volumes:        c.compileVolumes(spec.Docker.Volumes),
 			},
 		},
 	}
 	return result
 }
 
-func (c *compiler) compileContainers(containers []*engine.Container) []corev1.Container {
-	return lo.Map(containers, func(container *engine.Container, index int) corev1.Container {
+func (c *compiler) compileContainers(containers []*entity.Container) []corev1.Container {
+	return lo.Map(containers, func(container *entity.Container, index int) corev1.Container {
 		return c.compileContainer(container)
 	})
 }
 
-func (c *compiler) compileContainer(container *engine.Container) corev1.Container {
+func (c *compiler) compileContainer(container *entity.Container) corev1.Container {
 	return corev1.Container{
 		Name:         container.Name,
 		Image:        container.Image,
@@ -100,12 +100,38 @@ func (c *compiler) getNextPort(containerID string) string {
 	return strconv.FormatInt(int64(port), 10)
 }
 
-func (c *compiler) compileContainerVolumeMounts(volumeMounts []corev1.VolumeMount) []corev1.VolumeMount {
-	return append(volumeMounts, c.getSystemVolumeMounts()...)
+func (c *compiler) compileContainerVolumeMounts(volumeMounts []*entity.VolumeMount) []corev1.VolumeMount {
+	return append(lo.Map(volumeMounts, func(item *entity.VolumeMount, index int) corev1.VolumeMount {
+		return c.compileVolumeMount(item)
+	}), c.getSystemVolumeMounts()...)
 }
 
-func (c *compiler) compileVolumes(volumes []corev1.Volume) []corev1.Volume {
-	return append(volumes, c.getSystemVolumes()...)
+func (c *compiler) compileVolumeMount(v *entity.VolumeMount) corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      v.Name,
+		ReadOnly:  v.ReadOnly,
+		MountPath: v.MountPath,
+	}
+}
+
+func (c *compiler) compileVolumes(volumes []*entity.Volume) []corev1.Volume {
+	return append(lo.Map(volumes, func(item *entity.Volume, index int) corev1.Volume {
+		return c.compileVolume(item)
+	}), c.getSystemVolumes()...)
+}
+
+func (c *compiler) compileVolume(v *entity.Volume) corev1.Volume {
+	volume := corev1.Volume{
+		Name:         v.Name,
+		VolumeSource: corev1.VolumeSource{},
+	}
+	if v.EmptyDir != nil {
+		volume.EmptyDir = &corev1.EmptyDirVolumeSource{}
+	}
+	if v.HostPath != nil {
+		volume.HostPath = &corev1.HostPathVolumeSource{}
+	}
+	return volume
 }
 
 const (
