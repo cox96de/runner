@@ -159,6 +159,15 @@ func newCommand(cmd *exec.Cmd, logWriter io.ReadWriteCloser) *command {
 	return &command{Cmd: cmd, logWriter: logWriter, runningCh: make(chan struct{})}
 }
 
+func (c *command) Start() error {
+	err := c.Cmd.Start()
+	if err != nil {
+		close(c.runningCh)
+		_ = c.logWriter.Close()
+	}
+	return err
+}
+
 // Wait waits for the command to exit.
 func (c *command) Wait() {
 	c.waitError = c.Cmd.Wait()
