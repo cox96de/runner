@@ -5,7 +5,7 @@ import "time"
 type Job struct {
 	ID               int64             `json:"id"`
 	PipelineID       int64             `json:"pipeline_id"`
-	UID              string            `json:"uid"`
+	Name             string            `json:"name"`
 	RunsOn           *RunsOn           `json:"runs_on"`
 	WorkingDirectory string            `json:"working_directory"`
 	EnvVar           map[string]string `json:"env_var"`
@@ -31,7 +31,7 @@ type Step struct {
 	ID               int64             `json:"id"`
 	PipelineID       int64             `json:"pipeline_id"`
 	JobID            int64             `json:"job_id"`
-	UID              string            `json:"uid"`
+	Name             string            `json:"name"`
 	WorkingDirectory string            `json:"working_directory"`
 	User             string            `json:"user"`
 	DependsOn        []string          `json:"depends_on"`
