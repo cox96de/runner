@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message Pipeline {
+  int64 ID = 1;
+  string CreatedAt = 2;
+  string UpdatedAt = 3;
+}
+
+
+message PipelineRun {
+
+}
