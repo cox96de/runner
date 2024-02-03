@@ -3,6 +3,8 @@ package util
 import (
 	"time"
 
+	"github.com/rs/xid"
+
 	"golang.org/x/exp/rand"
 )
 
@@ -23,4 +25,10 @@ func RandomStringFromCharset(length int, charset string) string {
 		result[i] = charset[rand.Intn(len(charset))]
 	}
 	return string(result)
+}
+
+// RandomID generates a random string with xid with a prefix.
+// The result is NOT cryptographically secure.
+func RandomID(prefix string) string {
+	return prefix + "-" + xid.New().String()
 }

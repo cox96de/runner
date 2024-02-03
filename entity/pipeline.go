@@ -6,8 +6,8 @@ type Status int8
 
 type Pipeline struct {
 	ID         int64                `json:"id"`
-	Jobs       []*Job               `json:"jobs"`
 	Executions []*PipelineExecution `json:"executions"`
+	Jobs       []*Job               `json:"jobs"`
 	CreatedAt  time.Time            `json:"created_at"`
 	UpdatedAt  time.Time            `json:"updated_at"`
 }
