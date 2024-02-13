@@ -24,7 +24,8 @@ type Runner interface {
 	Start(ctx context.Context) error
 	// GetExecutor gets an executor from the runner.
 	// The Executor is a client to operate in the runner such run commands, read files.
-	GetExecutor(ctx context.Context, name string) (executorpb.ExecutorClient, error)
+	// The name typically is the name of the step.
+	GetExecutor(ctx context.Context, stepName string) (executorpb.ExecutorClient, error)
 	// Stop stops the runner. All resources should be released.
 	Stop(ctx context.Context) error
 }

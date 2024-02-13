@@ -9,6 +9,10 @@ import (
 
 type Engine struct{}
 
+func NewEngine() *Engine {
+	return &Engine{}
+}
+
 func (e *Engine) Ping(_ context.Context) error {
 	return nil
 }

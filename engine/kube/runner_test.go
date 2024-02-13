@@ -16,6 +16,7 @@ func TestRunner_GetExecutor(t *testing.T) {
 			pod: &corev1.Pod{
 				Status: corev1.PodStatus{PodIP: "192.168.31.2"},
 			},
+			stepsContainer: map[string]string{"test": "test"},
 		}
 		executor, err := r.GetExecutor(context.Background(), "test")
 		assert.NilError(t, err)
@@ -32,6 +33,7 @@ func TestRunner_GetExecutor(t *testing.T) {
 		r := &Runner{
 			portForwarder:      &portforward.PortForwarder{},
 			portForwardPortMap: map[string]int32{"test": 1},
+			stepsContainer:     map[string]string{"test": "test"},
 		}
 		executor, err := r.GetExecutor(context.Background(), "test")
 		assert.NilError(t, err)

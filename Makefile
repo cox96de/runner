@@ -10,6 +10,10 @@ format:
 .PHONY: lint
 lint:
 	golangci-lint run --new-from-rev=origin/master --timeout=10m --go=1.20
-build:
+build: build_executor build_server
+build_executor:
 	mkdir -p output
 	CGO_ENABLED=0 go build -o output/executor ./cmd/executor...
+build_server:
+	mkdir -p output
+	CGO_ENABLED=0 go build -o output/server ./cmd/server...
