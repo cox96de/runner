@@ -111,15 +111,14 @@ func PackStep(step *Step) (*entity.Step, error) {
 }
 
 type StepExecution struct {
-	ID    int64 `gorm:"column:id;primaryKey;autoIncrement"`
-	JobID int64 `gorm:"column:job_id"`
-	// TODO: Status type
-	Status      int       `gorm:"column:status"`
-	ExitCode    int       `gorm:"column:exit_code"`
-	StartedAt   time.Time `gorm:"column:started_at"`
-	CompletedAt time.Time `gorm:"column:completed_at"`
-	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	ID          int64             `gorm:"column:id;primaryKey;autoIncrement"`
+	JobID       int64             `gorm:"column:job_id"`
+	Status      entity.StepStatus `gorm:"column:status"`
+	ExitCode    int               `gorm:"column:exit_code"`
+	StartedAt   time.Time         `gorm:"column:started_at"`
+	CompletedAt time.Time         `gorm:"column:completed_at"`
+	CreatedAt   time.Time         `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   time.Time         `gorm:"column:updated_at;autoUpdateTime"`
 }
 
 func (p *StepExecution) TableName() string {

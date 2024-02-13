@@ -4,6 +4,14 @@ import "time"
 
 type StepStatus = Status
 
+const (
+	StepStatusCreated   = StatusCreated
+	StepStatusRunning   = StatusRunning
+	StepStatusFailed    = StatusFailed
+	StepStatusSkipped   = StatusSkipped
+	StepStatusSucceeded = StatusSucceeded
+)
+
 type Step struct {
 	ID               int64             `json:"id"`
 	PipelineID       int64             `json:"pipeline_id"`

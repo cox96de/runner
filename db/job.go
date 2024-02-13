@@ -106,11 +106,11 @@ type JobExecution struct {
 	ID    int64 `gorm:"column:id;primaryKey;autoIncrement"`
 	JobID int64 `gorm:"column:job_id"`
 	// TODO: Status type
-	Status      int       `gorm:"column:status"`
-	StartedAt   time.Time `gorm:"column:started_at"`
-	CompletedAt time.Time `gorm:"column:completed_at"`
-	CreatedAt   time.Time `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time `gorm:"column:updated_at;autoUpdateTime"`
+	Status      entity.JobStatus `gorm:"column:status"`
+	StartedAt   time.Time        `gorm:"column:started_at"`
+	CompletedAt time.Time        `gorm:"column:completed_at"`
+	CreatedAt   time.Time        `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   time.Time        `gorm:"column:updated_at;autoUpdateTime"`
 }
 
 func (p *JobExecution) TableName() string {

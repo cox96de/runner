@@ -2,8 +2,6 @@ package entity
 
 import "time"
 
-type Status int8
-
 type Pipeline struct {
 	ID         int64                `json:"id"`
 	Executions []*PipelineExecution `json:"executions"`
