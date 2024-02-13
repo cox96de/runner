@@ -13,18 +13,21 @@ const (
 )
 
 type Step struct {
-	ID               int64             `json:"id"`
-	PipelineID       int64             `json:"pipeline_id"`
-	JobID            int64             `json:"job_id"`
-	Name             string            `json:"name"`
-	WorkingDirectory string            `json:"working_directory"`
-	User             string            `json:"user"`
-	DependsOn        []string          `json:"depends_on"`
-	Commands         []string          `json:"commands"`
-	EnvVar           map[string]string `json:"env_var"`
-	Executions       []*StepExecution  `json:"executions"`
-	CreatedAt        time.Time         `json:"created_at"`
-	UpdatedAt        time.Time         `json:"updated_at"`
+	ID               int64  `json:"id"`
+	PipelineID       int64  `json:"pipeline_id"`
+	JobID            int64  `json:"job_id"`
+	Name             string `json:"name"`
+	WorkingDirectory string `json:"working_directory"`
+	User             string `json:"user"`
+	// Container is the name of the container to run the step.
+	// If it's empty, use the default container defined in the runs_on.
+	Container  string            `json:"container"`
+	DependsOn  []string          `json:"depends_on"`
+	Commands   []string          `json:"commands"`
+	EnvVar     map[string]string `json:"env_var"`
+	Executions []*StepExecution  `json:"executions"`
+	CreatedAt  time.Time         `json:"created_at"`
+	UpdatedAt  time.Time         `json:"updated_at"`
 }
 
 type StepExecution struct {

@@ -69,6 +69,15 @@ func (e *Engine) CreateRunner(ctx context.Context, spec *entity.Job) (engine.Run
 		pod:             compile.pod,
 		executorPortMap: c.executorPortMap,
 		namespace:       e.namespace,
+		stepsContainer:  map[string]string{},
+	}
+	defaultContainerName := spec.RunsOn.Docker.DefaultContainer
+	for _, step := range spec.Steps {
+		containerName := step.Container
+		if containerName == "" {
+			containerName = defaultContainerName
+		}
+		r.stepsContainer[step.Name] = containerName
 	}
 	if e.usePortForward {
 		ports := make([]string, 0, len(c.executorPortMap))

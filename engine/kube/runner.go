@@ -31,6 +31,7 @@ type Runner struct {
 	namespace          string
 	portForwarder      *portforward.PortForwarder
 	portForwardStop    chan struct{}
+	stepsContainer     map[string]string
 }
 
 func (r *Runner) Start(ctx context.Context) (startErr error) {
@@ -120,13 +121,17 @@ func (r *Runner) waitPodReady(ctx context.Context) error {
 	}
 }
 
-func (r *Runner) GetExecutor(ctx context.Context, name string) (executorpb.ExecutorClient, error) {
-	if r.portForwarder != nil {
-		return r.getExecutorFromPortForward(name)
+func (r *Runner) GetExecutor(ctx context.Context, stepName string) (executorpb.ExecutorClient, error) {
+	containerName := r.stepsContainer[stepName]
+	if containerName == "" {
+		return nil, errors.Errorf("the step %s not found", stepName)
 	}
-	port, ok := r.executorPortMap[name]
+	if r.portForwarder != nil {
+		return r.getExecutorFromPortForward(containerName)
+	}
+	port, ok := r.executorPortMap[containerName]
 	if !ok {
-		return nil, errors.Errorf("the runner container %s not found", name)
+		return nil, errors.Errorf("the runner container %s not found", containerName)
 	}
 	addr := net.JoinHostPort(r.pod.Status.PodIP,
 		fmt.Sprintf("%d", port))
