@@ -17,6 +17,16 @@ type Job struct {
 }
 type JobStatus = Status
 
+const (
+	JobStatusCreated   = StatusCreated
+	JobStatusQueued    = StatusQueued
+	JobStatusRunning   = StatusRunning
+	JobStatusCanceling = StatusCanceling
+	JobStatusFailed    = StatusFailed
+	JobStatusSkipped   = StatusSkipped
+	JobStatusSucceeded = StatusSucceeded
+)
+
 type JobExecution struct {
 	ID          int64            `json:"id"`
 	Status      JobStatus        `json:"status"`
