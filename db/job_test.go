@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/cox96de/runner/entity"
 	"gotest.tools/v3/assert"
 )
@@ -38,4 +40,29 @@ func TestClient_CreateJobs(t *testing.T) {
 		assert.NilError(t, err, job.Name)
 		assert.DeepEqual(t, job, jobByID)
 	}
+}
+
+func TestClient_CreateJobExecutions(t *testing.T) {
+	db := NewMockDB(t, &JobExecution{})
+	jobs, err := db.CreateJobExecutions(context.Background(), []*CreateJobExecutionOption{
+		{
+			JobID:  1,
+			Status: 0,
+		},
+		{
+			JobID:  2,
+			Status: 0,
+		},
+	})
+	assert.NilError(t, err)
+	assert.DeepEqual(t, jobs, []*JobExecution{
+		{
+			JobID:  1,
+			Status: 0,
+		},
+		{
+			JobID:  2,
+			Status: 0,
+		},
+	}, cmpopts.IgnoreFields(JobExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
 }

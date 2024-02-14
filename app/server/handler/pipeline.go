@@ -39,7 +39,9 @@ func (h *Handler) CreatePipelineHandler(c *gin.Context) {
 
 func (h *Handler) createPipeline(ctx context.Context, pipeline *entity.Pipeline) (*entity.Pipeline, error) {
 	createJobOpts := make([]*db.CreateJobOption, 0, len(pipeline.Jobs))
+	createJobExecutionOpts := make([]*db.CreateJobExecutionOption, 0, len(pipeline.Jobs))
 	createStepOptMap := make(map[string][]*db.CreateStepOption)
+	createStepExecutionOpts := make([]*db.CreateStepExecutionOption, 0)
 	for _, job := range pipeline.Jobs {
 		createJobOpts = append(createJobOpts, &db.CreateJobOption{
 			Name:             job.Name,
@@ -62,10 +64,12 @@ func (h *Handler) createPipeline(ctx context.Context, pipeline *entity.Pipeline)
 		createStepOptMap[job.Name] = stepOpts
 	}
 	var (
-		createdPipeline *db.Pipeline
-		createdJobs     []*db.Job
-		createdSteps    []*db.Step
-		err             error
+		createdPipeline       *db.Pipeline
+		createdJobs           []*db.Job
+		createdJobExeuctions  []*db.JobExecution
+		createdSteps          []*db.Step
+		createdStepExecutions []*db.StepExecution
+		err                   error
 	)
 	err = h.db.Transaction(func(client *db.Client) error {
 		createdPipeline, err = client.CreatePipeline(ctx)
@@ -90,39 +94,72 @@ func (h *Handler) createPipeline(ctx context.Context, pipeline *entity.Pipeline)
 				opt.JobID = createdJob.ID
 			})
 			createStepOpts = append(createStepOpts, stepOpts...)
+
+			createJobExecutionOpts = append(createJobExecutionOpts, &db.CreateJobExecutionOption{
+				JobID:  createdJob.ID,
+				Status: entity.JobStatusCreated,
+			})
 		}
+		createdJobExeuctions, err = client.CreateJobExecutions(ctx, createJobExecutionOpts)
+		if err != nil {
+			return errors.WithMessage(err, "failed to create job executions")
+		}
+		jobExecutionByJobIDMap := lo.SliceToMap(createdJobExeuctions, func(item *db.JobExecution) (int64, *db.JobExecution) {
+			return item.JobID, item
+		})
 		createdSteps, err = client.CreateSteps(ctx, createStepOpts)
 		if err != nil {
 			return errors.WithMessage(err, "failed to create steps")
+		}
+		for _, step := range createdSteps {
+			createStepExecutionOpts = append(createStepExecutionOpts, &db.CreateStepExecutionOption{
+				JobExecutionID: jobExecutionByJobIDMap[step.JobID].ID,
+				StepID:         step.ID,
+				Status:         entity.StepStatusCreated,
+			})
+		}
+		createdStepExecutions, err = client.CreateStepExecutions(ctx, createStepExecutionOpts)
+		if err != nil {
+			return errors.WithMessage(err, "failed to create step executions")
 		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	p, err := packPipeline(createdPipeline, createdJobs, createdSteps)
+	p, err := packPipeline(createdPipeline, createdJobs, createdJobExeuctions, createdSteps, createdStepExecutions)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to pack pipeline")
 	}
 	return p, nil
 }
 
-func packPipeline(p *db.Pipeline, jobs []*db.Job, steps []*db.Step) (*entity.Pipeline, error) {
+func packPipeline(p *db.Pipeline, jobs []*db.Job, jobExecutions []*db.JobExecution, steps []*db.Step,
+	stepExecutions []*db.StepExecution,
+) (*entity.Pipeline, error) {
 	pipeline := &entity.Pipeline{
 		ID:        p.ID,
 		CreatedAt: p.CreatedAt,
 		UpdatedAt: p.UpdatedAt,
 	}
 	stepsByJobID := make(map[int64][]*entity.Step)
+	stepExecutionByJobID := make(map[int64][]*db.StepExecution)
+	for _, stepExecution := range stepExecutions {
+		stepExecutionByJobID[stepExecution.JobExecutionID] = append(stepExecutionByJobID[stepExecution.JobExecutionID], stepExecution)
+	}
 	for _, step := range steps {
-		s, err := db.PackStep(step)
+		s, err := db.PackStep(step, stepExecutionByJobID[step.ID])
 		if err != nil {
 			return nil, errors.WithMessagef(err, "failed to pack step %d", step.ID)
 		}
 		stepsByJobID[step.JobID] = append(stepsByJobID[step.JobID], s)
 	}
+	jobExecutionsByJobID := make(map[int64][]*db.JobExecution)
+	for _, jobExecution := range jobExecutions {
+		jobExecutionsByJobID[jobExecution.JobID] = append(jobExecutionsByJobID[jobExecution.JobID], jobExecution)
+	}
 	for _, job := range jobs {
-		j, err := db.PackJob(job)
+		j, err := db.PackJob(job, jobExecutionsByJobID[job.ID])
 		if err != nil {
 			return nil, errors.WithMessagef(err, "failed to pack job %d", job.ID)
 		}

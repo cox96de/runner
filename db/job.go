@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/samber/lo"
+
 	"github.com/cox96de/runner/entity"
 	"github.com/pkg/errors"
 )
@@ -73,7 +75,7 @@ func (c *Client) GetJobByID(ctx context.Context, id int64) (*Job, error) {
 }
 
 // PackJob packs a job into entity.Job.
-func PackJob(j *Job) (*entity.Job, error) {
+func PackJob(j *Job, executions []*JobExecution) (*entity.Job, error) {
 	runsOn := &entity.RunsOn{}
 	err := json.Unmarshal(j.RunsOn, runsOn)
 	if err != nil {
@@ -96,10 +98,23 @@ func PackJob(j *Job) (*entity.Job, error) {
 		RunsOn:           runsOn,
 		WorkingDirectory: j.WorkingDirectory,
 		EnvVar:           envVar,
-		DependsOn:        dependsOn,
-		CreatedAt:        j.CreatedAt,
-		UpdatedAt:        j.UpdatedAt,
+		Executions: lo.Map(executions, func(e *JobExecution, _ int) *entity.JobExecution {
+			return packJobExecution(e)
+		}),
+		DependsOn: dependsOn,
+		CreatedAt: j.CreatedAt,
+		UpdatedAt: j.UpdatedAt,
 	}, nil
+}
+
+func packJobExecution(j *JobExecution) *entity.JobExecution {
+	return &entity.JobExecution{
+		ID:          j.ID,
+		JobID:       j.JobID,
+		Status:      j.Status,
+		StartedAt:   j.StartedAt,
+		CompletedAt: j.CompletedAt,
+	}
 }
 
 type JobExecution struct {
@@ -107,12 +122,33 @@ type JobExecution struct {
 	JobID int64 `gorm:"column:job_id"`
 	// TODO: Status type
 	Status      entity.JobStatus `gorm:"column:status"`
-	StartedAt   time.Time        `gorm:"column:started_at"`
-	CompletedAt time.Time        `gorm:"column:completed_at"`
+	StartedAt   *time.Time       `gorm:"column:started_at"`
+	CompletedAt *time.Time       `gorm:"column:completed_at"`
 	CreatedAt   time.Time        `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt   time.Time        `gorm:"column:updated_at;autoUpdateTime"`
 }
 
 func (p *JobExecution) TableName() string {
 	return "job_execution"
+}
+
+type CreateJobExecutionOption struct {
+	JobID  int64
+	Status entity.JobStatus
+}
+
+// CreateJobExecutions creates new job executions.
+func (c *Client) CreateJobExecutions(ctx context.Context, options []*CreateJobExecutionOption) ([]*JobExecution, error) {
+	executions := make([]*JobExecution, 0, len(options))
+	for _, option := range options {
+		execution := &JobExecution{
+			JobID:  option.JobID,
+			Status: option.Status,
+		}
+		executions = append(executions, execution)
+	}
+	if err := c.conn.WithContext(ctx).Create(executions).Error; err != nil {
+		return nil, err
+	}
+	return executions, nil
 }

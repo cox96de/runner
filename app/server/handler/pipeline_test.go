@@ -40,16 +40,28 @@ func TestHandler_createPipeline(t *testing.T) {
 				WorkingDirectory: "/tmp",
 				EnvVar:           map[string]string{"key": "value"},
 				DependsOn:        []string{"job2"},
+				Executions: []*entity.JobExecution{
+					{
+						Status: entity.JobStatusCreated,
+					},
+				},
 				Steps: []*entity.Step{
 					{
 						Name:     "step1",
 						User:     "user",
 						Commands: []string{"echo hello"},
+						Executions: []*entity.StepExecution{
+							{
+								Status: entity.StepStatusCreated,
+							},
+						},
 					},
 				},
 			},
 		},
 	}, cmpopts.IgnoreFields(entity.Pipeline{}, "ID", "CreatedAt", "UpdatedAt"),
 		cmpopts.IgnoreFields(entity.Job{}, "PipelineID", "ID", "CreatedAt", "UpdatedAt"),
-		cmpopts.IgnoreFields(entity.Step{}, "PipelineID", "JobID", "ID", "CreatedAt", "UpdatedAt"))
+		cmpopts.IgnoreFields(entity.JobExecution{}, "JobID", "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"),
+		cmpopts.IgnoreFields(entity.Step{}, "PipelineID", "JobID", "ID", "CreatedAt", "UpdatedAt"),
+		cmpopts.IgnoreFields(entity.StepExecution{}, "JobExecutionID", "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
 }
