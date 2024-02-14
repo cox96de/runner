@@ -29,8 +29,11 @@ const (
 
 type JobExecution struct {
 	ID          int64            `json:"id"`
+	JobID       int64            `json:"job_id"`
 	Status      JobStatus        `json:"status"`
 	Steps       []*StepExecution `json:"steps"`
 	StartedAt   *time.Time       `json:"started_at"`
 	CompletedAt *time.Time       `json:"completed_at"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
 }

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/samber/lo"
+
 	"github.com/cox96de/runner/entity"
 
 	"github.com/pkg/errors"
@@ -81,7 +83,7 @@ func (c *Client) GetStepByID(ctx context.Context, id int64) (*Step, error) {
 }
 
 // PackStep packs a step into entity.Step.
-func PackStep(step *Step) (*entity.Step, error) {
+func PackStep(step *Step, executions []*StepExecution) (*entity.Step, error) {
 	s := &entity.Step{
 		ID:               step.ID,
 		PipelineID:       step.PipelineID,
@@ -107,20 +109,61 @@ func PackStep(step *Step) (*entity.Step, error) {
 			return nil, errors.WithMessage(err, "failed to unmarshal step.DependsOn")
 		}
 	}
+	s.Executions = lo.Map(executions, func(e *StepExecution, i int) *entity.StepExecution {
+		return packStepExecution(e)
+	})
 	return s, nil
 }
 
+func packStepExecution(s *StepExecution) *entity.StepExecution {
+	return &entity.StepExecution{
+		ID:             s.ID,
+		JobExecutionID: s.JobExecutionID,
+		Status:         s.Status,
+		ExitCode:       s.ExitCode,
+		StartedAt:      s.StartedAt,
+		CompletedAt:    s.CompletedAt,
+		CreatedAt:      s.CreatedAt,
+		UpdatedAt:      s.UpdatedAt,
+	}
+}
+
 type StepExecution struct {
-	ID          int64             `gorm:"column:id;primaryKey;autoIncrement"`
-	JobID       int64             `gorm:"column:job_id"`
-	Status      entity.StepStatus `gorm:"column:status"`
-	ExitCode    int               `gorm:"column:exit_code"`
-	StartedAt   time.Time         `gorm:"column:started_at"`
-	CompletedAt time.Time         `gorm:"column:completed_at"`
-	CreatedAt   time.Time         `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time         `gorm:"column:updated_at;autoUpdateTime"`
+	ID             int64             `gorm:"column:id;primaryKey;autoIncrement"`
+	JobExecutionID int64             `gorm:"column:job_execution_id"`
+	StepID         int64             `gorm:"column:step_id"`
+	Status         entity.StepStatus `gorm:"column:status"`
+	ExitCode       int               `gorm:"column:exit_code"`
+	StartedAt      *time.Time        `gorm:"column:started_at"`
+	CompletedAt    *time.Time        `gorm:"column:completed_at"`
+	CreatedAt      time.Time         `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt      time.Time         `gorm:"column:updated_at;autoUpdateTime"`
 }
 
 func (p *StepExecution) TableName() string {
 	return "step_execution"
+}
+
+type CreateStepExecutionOption struct {
+	JobExecutionID int64
+	StepID         int64
+	Status         entity.StepStatus
+}
+
+// CreateStepExecutions creates new step executions.
+func (c *Client) CreateStepExecutions(ctx context.Context, options []*CreateStepExecutionOption) ([]*StepExecution, error) {
+	executions := make([]*StepExecution, 0, len(options))
+	for _, option := range options {
+		execution := &StepExecution{
+			ID:             0,
+			JobExecutionID: option.JobExecutionID,
+			StepID:         option.StepID,
+			Status:         option.Status,
+		}
+		executions = append(executions, execution)
+	}
+	if err := c.conn.WithContext(ctx).Create(executions).Error; err != nil {
+		return nil, err
+	}
+	return executions, nil
 }

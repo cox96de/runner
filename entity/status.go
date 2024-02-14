@@ -35,7 +35,7 @@ const (
 	//nolint
 	statusNotStarted Status = iota - 1
 	// StatusCreated is the status of a job that has been created but not yet started.
-	StatusCreated = iota
+	StatusCreated
 	// StatusQueued is the status of a job that has been queued but not yet started.
 	StatusQueued
 	statusNotStartedEnd
@@ -88,4 +88,9 @@ func (s Status) toString() string {
 		return str
 	}
 	return "unknown"
+}
+
+// IsCompleted returns true if the status is completed.
+func (s Status) IsCompleted() bool {
+	return s >= statusCompleted && s <= statusCompletedEnd
 }

@@ -37,4 +37,6 @@ type StepExecution struct {
 	ExitCode       int        `json:"exit_code"`
 	StartedAt      *time.Time `json:"started_at"`
 	CompletedAt    *time.Time `json:"completed_at"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 }
