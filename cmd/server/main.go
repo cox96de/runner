@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 
+	"github.com/cox96de/runner/app/server/dispatch"
+	"github.com/cox96de/runner/app/server/pipeline"
+
 	"github.com/cox96de/runner/app/server/handler"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
@@ -45,7 +48,7 @@ func RunServer(configfile string) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to compose db")
 	}
-	h := handler.NewHandler(dbClient)
+	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient))
 	engine := gin.New()
 	group := engine.Group("/api/v1")
 	h.RegisterRouter(group)

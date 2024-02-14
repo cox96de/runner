@@ -152,3 +152,24 @@ func (c *Client) CreateJobExecutions(ctx context.Context, options []*CreateJobEx
 	}
 	return executions, nil
 }
+
+func (c *Client) GetJobExecution(ctx context.Context, id int64) (*JobExecution, error) {
+	execution := &JobExecution{}
+	if err := c.conn.WithContext(ctx).First(execution, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return execution, nil
+}
+
+type UpdateJobExecutionOption struct {
+	ID     int64
+	Status *entity.JobStatus
+}
+
+func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecutionOption) error {
+	updateField := map[string]interface{}{}
+	if option.Status != nil {
+		updateField["status"] = *option.Status
+	}
+	return c.conn.WithContext(ctx).Model(&JobExecution{}).Where("id = ?", option.ID).Updates(updateField).Error
+}
