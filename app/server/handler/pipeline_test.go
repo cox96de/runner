@@ -4,6 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/app/server/dispatch"
+	"github.com/cox96de/runner/app/server/pipeline"
+
 	"github.com/cox96de/runner/entity"
 	"github.com/cox96de/runner/mock"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -12,8 +15,8 @@ import (
 
 func TestHandler_createPipeline(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
-	handler := NewHandler(dbClient)
-	pipeline, err := handler.createPipeline(context.Background(), &entity.Pipeline{
+	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient))
+	p, err := handler.createPipeline(context.Background(), &entity.Pipeline{
 		Jobs: []*entity.Job{
 			{
 				Name:             "job1",
@@ -32,7 +35,7 @@ func TestHandler_createPipeline(t *testing.T) {
 		},
 	})
 	assert.NilError(t, err)
-	assert.DeepEqual(t, pipeline, &entity.Pipeline{
+	assert.DeepEqual(t, p, &entity.Pipeline{
 		Jobs: []*entity.Job{
 			{
 				Name:             "job1",

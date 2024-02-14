@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/samber/lo"
 
 	"github.com/cox96de/runner/entity"
 	"gotest.tools/v3/assert"
@@ -65,4 +66,29 @@ func TestClient_CreateJobExecutions(t *testing.T) {
 			Status: 0,
 		},
 	}, cmpopts.IgnoreFields(JobExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
+	t.Run("GetJobByID", func(t *testing.T) {
+		for _, job := range jobs {
+			jobByID, err := db.GetJobExecution(context.Background(), job.ID)
+			assert.NilError(t, err, job.JobID)
+			assert.DeepEqual(t, job, jobByID)
+		}
+	})
+}
+
+func TestClient_UpdateJobExecution(t *testing.T) {
+	db := NewMockDB(t, &JobExecution{})
+	executions, err := db.CreateJobExecutions(context.Background(), []*CreateJobExecutionOption{
+		{
+			JobID: 1,
+		},
+	})
+	assert.NilError(t, err)
+	err = db.UpdateJobExecution(context.Background(), &UpdateJobExecutionOption{
+		ID:     executions[0].ID,
+		Status: lo.ToPtr(entity.JobStatusRunning),
+	})
+	assert.NilError(t, err)
+	execution, err := db.GetJobExecution(context.Background(), executions[0].ID)
+	assert.NilError(t, err)
+	assert.Equal(t, entity.JobStatusRunning, execution.Status)
 }
