@@ -18,7 +18,9 @@ const (
 )
 
 func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server executorpb.Executor_GetCommandLogServer) error {
+	h.commandLock.RLock()
 	c, ok := h.commands[int(request.Pid)]
+	h.commandLock.RUnlock()
 	if !ok {
 		return errors.Errorf("command with pid %d not found", request.Pid)
 	}
@@ -84,7 +86,9 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 }
 
 func (h *Handler) WaitCommand(ctx context.Context, request *executorpb.WaitCommandRequest) (*executorpb.WaitCommandResponse, error) {
+	h.commandLock.RLock()
 	c, ok := h.commands[int(request.Pid)]
+	h.commandLock.RUnlock()
 	if !ok {
 		return nil, errors.Errorf("command with pid %d not found", request.Pid)
 	}
