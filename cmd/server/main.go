@@ -48,7 +48,11 @@ func RunServer(configfile string) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to compose db")
 	}
-	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient))
+	locker, err := ComposeLocker(config.Locker)
+	if err != nil {
+		return errors.WithMessage(err, "failed to compose locker")
+	}
+	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), locker)
 	engine := gin.New()
 	group := engine.Group("/api/v1")
 	h.RegisterRouter(group)
