@@ -15,7 +15,7 @@ import (
 
 func TestHandler_createPipeline(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
-	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient))
+	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), nil)
 	p, err := handler.createPipeline(context.Background(), &entity.Pipeline{
 		Jobs: []*entity.Job{
 			{

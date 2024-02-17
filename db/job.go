@@ -173,3 +173,11 @@ func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecut
 	}
 	return c.conn.WithContext(ctx).Model(&JobExecution{}).Where("id = ?", option.ID).Updates(updateField).Error
 }
+
+func (c *Client) GetQueuedJobExecutions(ctx context.Context, limit int) ([]*JobExecution, error) {
+	executions := make([]*JobExecution, 0, limit)
+	if err := c.conn.WithContext(ctx).Where("status = ? order by id", entity.JobStatusQueued).Limit(limit).Find(&executions).Error; err != nil {
+		return nil, err
+	}
+	return executions, nil
+}
