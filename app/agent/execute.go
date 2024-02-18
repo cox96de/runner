@@ -5,11 +5,12 @@ import (
 	"io"
 	"time"
 
+	"github.com/cox96de/runner/log"
+
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/engine"
 	"github.com/cox96de/runner/entity"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 type Execution struct {
@@ -32,21 +33,21 @@ func (e *Execution) Execute(ctx context.Context) error {
 	}
 	err = e.runner.Start(ctx)
 	if err != nil {
-		e.stop()
+		e.stop(ctx)
 		return err
 	}
-	defer e.stop()
+	defer e.stop(ctx)
 	if err = e.executeSteps(ctx); err != nil {
 		return errors.WithMessage(err, "failed to execute steps")
 	}
 	return nil
 }
 
-func (e *Execution) stop() {
+func (e *Execution) stop(loggerCtx context.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*10)
 	defer cancel()
 	if err := e.runner.Stop(ctx); err != nil {
-		log.Errorf("failed to stop runner, the environment migh be leak: %v", err)
+		log.ExtractLogger(loggerCtx).Errorf("failed to stop runner, the environment migh be leak: %v", err)
 	}
 }
 
@@ -61,9 +62,10 @@ func (e *Execution) executeSteps(ctx context.Context) error {
 }
 
 func (e *Execution) executeStep(ctx context.Context, step *entity.Step) error {
+	logger := log.ExtractLogger(ctx).WithField("step", step.Name)
 	executor, err := e.runner.GetExecutor(ctx, step.Name)
 	if err != nil {
-		return err
+		return errors.WithMessage(err, "failed to get executor")
 	}
 	commands := []string{"/bin/sh", "-c", "printf '%s' \"$RUNNER_SCRIPT\" | /bin/sh"}
 	script := compileUnixScript(step.Commands)
@@ -79,7 +81,7 @@ func (e *Execution) executeStep(ctx context.Context, step *entity.Step) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to start command")
 	}
-	log.Infof("success to start command with pid: %d", startCommandResponse.Status.Pid)
+	logger.Infof("success to start command with pid: %d", startCommandResponse.Status.Pid)
 	getCommandLogResp, err := executor.GetCommandLog(ctx, &executorpb.GetCommandLogRequest{
 		Pid: startCommandResponse.Status.Pid,
 	})
@@ -96,7 +98,7 @@ func (e *Execution) executeStep(ctx context.Context, step *entity.Step) error {
 				continue
 			}
 			// TODO: write log to io.Writer.
-			log.Debugf("command log: %v", commandLog)
+			logger.Debugf("command log: %v", commandLog)
 		}
 	}()
 	var processStatus *executorpb.ProcessStatus
@@ -114,6 +116,6 @@ func (e *Execution) executeStep(ctx context.Context, step *entity.Step) error {
 			break
 		}
 	}
-	log.Infof("command is completed, exit code: %+v", processStatus.ExitCode)
+	logger.Infof("command is completed, exit code: %+v", processStatus.ExitCode)
 	return nil
 }
