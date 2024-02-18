@@ -6,10 +6,11 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/cox96de/runner/log"
+
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/lib"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -72,9 +73,10 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 	h.commandLock.Lock()
 	h.commands[cmd.Process.Pid] = c
 	h.commandLock.Unlock()
+	logger := log.ExtractLogger(ctx)
 	go func() {
 		c.Wait()
-		log.Infof("process %d exited", c.Process.Pid)
+		logger.Infof("process %d exited", c.Process.Pid)
 	}()
 	return &executorpb.StartCommandResponse{
 		Status: &executorpb.ProcessStatus{

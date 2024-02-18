@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/cox96de/runner/log"
 
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/entity"
@@ -27,9 +27,10 @@ func (h *Handler) CreatePipelineHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, &Message{Message: err})
 		return
 	}
+	logger := log.ExtractLogger(c)
 	pipeline, err := h.createPipeline(c, req.Pipeline)
 	if err != nil {
-		log.Errorf("failed to create pipeline: %v", err)
+		logger.Errorf("failed to create pipeline: %v", err)
 		c.JSON(http.StatusInternalServerError, &Message{Message: err})
 		return
 	}
@@ -37,12 +38,13 @@ func (h *Handler) CreatePipelineHandler(c *gin.Context) {
 }
 
 func (h *Handler) createPipeline(ctx context.Context, pipeline *entity.Pipeline) (*entity.Pipeline, error) {
+	logger := log.ExtractLogger(ctx)
 	response, err := h.pipelineService.CreatePipeline(ctx, pipeline)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create pipeline")
 	}
 	if err = h.dispatchService.Dispatch(ctx, response.CreatedJobs, response.CreatedJobExecutions); err != nil {
-		log.Warnf("failed to dispatch job: %+v", err)
+		logger.Warnf("failed to dispatch job: %+v", err)
 	}
 	p, err := packPipeline(response.CreatedPipeline, response.CreatedJobs, response.CreatedJobExecutions,
 		response.CreatedSteps, response.CreatedStepExecutions)

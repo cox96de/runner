@@ -5,9 +5,10 @@ import (
 	"runtime"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/cox96de/runner/engine/shell"
 	"github.com/cox96de/runner/testtool"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/cox96de/runner/entity"
 	"gotest.tools/v3/assert"
