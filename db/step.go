@@ -16,7 +16,7 @@ type Step struct {
 	ID               int64     `gorm:"column:id;primaryKey;autoIncrement"`
 	PipelineID       int64     `gorm:"column:pipeline_id"`
 	JobID            int64     `gorm:"column:job_id"`
-	Name             string    `gorm:"column:uid"`
+	Name             string    `gorm:"column:name"`
 	User             string    `gorm:"column:user"`
 	WorkingDirectory string    `gorm:"column:working_directory"`
 	Commands         []byte    `gorm:"column:commands"`

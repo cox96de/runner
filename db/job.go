@@ -14,7 +14,7 @@ import (
 type Job struct {
 	ID               int64     `gorm:"column:id;primaryKey;autoIncrement"`
 	PipelineID       int64     `gorm:"column:pipeline_id"`
-	Name             string    `gorm:"column:uid"`
+	Name             string    `gorm:"column:name"`
 	RunsOn           []byte    `gorm:"column:runs_on"`
 	WorkingDirectory string    `gorm:"column:working_directory"`
 	EnvVar           []byte    `gorm:"column:env_var"`
