@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "code.byted.org/pipeline/leafboat/executor/executorpb";
+option go_package = "github.com/cox96de/runner/app/executor/executorpb";
 service Executor {
   rpc Ping(PingRequest)returns(PingResponse);
   rpc Environment(EnvironmentRequest)returns(EnvironmentResponse);
