@@ -75,7 +75,7 @@ func (c *Client) GetJobByID(ctx context.Context, id int64) (*Job, error) {
 }
 
 // PackJob packs a job into entity.Job.
-func PackJob(j *Job, executions []*JobExecution) (*entity.Job, error) {
+func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions []*StepExecution) (*entity.Job, error) {
 	runsOn := &entity.RunsOn{}
 	err := json.Unmarshal(j.RunsOn, runsOn)
 	if err != nil {
@@ -91,6 +91,10 @@ func PackJob(j *Job, executions []*JobExecution) (*entity.Job, error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to unmarshal job.DependsOn")
 	}
+	packSteps, err := packSteps(steps, stepExecutions)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to pack steps")
+	}
 	return &entity.Job{
 		ID:               j.ID,
 		PipelineID:       j.PipelineID,
@@ -101,6 +105,7 @@ func PackJob(j *Job, executions []*JobExecution) (*entity.Job, error) {
 		Executions: lo.Map(executions, func(e *JobExecution, _ int) *entity.JobExecution {
 			return packJobExecution(e)
 		}),
+		Steps:     packSteps,
 		DependsOn: dependsOn,
 		CreatedAt: j.CreatedAt,
 		UpdatedAt: j.UpdatedAt,

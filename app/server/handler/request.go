@@ -68,7 +68,15 @@ func (h *Handler) packJob(ctx context.Context, jobExecution *db.JobExecution) (*
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get job")
 	}
-	packJob, err := db.PackJob(job, []*db.JobExecution{jobExecution})
+	steps, err := h.db.GetStepsByJobID(ctx, job.ID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get steps")
+	}
+	stepExecutions, err := h.db.GetStepExecutionsByJobExecutionID(ctx, jobExecution.ID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get step executions")
+	}
+	packJob, err := db.PackJob(job, []*db.JobExecution{jobExecution}, steps, stepExecutions)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to pack job")
 	}

@@ -26,33 +26,43 @@ func TestClient_CreateSteps(t *testing.T) {
 		assert.NilError(t, err, step.Name)
 		assert.DeepEqual(t, step, stepByID)
 	}
+	t.Run("GetStepsByJobID", func(t *testing.T) {
+		steps, err := db.GetStepsByJobID(context.Background(), 1)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, steps, steps, cmpopts.IgnoreFields(Step{}, "ID", "CreatedAt", "UpdatedAt"))
+	})
 }
 
 func TestClient_CreateStepExecutions(t *testing.T) {
 	db := NewMockDB(t, &StepExecution{})
-	jobs, err := db.CreateStepExecutions(context.Background(), []*CreateStepExecutionOption{
+	stepExecutions, err := db.CreateStepExecutions(context.Background(), []*CreateStepExecutionOption{
 		{
 			JobExecutionID: 1,
 			StepID:         1,
 			Status:         0,
 		},
 		{
-			JobExecutionID: 2,
+			JobExecutionID: 1,
 			StepID:         2,
 			Status:         0,
 		},
 	})
 	assert.NilError(t, err)
-	assert.DeepEqual(t, jobs, []*StepExecution{
+	assert.DeepEqual(t, stepExecutions, []*StepExecution{
 		{
 			JobExecutionID: 1,
 			StepID:         1,
 			Status:         0,
 		},
 		{
-			JobExecutionID: 2,
+			JobExecutionID: 1,
 			StepID:         2,
 			Status:         0,
 		},
 	}, cmpopts.IgnoreFields(StepExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
+	t.Run("GetStepExecutionsByJobExecutionID", func(t *testing.T) {
+		stepExecutions, err := db.GetStepExecutionsByJobExecutionID(context.Background(), 1)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, stepExecutions, stepExecutions, cmpopts.IgnoreFields(StepExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
+	})
 }

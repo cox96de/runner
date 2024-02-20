@@ -82,6 +82,30 @@ func (c *Client) GetStepByID(ctx context.Context, id int64) (*Step, error) {
 	return step, nil
 }
 
+// GetStepsByJobID returns steps by job id.
+func (c *Client) GetStepsByJobID(ctx context.Context, jobID int64) ([]*Step, error) {
+	var steps []*Step
+	if err := c.conn.WithContext(ctx).Find(&steps, "job_id = ?", jobID).Error; err != nil {
+		return nil, err
+	}
+	return steps, nil
+}
+
+func packSteps(steps []*Step, executions []*StepExecution) ([]*entity.Step, error) {
+	executionsByStepID := lo.GroupBy(executions, func(item *StepExecution) int64 {
+		return item.StepID
+	})
+	result := make([]*entity.Step, 0, len(steps))
+	for _, step := range steps {
+		packStep, err := PackStep(step, executionsByStepID[step.ID])
+		if err != nil {
+			return nil, errors.WithMessagef(err, "failed to pack step %d", step.ID)
+		}
+		result = append(result, packStep)
+	}
+	return result, nil
+}
+
 // PackStep packs a step into entity.Step.
 func PackStep(step *Step, executions []*StepExecution) (*entity.Step, error) {
 	s := &entity.Step{
@@ -166,4 +190,13 @@ func (c *Client) CreateStepExecutions(ctx context.Context, options []*CreateStep
 		return nil, err
 	}
 	return executions, nil
+}
+
+// GetStepExecutionsByJobExecutionID returns step executions by job execution id.
+func (c *Client) GetStepExecutionsByJobExecutionID(ctx context.Context, jobExecutionID int64) ([]*StepExecution, error) {
+	var steps []*StepExecution
+	if err := c.conn.WithContext(ctx).Find(&steps, "job_execution_id = ?", jobExecutionID).Error; err != nil {
+		return nil, err
+	}
+	return steps, nil
 }
