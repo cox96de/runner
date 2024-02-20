@@ -2,5 +2,10 @@ github_checks: false
 coverage:
   status:
     patch: false
+    project:
+      default:
+        target: "50%"
 ignore:
   - "**/*.pb.go"
+  - "**/mock/*"
+  - "api/httpserverclient/*"
