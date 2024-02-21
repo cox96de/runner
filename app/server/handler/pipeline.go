@@ -4,21 +4,22 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/cox96de/runner/api"
+
 	"github.com/cox96de/runner/log"
 
 	"github.com/cox96de/runner/db"
-	"github.com/cox96de/runner/entity"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 )
 
 type CreatePipelineRequest struct {
 	// Pipeline is pipeline DSL.
-	Pipeline *entity.Pipeline `json:"pipeline"`
+	Pipeline *api.Pipeline `json:"pipeline"`
 }
 
 type CreatePipelineResponse struct {
-	Pipeline *entity.Pipeline `json:"pipeline"`
+	Pipeline *api.Pipeline `json:"pipeline"`
 }
 
 func (h *Handler) CreatePipelineHandler(c *gin.Context) {
@@ -34,10 +35,10 @@ func (h *Handler) CreatePipelineHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, &Message{Message: err})
 		return
 	}
-	c.JSON(http.StatusOK, &CreatePipelineResponse{Pipeline: pipeline})
+	JSON(c, http.StatusOK, &CreatePipelineResponse{Pipeline: pipeline})
 }
 
-func (h *Handler) createPipeline(ctx context.Context, pipeline *entity.Pipeline) (*entity.Pipeline, error) {
+func (h *Handler) createPipeline(ctx context.Context, pipeline *api.Pipeline) (*api.Pipeline, error) {
 	logger := log.ExtractLogger(ctx)
 	response, err := h.pipelineService.CreatePipeline(ctx, pipeline)
 	if err != nil {
@@ -56,13 +57,13 @@ func (h *Handler) createPipeline(ctx context.Context, pipeline *entity.Pipeline)
 
 func packPipeline(p *db.Pipeline, jobs []*db.Job, jobExecutions []*db.JobExecution, steps []*db.Step,
 	stepExecutions []*db.StepExecution,
-) (*entity.Pipeline, error) {
-	pipeline := &entity.Pipeline{
+) (*api.Pipeline, error) {
+	pipeline := &api.Pipeline{
 		ID:        p.ID,
-		CreatedAt: p.CreatedAt,
-		UpdatedAt: p.UpdatedAt,
+		CreatedAt: api.ConvertTime(p.CreatedAt),
+		UpdatedAt: api.ConvertTime(p.UpdatedAt),
 	}
-	stepsByJobID := make(map[int64][]*entity.Step)
+	stepsByJobID := make(map[int64][]*api.Step)
 	stepExecutionByJobID := make(map[int64][]*db.StepExecution)
 	for _, stepExecution := range stepExecutions {
 		stepExecutionByJobID[stepExecution.JobExecutionID] = append(stepExecutionByJobID[stepExecution.JobExecutionID], stepExecution)

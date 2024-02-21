@@ -5,22 +5,23 @@ import (
 	"io"
 	"time"
 
+	"github.com/cox96de/runner/api"
+
 	"github.com/cox96de/runner/log"
 
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/engine"
-	"github.com/cox96de/runner/entity"
 	"github.com/pkg/errors"
 )
 
 type Execution struct {
 	engine engine.Engine
-	job    *entity.Job
+	job    *api.Job
 
 	runner engine.Runner
 }
 
-func NewExecution(engine engine.Engine, job *entity.Job) *Execution {
+func NewExecution(engine engine.Engine, job *api.Job) *Execution {
 	return &Execution{engine: engine, job: job}
 }
 
@@ -61,7 +62,7 @@ func (e *Execution) executeSteps(ctx context.Context) error {
 	return nil
 }
 
-func (e *Execution) executeStep(ctx context.Context, step *entity.Step) error {
+func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	logger := log.ExtractLogger(ctx).WithField("step", step.Name)
 	executor, err := e.runner.GetExecutor(ctx, step.Name)
 	if err != nil {

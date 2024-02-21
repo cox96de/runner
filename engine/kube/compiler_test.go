@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/cox96de/runner/entity"
+	"github.com/cox96de/runner/api"
 
 	"github.com/cox96de/runner/testtool"
 )
@@ -15,14 +15,14 @@ func Test_newCompiler(t *testing.T) {
 		t.Skip("Skip test on windows")
 	}
 	c := newCompiler("cox96de/runner", "/executor")
-	compileResult := c.Compile("test", &entity.RunsOn{
-		Docker: &entity.Docker{
-			Containers: []*entity.Container{
-				{Image: "debian", Name: "test", VolumeMounts: []*entity.VolumeMount{{Name: "test", MountPath: "/test"}}},
+	compileResult := c.Compile("test", &api.RunsOn{
+		Docker: &api.Docker{
+			Containers: []*api.Container{
+				{Image: "debian", Name: "test", VolumeMounts: []*api.VolumeMount{{Name: "test", MountPath: "/test"}}},
 			},
-			Volumes: []*entity.Volume{{
+			Volumes: []*api.Volume{{
 				Name:     "test",
-				EmptyDir: &entity.EmptyDirVolumeSource{},
+				EmptyDir: &api.EmptyDirVolumeSource{},
 			}},
 		},
 	})

@@ -5,12 +5,13 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/cox96de/runner/api"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/cox96de/runner/engine/shell"
 	"github.com/cox96de/runner/testtool"
 
-	"github.com/cox96de/runner/entity"
 	"gotest.tools/v3/assert"
 )
 
@@ -22,8 +23,8 @@ func TestExecutor_executeJob(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
 	gitRoot, err := testtool.GetRepositoryRoot()
 	assert.NilError(t, err)
-	job := &entity.Job{
-		Steps: []*entity.Step{
+	job := &api.Job{
+		Steps: []*api.Step{
 			{
 				Name:             "step1",
 				Commands:         []string{"ls -alh"},

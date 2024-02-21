@@ -3,8 +3,8 @@ package pipeline
 import (
 	"context"
 
+	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/db"
-	"github.com/cox96de/runner/entity"
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 )
@@ -26,7 +26,7 @@ type CreatePipelineResponse struct {
 }
 
 // CreatePipeline creates a new pipeline and inserts into db.
-func (s *Service) CreatePipeline(ctx context.Context, pipeline *entity.Pipeline) (*CreatePipelineResponse, error) {
+func (s *Service) CreatePipeline(ctx context.Context, pipeline *api.Pipeline) (*CreatePipelineResponse, error) {
 	createJobOpts := make([]*db.CreateJobOption, 0, len(pipeline.Jobs))
 	createJobExecutionOpts := make([]*db.CreateJobExecutionOption, 0, len(pipeline.Jobs))
 	createStepOptMap := make(map[string][]*db.CreateStepOption)
@@ -82,7 +82,7 @@ func (s *Service) CreatePipeline(ctx context.Context, pipeline *entity.Pipeline)
 
 			createJobExecutionOpts = append(createJobExecutionOpts, &db.CreateJobExecutionOption{
 				JobID:  createdJob.ID,
-				Status: entity.JobStatusCreated,
+				Status: api.StatusCreated,
 			})
 		}
 		r.CreatedJobExecutions, err = client.CreateJobExecutions(ctx, createJobExecutionOpts)
@@ -100,7 +100,7 @@ func (s *Service) CreatePipeline(ctx context.Context, pipeline *entity.Pipeline)
 			createStepExecutionOpts = append(createStepExecutionOpts, &db.CreateStepExecutionOption{
 				JobExecutionID: jobExecutionByJobIDMap[step.JobID].ID,
 				StepID:         step.ID,
-				Status:         entity.StepStatusCreated,
+				Status:         api.StatusCreated,
 			})
 		}
 		r.CreatedStepExecutions, err = client.CreateStepExecutions(ctx, createStepExecutionOpts)

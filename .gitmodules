@@ -1,0 +1,3 @@
+[submodule "tools/protopatch"]
+	path = tools/protopatch
+	url = https://github.com/alta/protopatch.git

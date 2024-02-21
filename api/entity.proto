@@ -1,0 +1,121 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+import "tools/protopatch/patch/go.proto";
+option go_package = "github.com/cox96de/runner/api";
+
+message Pipeline {
+  int64 id = 1[(go.field).name = 'ID'];
+  repeated PipelineExecution executions = 2;
+  repeated Job jobs = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message PipelineExecution {
+  int64 id = 1;
+  Status status = 2;
+  repeated JobExecution jobs = 3;
+}
+
+message Job {
+  int64 id = 1[(go.field).name = 'ID'];
+  int64 pipeline_id = 2[(go.field).name = 'PipelineID'];
+  string name = 3;
+  RunsOn runs_on = 4;
+  string working_directory = 5;
+  map<string, string> env_var = 6;
+  repeated string depends_on = 7;
+  repeated Step steps = 8;
+  repeated JobExecution executions = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+// Status represents the status of a step.
+enum Status {
+  option (go.enum).name = 'Status';
+  UNKNOWN_STATUS = 0[(go.value).name = 'UnknownStatus'];
+  STATUS_CREATED = 1[(go.value).name = 'StatusCreated'];
+  STATUS_QUEUED = 2[(go.value).name = 'StatusQueued'];
+  STATUS_RUNNING = 25[(go.value).name = 'StatusRunning'];
+  STATUS_CANCELING = 26[(go.value).name = 'StatusCanceling'];
+  STATUS_FAILED = 50[(go.value).name = 'StatusFailed'];
+  STATUS_SKIPPED = 51[(go.value).name = 'StatusSkipped'];
+  STATUS_SUCCEEDED = 52[(go.value).name = 'StatusSucceeded'];
+}
+
+message JobExecution {
+  int64 id = 1[(go.field).name = 'ID'];
+  int64 job_id = 2[(go.field).name = 'JobID'];
+  Status status = 3;
+  repeated StepExecution steps = 4;
+  google.protobuf.Timestamp started_at = 5;
+  google.protobuf.Timestamp completed_at = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message RunsOn {
+  string label = 1;
+  Docker docker = 2;
+}
+
+message Docker {
+  repeated Container containers = 1;
+  repeated Volume volumes = 2;
+  string default_container = 3;
+}
+
+message Container {
+  string name = 1;
+  string image = 2;
+  repeated VolumeMount volume_mounts = 3;
+}
+
+message Volume {
+  string name = 1;
+  HostPathVolumeSource host_path = 2;
+  EmptyDirVolumeSource empty_dir = 3;
+}
+
+message HostPathVolumeSource {
+  string path = 1;
+}
+
+message EmptyDirVolumeSource {
+  // No fields defined
+}
+
+message VolumeMount {
+  string name = 1;
+  bool read_only = 2;
+  string mount_path = 3;
+}
+
+message Step {
+  int64 id = 1[(go.field).name = 'ID'];
+  int64 pipeline_id = 2[(go.field).name = 'PipelineID'];
+  int64 job_id = 3[(go.field).name = 'JobID'];
+  string name = 4;
+  string working_directory = 5;
+  string user = 6;
+  string container = 7;
+  repeated string depends_on = 8;
+  repeated string commands = 9;
+  map<string, string> env_var = 10;
+  repeated StepExecution executions = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+}
+
+message StepExecution {
+  int64 id = 1[(go.field).name = 'ID'];
+  int64 job_execution_id = 2[(go.field).name = 'JobExecutionID'];
+  Status status = 3;
+  int32 exit_code = 4;
+  google.protobuf.Timestamp started_at = 5;
+  google.protobuf.Timestamp completed_at = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+

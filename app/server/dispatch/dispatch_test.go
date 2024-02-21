@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/db"
 	"github.com/samber/lo"
 
 	"github.com/cox96de/runner/app/server/pipeline"
-	"github.com/cox96de/runner/entity"
 	"github.com/cox96de/runner/mock"
 	"gotest.tools/v3/assert"
 )
@@ -17,15 +17,15 @@ func TestService_Dispatch(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
 	pipelineService := pipeline.NewService(dbClient)
 	t.Run("no_dep", func(t *testing.T) {
-		createdPipeline, err := pipelineService.CreatePipeline(context.Background(), &entity.Pipeline{
-			Jobs: []*entity.Job{
+		createdPipeline, err := pipelineService.CreatePipeline(context.Background(), &api.Pipeline{
+			Jobs: []*api.Job{
 				{
 					Name:  "job1",
-					Steps: []*entity.Step{{Name: "step1"}},
+					Steps: []*api.Step{{Name: "step1"}},
 				},
 				{
 					Name:  "job2",
-					Steps: []*entity.Step{{Name: "step1"}},
+					Steps: []*api.Step{{Name: "step1"}},
 				},
 			},
 		})
@@ -36,19 +36,19 @@ func TestService_Dispatch(t *testing.T) {
 		for _, jobExecution := range createdPipeline.CreatedJobExecutions {
 			execution, err := dbClient.GetJobExecution(context.Background(), jobExecution.ID)
 			assert.NilError(t, err)
-			assert.Equal(t, entity.JobStatusQueued, execution.Status)
+			assert.Equal(t, api.StatusQueued, execution.Status)
 		}
 	})
 	t.Run("dep", func(t *testing.T) {
-		createdPipeline, err := pipelineService.CreatePipeline(context.Background(), &entity.Pipeline{
-			Jobs: []*entity.Job{
+		createdPipeline, err := pipelineService.CreatePipeline(context.Background(), &api.Pipeline{
+			Jobs: []*api.Job{
 				{
 					Name:  "job1",
-					Steps: []*entity.Step{{Name: "step1"}},
+					Steps: []*api.Step{{Name: "step1"}},
 				},
 				{
 					Name:      "job2",
-					Steps:     []*entity.Step{{Name: "step1"}},
+					Steps:     []*api.Step{{Name: "step1"}},
 					DependsOn: []string{"job1"},
 				},
 			},
@@ -65,9 +65,10 @@ func TestService_Dispatch(t *testing.T) {
 			assert.NilError(t, err)
 			switch jobIDNameMap[execution.JobID] {
 			case "job1":
-				assert.Equal(t, entity.JobStatusQueued, execution.Status)
+				assert.Equal(t, api.StatusQueued, execution.Status)
 			case "job2":
-				assert.Equal(t, entity.JobStatusCreated, execution.Status)
+				assert.Equal(t, api.
+					StatusCreated, execution.Status)
 			}
 		}
 		t.Run("dep_is_success", func(t *testing.T) {
@@ -75,9 +76,9 @@ func TestService_Dispatch(t *testing.T) {
 				if jobIDNameMap[execution.JobID] == "job1" {
 					err := dbClient.UpdateJobExecution(context.Background(), &db.UpdateJobExecutionOption{
 						ID:     execution.ID,
-						Status: lo.ToPtr(entity.JobStatusSucceeded),
+						Status: lo.ToPtr(api.StatusSucceeded),
 					})
-					execution.Status = entity.JobStatusSucceeded
+					execution.Status = api.StatusSucceeded
 					assert.NilError(t, err)
 				}
 			}
@@ -88,9 +89,9 @@ func TestService_Dispatch(t *testing.T) {
 				assert.NilError(t, err)
 				switch jobIDNameMap[execution.JobID] {
 				case "job1":
-					assert.Equal(t, entity.JobStatusSucceeded, execution.Status)
+					assert.Equal(t, api.StatusSucceeded, execution.Status)
 				case "job2":
-					assert.Equal(t, entity.JobStatusQueued, execution.Status)
+					assert.Equal(t, api.StatusQueued, execution.Status)
 				}
 			}
 		})
@@ -99,9 +100,9 @@ func TestService_Dispatch(t *testing.T) {
 				if jobIDNameMap[execution.JobID] == "job1" {
 					err := dbClient.UpdateJobExecution(context.Background(), &db.UpdateJobExecutionOption{
 						ID:     execution.ID,
-						Status: lo.ToPtr(entity.JobStatusFailed),
+						Status: lo.ToPtr(api.StatusFailed),
 					})
-					execution.Status = entity.JobStatusFailed
+					execution.Status = api.StatusFailed
 					assert.NilError(t, err)
 				}
 			}
@@ -112,9 +113,9 @@ func TestService_Dispatch(t *testing.T) {
 				assert.NilError(t, err)
 				switch jobIDNameMap[execution.JobID] {
 				case "job1":
-					assert.Equal(t, entity.JobStatusFailed, execution.Status)
+					assert.Equal(t, api.StatusFailed, execution.Status)
 				case "job2":
-					assert.Equal(t, entity.JobStatusSkipped, execution.Status)
+					assert.Equal(t, api.StatusSkipped, execution.Status)
 				}
 			}
 		})

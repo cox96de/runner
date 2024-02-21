@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/cox96de/runner/entity"
+	"github.com/cox96de/runner/api"
 	"github.com/samber/lo"
 
 	"github.com/cox96de/runner/db"
@@ -92,7 +92,7 @@ func (d *dispatcher) isAllPreCompleted(job *dispatchJob) (*db.UpdateJobExecution
 	if len(job.job.DependsOn) == 0 {
 		return &db.UpdateJobExecutionOption{
 			ID:     job.execution.ID,
-			Status: lo.ToPtr(entity.JobStatusQueued),
+			Status: lo.ToPtr(api.StatusQueued),
 		}, nil
 	}
 	var dependsOn []string
@@ -108,15 +108,15 @@ func (d *dispatcher) isAllPreCompleted(job *dispatchJob) (*db.UpdateJobExecution
 		if !depJob.execution.Status.IsCompleted() {
 			return nil, nil
 		}
-		if depJob.execution.Status != entity.JobStatusSucceeded {
+		if depJob.execution.Status != api.StatusSucceeded {
 			return &db.UpdateJobExecutionOption{
 				ID:     job.execution.ID,
-				Status: lo.ToPtr(entity.JobStatusSkipped),
+				Status: lo.ToPtr(api.StatusSkipped),
 			}, nil
 		}
 	}
 	return &db.UpdateJobExecutionOption{
 		ID:     job.execution.ID,
-		Status: lo.ToPtr(entity.JobStatusQueued),
+		Status: lo.ToPtr(api.StatusQueued),
 	}, nil
 }

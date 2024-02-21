@@ -3,7 +3,7 @@ package vm
 import (
 	"context"
 
-	"github.com/cox96de/runner/entity"
+	"github.com/cox96de/runner/api"
 
 	"github.com/cox96de/runner/engine"
 	"github.com/pkg/errors"
@@ -60,6 +60,6 @@ func (e *Engine) Ping(ctx context.Context) error {
 	return err
 }
 
-func (e *Engine) CreateRunner(ctx context.Context, option *entity.Job) (engine.Runner, error) {
+func (e *Engine) CreateRunner(ctx context.Context, option *api.Job) (engine.Runner, error) {
 	return nil, errors.New("not implemented")
 }
