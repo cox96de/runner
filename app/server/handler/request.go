@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cox96de/runner/api"
+
 	"github.com/cox96de/runner/db"
-	"github.com/cox96de/runner/entity"
 	"github.com/cox96de/runner/lib"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
@@ -14,7 +15,7 @@ import (
 )
 
 type RequestJobResponse struct {
-	Job *entity.Job
+	Job *api.Job
 }
 
 func (h *Handler) RequestJobHandler(c *gin.Context) {
@@ -25,13 +26,13 @@ func (h *Handler) RequestJobHandler(c *gin.Context) {
 		return
 	}
 	if job != nil {
-		c.JSON(http.StatusOK, &RequestJobResponse{Job: job})
+		JSON(c, http.StatusOK, &RequestJobResponse{Job: job})
 		return
 	}
-	c.JSON(http.StatusNoContent, nil)
+	JSON(c, http.StatusNoContent, nil)
 }
 
-func (h *Handler) requestJobHandler(ctx context.Context) (*entity.Job, error) {
+func (h *Handler) requestJobHandler(ctx context.Context) (*api.Job, error) {
 	// TODO: the limit should be configurable.
 	jobExecutions, err := h.db.GetQueuedJobExecutions(ctx, 100)
 	if err != nil {
@@ -63,7 +64,7 @@ func (h *Handler) requestJobHandler(ctx context.Context) (*entity.Job, error) {
 	return nil, nil
 }
 
-func (h *Handler) packJob(ctx context.Context, jobExecution *db.JobExecution) (*entity.Job, error) {
+func (h *Handler) packJob(ctx context.Context, jobExecution *db.JobExecution) (*api.Job, error) {
 	job, err := h.db.GetJobByID(ctx, jobExecution.JobID)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get job")

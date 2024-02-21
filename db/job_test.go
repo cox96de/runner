@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/api"
+
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/samber/lo"
 
-	"github.com/cox96de/runner/entity"
 	"gotest.tools/v3/assert"
 )
 
@@ -17,7 +18,7 @@ func TestClient_CreateJobs(t *testing.T) {
 		{
 			PipelineID: 1,
 			Name:       "job1",
-			RunsOn: &entity.RunsOn{
+			RunsOn: &api.RunsOn{
 				Label: "label_1",
 			},
 			WorkingDirectory: "/home/user",
@@ -27,7 +28,7 @@ func TestClient_CreateJobs(t *testing.T) {
 		{
 			PipelineID: 1,
 			Name:       "job2",
-			RunsOn: &entity.RunsOn{
+			RunsOn: &api.RunsOn{
 				Label: "label_1",
 			},
 			WorkingDirectory: "/home/user",
@@ -85,12 +86,12 @@ func TestClient_UpdateJobExecution(t *testing.T) {
 	assert.NilError(t, err)
 	err = db.UpdateJobExecution(context.Background(), &UpdateJobExecutionOption{
 		ID:     executions[0].ID,
-		Status: lo.ToPtr(entity.JobStatusRunning),
+		Status: lo.ToPtr(api.StatusRunning),
 	})
 	assert.NilError(t, err)
 	execution, err := db.GetJobExecution(context.Background(), executions[0].ID)
 	assert.NilError(t, err)
-	assert.Equal(t, entity.JobStatusRunning, execution.Status)
+	assert.Equal(t, api.StatusRunning, execution.Status)
 }
 
 func TestClient_GetQueuedJobExecutions(t *testing.T) {
@@ -103,22 +104,22 @@ func TestClient_GetQueuedJobExecutions(t *testing.T) {
 	_, err := db.CreateJobExecutions(context.Background(), []*CreateJobExecutionOption{
 		{
 			JobID:  1,
-			Status: entity.JobStatusQueued,
+			Status: api.StatusQueued,
 		},
 		{
 			JobID:  2,
-			Status: entity.JobStatusQueued,
+			Status: api.StatusQueued,
 		},
 		{
 			JobID:  2,
-			Status: entity.JobStatusRunning,
+			Status: api.StatusRunning,
 		},
 	})
 	assert.NilError(t, err)
 	executions, err := db.GetQueuedJobExecutions(context.Background(), 1)
 	assert.NilError(t, err)
 	assert.Assert(t, len(executions) == 1)
-	assert.Equal(t, entity.JobStatusQueued, executions[0].Status)
+	assert.Equal(t, api.StatusQueued, executions[0].Status)
 	jobExecutions, err := db.GetQueuedJobExecutions(context.Background(), 100)
 	assert.NilError(t, err)
 	assert.Assert(t, len(jobExecutions) == 2)

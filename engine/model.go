@@ -3,8 +3,9 @@ package engine
 import (
 	"context"
 
+	"github.com/cox96de/runner/api"
+
 	"github.com/cox96de/runner/app/executor/executorpb"
-	"github.com/cox96de/runner/entity"
 )
 
 //go:generate mockgen -destination mockgen_test.go -source model.go -package engine . Engine,Runner,Executor
@@ -13,7 +14,7 @@ type Engine interface {
 	// Ping checks the engine is working.
 	Ping(ctx context.Context) error
 	// CreateRunner creates a runner by RunnerSpec.
-	CreateRunner(ctx context.Context, option *entity.Job) (Runner, error)
+	CreateRunner(ctx context.Context, option *api.Job) (Runner, error)
 }
 
 // Runner is an environment to run job (compile job, ci job, etc).

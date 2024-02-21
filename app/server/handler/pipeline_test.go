@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/api"
+
 	"github.com/cox96de/runner/app/server/dispatch"
 	"github.com/cox96de/runner/app/server/pipeline"
 
-	"github.com/cox96de/runner/entity"
 	"github.com/cox96de/runner/mock"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/v3/assert"
@@ -16,15 +17,15 @@ import (
 func TestHandler_createPipeline(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
 	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), nil)
-	p, err := handler.createPipeline(context.Background(), &entity.Pipeline{
-		Jobs: []*entity.Job{
+	p, err := handler.createPipeline(context.Background(), &api.Pipeline{
+		Jobs: []*api.Job{
 			{
 				Name:             "job1",
-				RunsOn:           &entity.RunsOn{Label: "label1"},
+				RunsOn:           &api.RunsOn{Label: "label1"},
 				WorkingDirectory: "/tmp",
 				EnvVar:           map[string]string{"key": "value"},
 				DependsOn:        []string{"job2"},
-				Steps: []*entity.Step{
+				Steps: []*api.Step{
 					{
 						Name:     "step1",
 						User:     "user",
@@ -35,36 +36,37 @@ func TestHandler_createPipeline(t *testing.T) {
 		},
 	})
 	assert.NilError(t, err)
-	assert.DeepEqual(t, p, &entity.Pipeline{
-		Jobs: []*entity.Job{
+	assert.DeepEqual(t, p, &api.Pipeline{
+		Jobs: []*api.Job{
 			{
 				Name:             "job1",
-				RunsOn:           &entity.RunsOn{Label: "label1"},
+				RunsOn:           &api.RunsOn{Label: "label1"},
 				WorkingDirectory: "/tmp",
 				EnvVar:           map[string]string{"key": "value"},
 				DependsOn:        []string{"job2"},
-				Executions: []*entity.JobExecution{
+				Executions: []*api.JobExecution{
 					{
-						Status: entity.JobStatusCreated,
+						Status: api.StatusCreated,
 					},
 				},
-				Steps: []*entity.Step{
+				Steps: []*api.Step{
 					{
 						Name:     "step1",
 						User:     "user",
 						Commands: []string{"echo hello"},
-						Executions: []*entity.StepExecution{
+						Executions: []*api.StepExecution{
 							{
-								Status: entity.StepStatusCreated,
+								Status: api.StatusCreated,
 							},
 						},
 					},
 				},
 			},
 		},
-	}, cmpopts.IgnoreFields(entity.Pipeline{}, "ID", "CreatedAt", "UpdatedAt"),
-		cmpopts.IgnoreFields(entity.Job{}, "PipelineID", "ID", "CreatedAt", "UpdatedAt"),
-		cmpopts.IgnoreFields(entity.JobExecution{}, "JobID", "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"),
-		cmpopts.IgnoreFields(entity.Step{}, "PipelineID", "JobID", "ID", "CreatedAt", "UpdatedAt"),
-		cmpopts.IgnoreFields(entity.StepExecution{}, "JobExecutionID", "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
+	}, cmpopts.IgnoreUnexported(api.Pipeline{}, api.Job{}, api.JobExecution{}, api.Step{}, api.StepExecution{}, api.RunsOn{}),
+		cmpopts.IgnoreFields(api.Pipeline{}, "ID", "CreatedAt", "UpdatedAt"),
+		cmpopts.IgnoreFields(api.Job{}, "PipelineID", "ID", "CreatedAt", "UpdatedAt"),
+		cmpopts.IgnoreFields(api.JobExecution{}, "JobID", "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"),
+		cmpopts.IgnoreFields(api.Step{}, "PipelineID", "JobID", "ID", "CreatedAt", "UpdatedAt"),
+		cmpopts.IgnoreFields(api.StepExecution{}, "JobExecutionID", "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
 }

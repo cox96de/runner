@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/cox96de/runner/entity"
+	"github.com/cox96de/runner/api"
 
 	"github.com/cox96de/runner/engine"
 	"github.com/pkg/errors"
@@ -58,7 +58,7 @@ func (e *Engine) Ping(ctx context.Context) error {
 	return err
 }
 
-func (e *Engine) CreateRunner(ctx context.Context, spec *entity.Job) (engine.Runner, error) {
+func (e *Engine) CreateRunner(ctx context.Context, spec *api.Job) (engine.Runner, error) {
 	if spec.RunsOn == nil || spec.RunsOn.Docker == nil {
 		return nil, errors.New("runs_on.docker is nil")
 	}

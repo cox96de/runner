@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/samber/lo"
+	"github.com/cox96de/runner/api"
 
-	"github.com/cox96de/runner/entity"
+	"github.com/samber/lo"
 
 	"github.com/pkg/errors"
 )
@@ -91,11 +91,11 @@ func (c *Client) GetStepsByJobID(ctx context.Context, jobID int64) ([]*Step, err
 	return steps, nil
 }
 
-func packSteps(steps []*Step, executions []*StepExecution) ([]*entity.Step, error) {
+func packSteps(steps []*Step, executions []*StepExecution) ([]*api.Step, error) {
 	executionsByStepID := lo.GroupBy(executions, func(item *StepExecution) int64 {
 		return item.StepID
 	})
-	result := make([]*entity.Step, 0, len(steps))
+	result := make([]*api.Step, 0, len(steps))
 	for _, step := range steps {
 		packStep, err := PackStep(step, executionsByStepID[step.ID])
 		if err != nil {
@@ -106,17 +106,17 @@ func packSteps(steps []*Step, executions []*StepExecution) ([]*entity.Step, erro
 	return result, nil
 }
 
-// PackStep packs a step into entity.Step.
-func PackStep(step *Step, executions []*StepExecution) (*entity.Step, error) {
-	s := &entity.Step{
+// PackStep packs a step into api.Step.
+func PackStep(step *Step, executions []*StepExecution) (*api.Step, error) {
+	s := &api.Step{
 		ID:               step.ID,
 		PipelineID:       step.PipelineID,
 		JobID:            step.JobID,
 		Name:             step.Name,
 		User:             step.User,
 		WorkingDirectory: step.WorkingDirectory,
-		CreatedAt:        step.CreatedAt,
-		UpdatedAt:        step.UpdatedAt,
+		CreatedAt:        api.ConvertTime(step.CreatedAt),
+		UpdatedAt:        api.ConvertTime(step.UpdatedAt),
 	}
 	if step.Commands != nil {
 		if err := json.Unmarshal(step.Commands, &s.Commands); err != nil {
@@ -133,35 +133,35 @@ func PackStep(step *Step, executions []*StepExecution) (*entity.Step, error) {
 			return nil, errors.WithMessage(err, "failed to unmarshal step.DependsOn")
 		}
 	}
-	s.Executions = lo.Map(executions, func(e *StepExecution, i int) *entity.StepExecution {
+	s.Executions = lo.Map(executions, func(e *StepExecution, i int) *api.StepExecution {
 		return packStepExecution(e)
 	})
 	return s, nil
 }
 
-func packStepExecution(s *StepExecution) *entity.StepExecution {
-	return &entity.StepExecution{
+func packStepExecution(s *StepExecution) *api.StepExecution {
+	return &api.StepExecution{
 		ID:             s.ID,
 		JobExecutionID: s.JobExecutionID,
 		Status:         s.Status,
 		ExitCode:       s.ExitCode,
-		StartedAt:      s.StartedAt,
-		CompletedAt:    s.CompletedAt,
-		CreatedAt:      s.CreatedAt,
-		UpdatedAt:      s.UpdatedAt,
+		StartedAt:      api.ConvertTime(s.StartedAt),
+		CompletedAt:    api.ConvertTime(s.CompletedAt),
+		CreatedAt:      api.ConvertTime(s.CreatedAt),
+		UpdatedAt:      api.ConvertTime(s.UpdatedAt),
 	}
 }
 
 type StepExecution struct {
-	ID             int64             `gorm:"column:id;primaryKey;autoIncrement"`
-	JobExecutionID int64             `gorm:"column:job_execution_id"`
-	StepID         int64             `gorm:"column:step_id"`
-	Status         entity.StepStatus `gorm:"column:status"`
-	ExitCode       int               `gorm:"column:exit_code"`
-	StartedAt      *time.Time        `gorm:"column:started_at"`
-	CompletedAt    *time.Time        `gorm:"column:completed_at"`
-	CreatedAt      time.Time         `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt      time.Time         `gorm:"column:updated_at;autoUpdateTime"`
+	ID             int64      `gorm:"column:id;primaryKey;autoIncrement"`
+	JobExecutionID int64      `gorm:"column:job_execution_id"`
+	StepID         int64      `gorm:"column:step_id"`
+	Status         api.Status `gorm:"column:status"`
+	ExitCode       int32      `gorm:"column:exit_code"`
+	StartedAt      *time.Time `gorm:"column:started_at"`
+	CompletedAt    *time.Time `gorm:"column:completed_at"`
+	CreatedAt      time.Time  `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt      time.Time  `gorm:"column:updated_at;autoUpdateTime"`
 }
 
 func (p *StepExecution) TableName() string {
@@ -171,7 +171,7 @@ func (p *StepExecution) TableName() string {
 type CreateStepExecutionOption struct {
 	JobExecutionID int64
 	StepID         int64
-	Status         entity.StepStatus
+	Status         api.Status
 }
 
 // CreateStepExecutions creates new step executions.

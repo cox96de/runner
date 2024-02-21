@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/api"
+
 	"github.com/cox96de/runner/app/server/dispatch"
 	"github.com/cox96de/runner/app/server/pipeline"
-	"github.com/cox96de/runner/entity"
 	"github.com/cox96de/runner/mock"
 	"gotest.tools/v3/assert"
 )
@@ -14,11 +15,11 @@ import (
 func TestHandler_requestJobHandler(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
 	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), mock.NewMockLocker())
-	createPipeline, err := handler.createPipeline(context.Background(), &entity.Pipeline{
-		Jobs: []*entity.Job{
+	createPipeline, err := handler.createPipeline(context.Background(), &api.Pipeline{
+		Jobs: []*api.Job{
 			{
 				Name: "test",
-				Steps: []*entity.Step{
+				Steps: []*api.Step{
 					{
 						Name:     "test",
 						Commands: []string{"echo", "test"},

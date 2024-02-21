@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/cox96de/runner/api"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/samber/lo"
 
-	"github.com/cox96de/runner/entity"
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +32,7 @@ func (p *Job) TableName() string {
 type CreateJobOption struct {
 	PipelineID       int64
 	Name             string
-	RunsOn           *entity.RunsOn
+	RunsOn           *api.RunsOn
 	WorkingDirectory string
 	EnvVar           map[string]string
 	DependsOn        []string
@@ -74,9 +76,9 @@ func (c *Client) GetJobByID(ctx context.Context, id int64) (*Job, error) {
 	return job, nil
 }
 
-// PackJob packs a job into entity.Job.
-func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions []*StepExecution) (*entity.Job, error) {
-	runsOn := &entity.RunsOn{}
+// PackJob packs a job into api.Job.
+func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions []*StepExecution) (*api.Job, error) {
+	runsOn := &api.RunsOn{}
 	err := json.Unmarshal(j.RunsOn, runsOn)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to unmarshal job.RunsOn")
@@ -95,42 +97,43 @@ func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions [
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to pack steps")
 	}
-	return &entity.Job{
+	return &api.Job{
 		ID:               j.ID,
 		PipelineID:       j.PipelineID,
 		Name:             j.Name,
 		RunsOn:           runsOn,
 		WorkingDirectory: j.WorkingDirectory,
 		EnvVar:           envVar,
-		Executions: lo.Map(executions, func(e *JobExecution, _ int) *entity.JobExecution {
+		Executions: lo.Map(executions, func(e *JobExecution, _ int) *api.JobExecution {
 			return packJobExecution(e)
 		}),
 		Steps:     packSteps,
 		DependsOn: dependsOn,
-		CreatedAt: j.CreatedAt,
-		UpdatedAt: j.UpdatedAt,
+		CreatedAt: timestamppb.New(j.CreatedAt),
+		UpdatedAt: timestamppb.New(j.UpdatedAt),
 	}, nil
 }
 
-func packJobExecution(j *JobExecution) *entity.JobExecution {
-	return &entity.JobExecution{
+func packJobExecution(j *JobExecution) *api.JobExecution {
+	return &api.JobExecution{
 		ID:          j.ID,
 		JobID:       j.JobID,
 		Status:      j.Status,
-		StartedAt:   j.StartedAt,
-		CompletedAt: j.CompletedAt,
+		StartedAt:   api.ConvertTime(j.StartedAt),
+		CompletedAt: api.ConvertTime(j.CompletedAt),
+		CreatedAt:   api.ConvertTime(j.CreatedAt),
+		UpdatedAt:   api.ConvertTime(j.UpdatedAt),
 	}
 }
 
 type JobExecution struct {
-	ID    int64 `gorm:"column:id;primaryKey;autoIncrement"`
-	JobID int64 `gorm:"column:job_id"`
-	// TODO: Status type
-	Status      entity.JobStatus `gorm:"column:status"`
-	StartedAt   *time.Time       `gorm:"column:started_at"`
-	CompletedAt *time.Time       `gorm:"column:completed_at"`
-	CreatedAt   time.Time        `gorm:"column:created_at;autoCreateTime"`
-	UpdatedAt   time.Time        `gorm:"column:updated_at;autoUpdateTime"`
+	ID          int64      `gorm:"column:id;primaryKey;autoIncrement"`
+	JobID       int64      `gorm:"column:job_id"`
+	Status      api.Status `gorm:"column:status"`
+	StartedAt   *time.Time `gorm:"column:started_at"`
+	CompletedAt *time.Time `gorm:"column:completed_at"`
+	CreatedAt   time.Time  `gorm:"column:created_at;autoCreateTime"`
+	UpdatedAt   time.Time  `gorm:"column:updated_at;autoUpdateTime"`
 }
 
 func (p *JobExecution) TableName() string {
@@ -139,7 +142,7 @@ func (p *JobExecution) TableName() string {
 
 type CreateJobExecutionOption struct {
 	JobID  int64
-	Status entity.JobStatus
+	Status api.Status
 }
 
 // CreateJobExecutions creates new job executions.
@@ -168,7 +171,7 @@ func (c *Client) GetJobExecution(ctx context.Context, id int64) (*JobExecution, 
 
 type UpdateJobExecutionOption struct {
 	ID     int64
-	Status *entity.JobStatus
+	Status *api.Status
 }
 
 func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecutionOption) error {
@@ -181,7 +184,7 @@ func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecut
 
 func (c *Client) GetQueuedJobExecutions(ctx context.Context, limit int) ([]*JobExecution, error) {
 	executions := make([]*JobExecution, 0, limit)
-	if err := c.conn.WithContext(ctx).Where("status = ? order by id", entity.JobStatusQueued).Limit(limit).Find(&executions).Error; err != nil {
+	if err := c.conn.WithContext(ctx).Where("status = ? order by id", api.StatusQueued).Limit(limit).Find(&executions).Error; err != nil {
 		return nil, err
 	}
 	return executions, nil

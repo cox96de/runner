@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/cox96de/runner/entity"
+	"github.com/cox96de/runner/api"
 
 	"github.com/cox96de/runner/testtool"
 	"gotest.tools/v3/assert"
@@ -50,23 +50,23 @@ func TestEngine_CreateRunner(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	t.Run("no_spec", func(t *testing.T) {
-		_, err := e.CreateRunner(context.Background(), &entity.Job{
+		_, err := e.CreateRunner(context.Background(), &api.Job{
 			ID:     1,
-			RunsOn: &entity.RunsOn{},
+			RunsOn: &api.RunsOn{},
 		})
 		assert.ErrorContains(t, err, "is nil")
 	})
 	t.Run("success", func(t *testing.T) {
-		r, err := e.CreateRunner(context.Background(), &entity.Job{
+		r, err := e.CreateRunner(context.Background(), &api.Job{
 			ID: 1,
-			RunsOn: &entity.RunsOn{
-				Docker: &entity.Docker{
-					Containers: []*entity.Container{
-						{Image: "debian", Name: "test", VolumeMounts: []*entity.VolumeMount{{Name: "test", MountPath: "/test"}}},
+			RunsOn: &api.RunsOn{
+				Docker: &api.Docker{
+					Containers: []*api.Container{
+						{Image: "debian", Name: "test", VolumeMounts: []*api.VolumeMount{{Name: "test", MountPath: "/test"}}},
 					},
-					Volumes: []*entity.Volume{{
+					Volumes: []*api.Volume{{
 						Name:     "test",
-						EmptyDir: &entity.EmptyDirVolumeSource{},
+						EmptyDir: &api.EmptyDirVolumeSource{},
 					}},
 				},
 			},
