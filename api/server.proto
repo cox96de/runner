@@ -1,0 +1,23 @@
+syntax = "proto3";
+import "entity.proto";
+option go_package = "github.com/cox96de/runner/api";
+
+service Server {
+  rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
+  rpc RequestJob(RequestJobRequest) returns (RequestJobResponse) {}
+}
+
+message CreatePipelineRequest {
+  Pipeline pipeline = 1;
+}
+
+message CreatePipelineResponse {
+  Pipeline pipeline = 1;
+}
+
+message RequestJobRequest {
+}
+
+message RequestJobResponse {
+  Job job = 1;
+}

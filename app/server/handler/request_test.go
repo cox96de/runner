@@ -15,27 +15,30 @@ import (
 func TestHandler_requestJobHandler(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
 	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), mock.NewMockLocker())
-	createPipeline, err := handler.createPipeline(context.Background(), &api.Pipeline{
-		Jobs: []*api.Job{
-			{
-				Name: "test",
-				Steps: []*api.Step{
-					{
-						Name:     "test",
-						Commands: []string{"echo", "test"},
+	createPipelineResponse, err := handler.CreatePipeline(context.Background(), &api.CreatePipelineRequest{
+		Pipeline: &api.Pipeline{
+			Jobs: []*api.Job{
+				{
+					Name: "test",
+					Steps: []*api.Step{
+						{
+							Name:     "test",
+							Commands: []string{"echo", "test"},
+						},
 					},
 				},
 			},
 		},
 	})
 	assert.NilError(t, err)
-	job, err := handler.requestJobHandler(context.Background())
+	response, err := handler.RequestJob(context.Background(), &api.RequestJobRequest{})
 	assert.NilError(t, err)
-	assert.Equal(t, job.ID, createPipeline.Jobs[0].ID)
-	assert.Equal(t, job.Executions[0].ID, createPipeline.Jobs[0].Executions[0].ID)
+	job := response.Job
+	assert.Equal(t, job.ID, createPipelineResponse.Pipeline.Jobs[0].ID)
+	assert.Equal(t, job.Executions[0].ID, createPipelineResponse.Pipeline.Jobs[0].Executions[0].ID)
 	t.Run("get_empty_job", func(t *testing.T) {
-		job, err := handler.requestJobHandler(context.Background())
+		requestJobResponse, err := handler.RequestJob(context.Background(), &api.RequestJobRequest{})
 		assert.NilError(t, err)
-		assert.Assert(t, job == nil)
+		assert.Assert(t, requestJobResponse.Job == nil)
 	})
 }

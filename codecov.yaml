@@ -2,3 +2,5 @@ github_checks: false
 coverage:
   status:
     patch: false
+ignore:
+  - "**/*.pb.go"

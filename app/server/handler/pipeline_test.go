@@ -17,26 +17,28 @@ import (
 func TestHandler_createPipeline(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
 	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), nil)
-	p, err := handler.createPipeline(context.Background(), &api.Pipeline{
-		Jobs: []*api.Job{
-			{
-				Name:             "job1",
-				RunsOn:           &api.RunsOn{Label: "label1"},
-				WorkingDirectory: "/tmp",
-				EnvVar:           map[string]string{"key": "value"},
-				DependsOn:        []string{"job2"},
-				Steps: []*api.Step{
-					{
-						Name:     "step1",
-						User:     "user",
-						Commands: []string{"echo hello"},
+	p, err := handler.CreatePipeline(context.Background(), &api.CreatePipelineRequest{
+		Pipeline: &api.Pipeline{
+			Jobs: []*api.Job{
+				{
+					Name:             "job1",
+					RunsOn:           &api.RunsOn{Label: "label1"},
+					WorkingDirectory: "/tmp",
+					EnvVar:           map[string]string{"key": "value"},
+					DependsOn:        []string{"job2"},
+					Steps: []*api.Step{
+						{
+							Name:     "step1",
+							User:     "user",
+							Commands: []string{"echo hello"},
+						},
 					},
 				},
 			},
 		},
 	})
 	assert.NilError(t, err)
-	assert.DeepEqual(t, p, &api.Pipeline{
+	assert.DeepEqual(t, p.Pipeline, &api.Pipeline{
 		Jobs: []*api.Job{
 			{
 				Name:             "job1",
