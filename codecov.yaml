@@ -1,3 +1,4 @@
+github_checks: false
 coverage:
   status:
     patch: false
