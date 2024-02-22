@@ -18,15 +18,15 @@ func TestHandler_createPipeline(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
 	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), nil)
 	p, err := handler.CreatePipeline(context.Background(), &api.CreatePipelineRequest{
-		Pipeline: &api.Pipeline{
-			Jobs: []*api.Job{
+		Pipeline: &api.PipelineDSL{
+			Jobs: []*api.JobDSL{
 				{
 					Name:             "job1",
 					RunsOn:           &api.RunsOn{Label: "label1"},
 					WorkingDirectory: "/tmp",
 					EnvVar:           map[string]string{"key": "value"},
 					DependsOn:        []string{"job2"},
-					Steps: []*api.Step{
+					Steps: []*api.StepDSL{
 						{
 							Name:     "step1",
 							User:     "user",

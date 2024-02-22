@@ -26,7 +26,7 @@ type CreatePipelineResponse struct {
 }
 
 // CreatePipeline creates a new pipeline and inserts into db.
-func (s *Service) CreatePipeline(ctx context.Context, pipeline *api.Pipeline) (*CreatePipelineResponse, error) {
+func (s *Service) CreatePipeline(ctx context.Context, pipeline *api.PipelineDSL) (*CreatePipelineResponse, error) {
 	createJobOpts := make([]*db.CreateJobOption, 0, len(pipeline.Jobs))
 	createJobExecutionOpts := make([]*db.CreateJobExecutionOption, 0, len(pipeline.Jobs))
 	createStepOptMap := make(map[string][]*db.CreateStepOption)

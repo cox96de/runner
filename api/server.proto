@@ -8,7 +8,7 @@ service Server {
 }
 
 message CreatePipelineRequest {
-  Pipeline pipeline = 1;
+  PipelineDSL pipeline = 1;
 }
 
 message CreatePipelineResponse {
