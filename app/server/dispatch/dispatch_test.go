@@ -17,15 +17,15 @@ func TestService_Dispatch(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
 	pipelineService := pipeline.NewService(dbClient)
 	t.Run("no_dep", func(t *testing.T) {
-		createdPipeline, err := pipelineService.CreatePipeline(context.Background(), &api.Pipeline{
-			Jobs: []*api.Job{
+		createdPipeline, err := pipelineService.CreatePipeline(context.Background(), &api.PipelineDSL{
+			Jobs: []*api.JobDSL{
 				{
 					Name:  "job1",
-					Steps: []*api.Step{{Name: "step1"}},
+					Steps: []*api.StepDSL{{Name: "step1"}},
 				},
 				{
 					Name:  "job2",
-					Steps: []*api.Step{{Name: "step1"}},
+					Steps: []*api.StepDSL{{Name: "step1"}},
 				},
 			},
 		})
@@ -40,15 +40,15 @@ func TestService_Dispatch(t *testing.T) {
 		}
 	})
 	t.Run("dep", func(t *testing.T) {
-		createdPipeline, err := pipelineService.CreatePipeline(context.Background(), &api.Pipeline{
-			Jobs: []*api.Job{
+		createdPipeline, err := pipelineService.CreatePipeline(context.Background(), &api.PipelineDSL{
+			Jobs: []*api.JobDSL{
 				{
 					Name:  "job1",
-					Steps: []*api.Step{{Name: "step1"}},
+					Steps: []*api.StepDSL{{Name: "step1"}},
 				},
 				{
 					Name:      "job2",
-					Steps:     []*api.Step{{Name: "step1"}},
+					Steps:     []*api.StepDSL{{Name: "step1"}},
 					DependsOn: []string{"job1"},
 				},
 			},

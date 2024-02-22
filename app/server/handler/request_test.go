@@ -16,11 +16,11 @@ func TestHandler_requestJobHandler(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
 	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), mock.NewMockLocker())
 	createPipelineResponse, err := handler.CreatePipeline(context.Background(), &api.CreatePipelineRequest{
-		Pipeline: &api.Pipeline{
-			Jobs: []*api.Job{
+		Pipeline: &api.PipelineDSL{
+			Jobs: []*api.JobDSL{
 				{
 					Name: "test",
-					Steps: []*api.Step{
+					Steps: []*api.StepDSL{
 						{
 							Name:     "test",
 							Commands: []string{"echo", "test"},
