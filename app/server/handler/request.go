@@ -14,25 +14,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type RequestJobResponse struct {
-	Job *api.Job
-}
-
 func (h *Handler) RequestJobHandler(c *gin.Context) {
-	job, err := h.requestJobHandler(c)
+	response, err := h.RequestJob(c, nil)
 	if err != nil {
 		log.Errorf("failed to request job: %v", err)
 		c.JSON(http.StatusInternalServerError, &Message{Message: err})
 		return
 	}
-	if job != nil {
-		JSON(c, http.StatusOK, &RequestJobResponse{Job: job})
+	if response.Job != nil {
+		JSON(c, http.StatusOK, response)
 		return
 	}
-	JSON(c, http.StatusNoContent, nil)
+	JSON(c, http.StatusNoContent, response)
 }
 
-func (h *Handler) requestJobHandler(ctx context.Context) (*api.Job, error) {
+func (h *Handler) RequestJob(ctx context.Context, request *api.RequestJobRequest) (*api.RequestJobResponse, error) {
 	// TODO: the limit should be configurable.
 	jobExecutions, err := h.db.GetQueuedJobExecutions(ctx, 100)
 	if err != nil {
@@ -59,9 +55,13 @@ func (h *Handler) requestJobHandler(ctx context.Context) (*api.Job, error) {
 				log.Warnf("failed to unlock job execution")
 			}
 		}
-		return job, nil
+		return &api.RequestJobResponse{
+			Job: job,
+		}, nil
 	}
-	return nil, nil
+	return &api.RequestJobResponse{
+		Job: nil,
+	}, nil
 }
 
 func (h *Handler) packJob(ctx context.Context, jobExecution *db.JobExecution) (*api.Job, error) {

@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.28.1
 // 	protoc        v5.26.0--rc1
-// source: api.proto
+// source: entity.proto
 
 package api
 

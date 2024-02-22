@@ -13,34 +13,25 @@ import (
 	"github.com/pkg/errors"
 )
 
-type CreatePipelineRequest struct {
-	// Pipeline is pipeline DSL.
-	Pipeline *api.Pipeline `json:"pipeline"`
-}
-
-type CreatePipelineResponse struct {
-	Pipeline *api.Pipeline `json:"pipeline"`
-}
-
 func (h *Handler) CreatePipelineHandler(c *gin.Context) {
-	var req CreatePipelineRequest
+	var req api.CreatePipelineRequest
 	if err := Bind(c, &req); err != nil {
 		c.JSON(http.StatusBadRequest, &Message{Message: err})
 		return
 	}
 	logger := log.ExtractLogger(c)
-	pipeline, err := h.createPipeline(c, req.Pipeline)
+	response, err := h.CreatePipeline(c, &req)
 	if err != nil {
 		logger.Errorf("failed to create pipeline: %v", err)
 		c.JSON(http.StatusInternalServerError, &Message{Message: err})
 		return
 	}
-	JSON(c, http.StatusOK, &CreatePipelineResponse{Pipeline: pipeline})
+	JSON(c, http.StatusOK, response)
 }
 
-func (h *Handler) createPipeline(ctx context.Context, pipeline *api.Pipeline) (*api.Pipeline, error) {
+func (h *Handler) CreatePipeline(ctx context.Context, request *api.CreatePipelineRequest) (*api.CreatePipelineResponse, error) {
 	logger := log.ExtractLogger(ctx)
-	response, err := h.pipelineService.CreatePipeline(ctx, pipeline)
+	response, err := h.pipelineService.CreatePipeline(ctx, request.Pipeline)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create pipeline")
 	}
@@ -52,7 +43,9 @@ func (h *Handler) createPipeline(ctx context.Context, pipeline *api.Pipeline) (*
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to pack pipeline")
 	}
-	return p, nil
+	return &api.CreatePipelineResponse{
+		Pipeline: p,
+	}, nil
 }
 
 func packPipeline(p *db.Pipeline, jobs []*db.Job, jobExecutions []*db.JobExecution, steps []*db.Step,
