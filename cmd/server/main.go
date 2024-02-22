@@ -44,7 +44,7 @@ func RunServer(configfile string) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to load config")
 	}
-	dbClient, err := ComposeDB(config.DB.Dialect, config.DB.DSN)
+	dbClient, err := ComposeDB(config.DB)
 	if err != nil {
 		return errors.WithMessage(err, "failed to compose db")
 	}
