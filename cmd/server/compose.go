@@ -10,20 +10,29 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
-func ComposeDB(dialect string, dsn string) (*db.Client, error) {
+func ComposeDB(c *DB) (*db.Client, error) {
 	var (
-		conn *gorm.DB
-		err  error
+		conn    *gorm.DB
+		err     error
+		dialect = c.Dialect
+		dsn     = c.DSN
 	)
+	opts := &gorm.Config{}
+	if c.TablePrefix != "" {
+		opts.NamingStrategy = &schema.NamingStrategy{
+			TablePrefix: c.TablePrefix,
+		}
+	}
 	switch db.Dialect(dialect) {
 	case db.Mysql:
-		conn, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		conn, err = gorm.Open(mysql.Open(dsn), opts)
 	case db.Postgres:
-		conn, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		conn, err = gorm.Open(postgres.Open(dsn), opts)
 	case db.SQLite:
-		conn, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+		conn, err = gorm.Open(sqlite.Open(dsn), opts)
 	default:
 		return nil, errors.Errorf("unsupported dialect: %s", dialect)
 	}

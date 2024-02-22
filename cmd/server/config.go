@@ -19,8 +19,9 @@ type Config struct {
 
 type DB struct {
 	// Dialect is the database dialect, support sqlite, mysql, postgres.
-	Dialect string `json:"dialect" yaml:"dialect"`
-	DSN     string `json:"dsn" yaml:"dsn"`
+	Dialect     string `json:"dialect" yaml:"dialect"`
+	DSN         string `json:"dsn" yaml:"dsn"`
+	TablePrefix string `json:"table_prefix" yaml:"table_prefix"`
 }
 
 type Locker struct {
