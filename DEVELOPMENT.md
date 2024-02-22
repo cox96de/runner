@@ -18,3 +18,4 @@ go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
 ```
 go install github.com/alta/protopatch/cmd/protoc-gen-go-patch@latest
 ```
+- [protoc-go-inject-tag](https://github.com/favadi/protoc-go-inject-tag.git)

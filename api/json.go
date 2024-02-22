@@ -28,6 +28,7 @@ func (s Status) MarshalJSON() ([]byte, error) {
 var status2str = map[Status]string{
 	StatusCreated:   "created",
 	StatusQueued:    "queued",
+	StatusPreparing: "preparing",
 	StatusRunning:   "running",
 	StatusCanceling: "canceling",
 	StatusFailed:    "failed",

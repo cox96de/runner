@@ -5,6 +5,11 @@ import (
 	"runtime"
 	"testing"
 
+	"google.golang.org/grpc"
+
+	mockapi "github.com/cox96de/runner/api/mock"
+	"go.uber.org/mock/gomock"
+
 	"github.com/cox96de/runner/api"
 
 	log "github.com/sirupsen/logrus"
@@ -36,8 +41,19 @@ func TestExecutor_executeJob(t *testing.T) {
 				WorkingDirectory: gitRoot,
 			},
 		},
+		Executions: []*api.JobExecution{
+			{},
+		},
 	}
-	execution := NewExecution(e, job)
+	client := mockapi.NewMockServerClient(gomock.NewController(t))
+	client.EXPECT().UpdateJobExecution(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context,
+		request *api.UpdateJobExecutionRequest, option ...grpc.CallOption,
+	) (*api.UpdateJobExecutionResponse, error) {
+		return &api.UpdateJobExecutionResponse{Job: &api.JobExecution{
+			Status: *request.Status,
+		}}, nil
+	}).AnyTimes()
+	execution := NewExecution(e, job, client)
 	err = execution.Execute(context.Background())
 	assert.NilError(t, err)
 }

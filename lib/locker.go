@@ -22,3 +22,9 @@ type Locker interface {
 func BuildJobRequestLockKey(jobID int64) string {
 	return fmt.Sprintf("job_request:%d:lock", jobID)
 }
+
+// BuildJobExecutionLockKey builds a lock key for a job execution.
+// The key is used to lock a job execution to prevent concurrent update job execution.
+func BuildJobExecutionLockKey(jobID int64) string {
+	return fmt.Sprintf("job_execution:%d:lock", jobID)
+}

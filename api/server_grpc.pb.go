@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type ServerClient interface {
 	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
 	RequestJob(ctx context.Context, in *RequestJobRequest, opts ...grpc.CallOption) (*RequestJobResponse, error)
+	UpdateJobExecution(ctx context.Context, in *UpdateJobExecutionRequest, opts ...grpc.CallOption) (*UpdateJobExecutionResponse, error)
 }
 
 type serverClient struct {
@@ -52,12 +53,22 @@ func (c *serverClient) RequestJob(ctx context.Context, in *RequestJobRequest, op
 	return out, nil
 }
 
+func (c *serverClient) UpdateJobExecution(ctx context.Context, in *UpdateJobExecutionRequest, opts ...grpc.CallOption) (*UpdateJobExecutionResponse, error) {
+	out := new(UpdateJobExecutionResponse)
+	err := c.cc.Invoke(ctx, "/Server/UpdateJobExecution", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ServerServer is the server API for Server service.
 // All implementations must embed UnimplementedServerServer
 // for forward compatibility
 type ServerServer interface {
 	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
 	RequestJob(context.Context, *RequestJobRequest) (*RequestJobResponse, error)
+	UpdateJobExecution(context.Context, *UpdateJobExecutionRequest) (*UpdateJobExecutionResponse, error)
 	mustEmbedUnimplementedServerServer()
 }
 
@@ -70,6 +81,9 @@ func (UnimplementedServerServer) CreatePipeline(context.Context, *CreatePipeline
 }
 func (UnimplementedServerServer) RequestJob(context.Context, *RequestJobRequest) (*RequestJobResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestJob not implemented")
+}
+func (UnimplementedServerServer) UpdateJobExecution(context.Context, *UpdateJobExecutionRequest) (*UpdateJobExecutionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateJobExecution not implemented")
 }
 func (UnimplementedServerServer) mustEmbedUnimplementedServerServer() {}
 
@@ -120,6 +134,24 @@ func _Server_RequestJob_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Server_UpdateJobExecution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateJobExecutionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServerServer).UpdateJobExecution(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Server/UpdateJobExecution",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServerServer).UpdateJobExecution(ctx, req.(*UpdateJobExecutionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Server_ServiceDesc is the grpc.ServiceDesc for Server service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +166,10 @@ var Server_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RequestJob",
 			Handler:    _Server_RequestJob_Handler,
+		},
+		{
+			MethodName: "UpdateJobExecution",
+			Handler:    _Server_UpdateJobExecution_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

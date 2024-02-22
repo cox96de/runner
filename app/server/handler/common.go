@@ -30,6 +30,7 @@ type render struct {
 }
 
 func (r *render) Render(writer http.ResponseWriter) error {
+	r.WriteContentType(writer)
 	bs, err := jj.Marshal(r.data)
 	if err != nil {
 		return err

@@ -1,7 +1,9 @@
 package httpserverclient
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -28,38 +30,34 @@ type Client struct {
 	u      *url.URL
 }
 
+func (c *Client) UpdateJobExecution(ctx context.Context, in *api.UpdateJobExecutionRequest,
+	opts ...grpc.CallOption,
+) (*api.UpdateJobExecutionResponse, error) {
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/executions/%d", in.JobID, in.ID))
+	resp := &api.UpdateJobExecutionResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (c *Client) CreatePipeline(ctx context.Context, in *api.CreatePipelineRequest, opts ...grpc.CallOption) (*api.CreatePipelineResponse, error) {
-	return nil, errors.New("not implemented")
+	u := c.u.JoinPath("/api/v1/pipelines")
+	resp := &api.CreatePipelineResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func (c *Client) RequestJob(ctx context.Context, in *api.RequestJobRequest, opts ...grpc.CallOption) (*api.RequestJobResponse, error) {
 	u := c.u.JoinPath("/api/v1/jobs/request")
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	response, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func(body io.ReadCloser) {
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}(response.Body)
-	if response.StatusCode == http.StatusNoContent {
-		return &api.RequestJobResponse{}, nil
-	}
-	if response.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("failed to request job, got status code: %d", response.StatusCode)
-	}
 	resp := &api.RequestJobResponse{}
-	content, err := io.ReadAll(response.Body)
+	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to read response body")
-	}
-	err = json.Unmarshal(content, resp)
-	if err != nil {
-		return nil, errors.WithMessagef(err, "failed to unmarshal response body: %s", string(content))
+		return nil, err
 	}
 	return resp, nil
 }
@@ -70,4 +68,39 @@ func NewClient(client *http.Client, baseURL string) (*Client, error) {
 		return nil, err
 	}
 	return &Client{client: client, u: u}, nil
+}
+
+func (c *Client) doRequest(ctx context.Context, path string, method string, in any, out any) error {
+	body, err := json.Marshal(in)
+	if err != nil {
+		return errors.WithMessagef(err, "failed to marshal request body: %v", in)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, path, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	response, err := c.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func(body io.ReadCloser) {
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}(response.Body)
+	if response.StatusCode == http.StatusNoContent {
+		return nil
+	}
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("failed to request job, got status code: %d", response.StatusCode)
+	}
+	content, err := io.ReadAll(response.Body)
+	if err != nil {
+		return errors.WithMessage(err, "failed to read response body")
+	}
+	err = json.Unmarshal(content, out)
+	if err != nil {
+		return errors.WithMessagef(err, "failed to unmarshal response body: %s", string(content))
+	}
+	return nil
 }

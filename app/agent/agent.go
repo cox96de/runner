@@ -45,7 +45,8 @@ func (a *Agent) Run(ctx context.Context) error {
 			return errors.WithMessage(err, "failed to poll job")
 		}
 		log.Infof("got job: %d, execution: %d", job.ID, job.Executions[0].ID)
-		err = NewExecution(a.engine, job).Execute(ctx)
+		err = NewExecution(a.engine, job, a.client).
+			Execute(ctx)
 		if err != nil {
 			log.Errorf("failed to execute job: %v", err)
 		}
