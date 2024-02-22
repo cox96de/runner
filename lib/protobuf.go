@@ -41,7 +41,8 @@ func (c *timestampCodec) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 }
 
 func (c *timestampCodec) IsEmpty(ptr unsafe.Pointer) bool {
-	return (*timestamppb.Timestamp)(ptr) == nil
+	i := (**timestamppb.Timestamp)(ptr)
+	return *i == nil
 }
 
 func (c *timestampCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {

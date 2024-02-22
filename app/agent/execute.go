@@ -15,19 +15,29 @@ import (
 )
 
 type Execution struct {
-	engine engine.Engine
-	job    *api.Job
+	engine    engine.Engine
+	job       *api.Job
+	execution *api.JobExecution
+	client    api.ServerClient
 
 	runner engine.Runner
 }
 
-func NewExecution(engine engine.Engine, job *api.Job) *Execution {
-	return &Execution{engine: engine, job: job}
+func NewExecution(engine engine.Engine, job *api.Job, client api.ServerClient) *Execution {
+	return &Execution{
+		engine:    engine,
+		job:       job,
+		execution: job.Executions[len(job.Executions)-1],
+		client:    client,
+	}
 }
 
 // Execute executes the job.
 func (e *Execution) Execute(ctx context.Context) error {
 	var err error
+	if err = e.updateStatus(ctx, api.StatusPreparing); err != nil {
+		return errors.WithMessage(err, "failed to update status")
+	}
 	e.runner, err = e.engine.CreateRunner(ctx, e.job)
 	if err != nil {
 		return err
@@ -38,9 +48,29 @@ func (e *Execution) Execute(ctx context.Context) error {
 		return err
 	}
 	defer e.stop(ctx)
+	if err = e.updateStatus(ctx, api.StatusRunning); err != nil {
+		return errors.WithMessage(err, "failed to update status")
+	}
 	if err = e.executeSteps(ctx); err != nil {
 		return errors.WithMessage(err, "failed to execute steps")
 	}
+	// TODO: calculate status.
+	if err = e.updateStatus(ctx, api.StatusSucceeded); err != nil {
+		return errors.WithMessage(err, "failed to update status")
+	}
+	return nil
+}
+
+func (e *Execution) updateStatus(ctx context.Context, status api.Status) error {
+	execution, err := e.client.UpdateJobExecution(ctx, &api.UpdateJobExecutionRequest{
+		JobID:  e.job.ID,
+		ID:     e.execution.ID,
+		Status: &status,
+	})
+	if err != nil {
+		return errors.WithMessagef(err, "failed to update job execution to %s", status)
+	}
+	e.execution = execution.Job
 	return nil
 }
 

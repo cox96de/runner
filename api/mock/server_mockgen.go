@@ -50,10 +50,34 @@ func (m *MockServerClient) CreatePipeline(arg0 context.Context, arg1 *api.Create
 }
 
 // CreatePipeline indicates an expected call of CreatePipeline.
-func (mr *MockServerClientMockRecorder) CreatePipeline(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockServerClientMockRecorder) CreatePipeline(arg0, arg1 interface{}, arg2 ...interface{}) *ServerClientCreatePipelineCall {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePipeline", reflect.TypeOf((*MockServerClient)(nil).CreatePipeline), varargs...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePipeline", reflect.TypeOf((*MockServerClient)(nil).CreatePipeline), varargs...)
+	return &ServerClientCreatePipelineCall{Call: call}
+}
+
+// ServerClientCreatePipelineCall wrap *gomock.Call
+type ServerClientCreatePipelineCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *ServerClientCreatePipelineCall) Return(arg0 *api.CreatePipelineResponse, arg1 error) *ServerClientCreatePipelineCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *ServerClientCreatePipelineCall) Do(f func(context.Context, *api.CreatePipelineRequest, ...grpc.CallOption) (*api.CreatePipelineResponse, error)) *ServerClientCreatePipelineCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *ServerClientCreatePipelineCall) DoAndReturn(f func(context.Context, *api.CreatePipelineRequest, ...grpc.CallOption) (*api.CreatePipelineResponse, error)) *ServerClientCreatePipelineCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
 }
 
 // RequestJob mocks base method.
@@ -70,8 +94,76 @@ func (m *MockServerClient) RequestJob(arg0 context.Context, arg1 *api.RequestJob
 }
 
 // RequestJob indicates an expected call of RequestJob.
-func (mr *MockServerClientMockRecorder) RequestJob(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockServerClientMockRecorder) RequestJob(arg0, arg1 interface{}, arg2 ...interface{}) *ServerClientRequestJobCall {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestJob", reflect.TypeOf((*MockServerClient)(nil).RequestJob), varargs...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestJob", reflect.TypeOf((*MockServerClient)(nil).RequestJob), varargs...)
+	return &ServerClientRequestJobCall{Call: call}
+}
+
+// ServerClientRequestJobCall wrap *gomock.Call
+type ServerClientRequestJobCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *ServerClientRequestJobCall) Return(arg0 *api.RequestJobResponse, arg1 error) *ServerClientRequestJobCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *ServerClientRequestJobCall) Do(f func(context.Context, *api.RequestJobRequest, ...grpc.CallOption) (*api.RequestJobResponse, error)) *ServerClientRequestJobCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *ServerClientRequestJobCall) DoAndReturn(f func(context.Context, *api.RequestJobRequest, ...grpc.CallOption) (*api.RequestJobResponse, error)) *ServerClientRequestJobCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// UpdateJobExecution mocks base method.
+func (m *MockServerClient) UpdateJobExecution(arg0 context.Context, arg1 *api.UpdateJobExecutionRequest, arg2 ...grpc.CallOption) (*api.UpdateJobExecutionResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateJobExecution", varargs...)
+	ret0, _ := ret[0].(*api.UpdateJobExecutionResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateJobExecution indicates an expected call of UpdateJobExecution.
+func (mr *MockServerClientMockRecorder) UpdateJobExecution(arg0, arg1 interface{}, arg2 ...interface{}) *ServerClientUpdateJobExecutionCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJobExecution", reflect.TypeOf((*MockServerClient)(nil).UpdateJobExecution), varargs...)
+	return &ServerClientUpdateJobExecutionCall{Call: call}
+}
+
+// ServerClientUpdateJobExecutionCall wrap *gomock.Call
+type ServerClientUpdateJobExecutionCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *ServerClientUpdateJobExecutionCall) Return(arg0 *api.UpdateJobExecutionResponse, arg1 error) *ServerClientUpdateJobExecutionCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *ServerClientUpdateJobExecutionCall) Do(f func(context.Context, *api.UpdateJobExecutionRequest, ...grpc.CallOption) (*api.UpdateJobExecutionResponse, error)) *ServerClientUpdateJobExecutionCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *ServerClientUpdateJobExecutionCall) DoAndReturn(f func(context.Context, *api.UpdateJobExecutionRequest, ...grpc.CallOption) (*api.UpdateJobExecutionResponse, error)) *ServerClientUpdateJobExecutionCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
 }

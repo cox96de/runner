@@ -105,7 +105,7 @@ func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions [
 		WorkingDirectory: j.WorkingDirectory,
 		EnvVar:           envVar,
 		Executions: lo.Map(executions, func(e *JobExecution, _ int) *api.JobExecution {
-			return packJobExecution(e)
+			return PackJobExecution(e)
 		}),
 		Steps:     packSteps,
 		DependsOn: dependsOn,
@@ -114,7 +114,7 @@ func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions [
 	}, nil
 }
 
-func packJobExecution(j *JobExecution) *api.JobExecution {
+func PackJobExecution(j *JobExecution) *api.JobExecution {
 	return &api.JobExecution{
 		ID:          j.ID,
 		JobID:       j.JobID,
@@ -170,14 +170,22 @@ func (c *Client) GetJobExecution(ctx context.Context, id int64) (*JobExecution, 
 }
 
 type UpdateJobExecutionOption struct {
-	ID     int64
-	Status *api.Status
+	ID          int64
+	Status      *api.Status
+	StartedAt   *time.Time
+	CompletedAt *time.Time
 }
 
 func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecutionOption) error {
 	updateField := map[string]interface{}{}
 	if option.Status != nil {
 		updateField["status"] = *option.Status
+	}
+	if option.StartedAt != nil {
+		updateField["started_at"] = *option.StartedAt
+	}
+	if option.CompletedAt != nil {
+		updateField["completed_at"] = *option.CompletedAt
 	}
 	return c.conn.WithContext(ctx).Model(&JobExecution{}).Where("id = ?", option.ID).Updates(updateField).Error
 }

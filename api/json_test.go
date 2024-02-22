@@ -8,7 +8,7 @@ import (
 )
 
 func Test_status_UnmarshalJSON(t *testing.T) {
-	assert.Assert(t, len(Status_name) == len(status2str)+1)
+	assert.Equal(t, len(Status_name), len(status2str)+1)
 	s := StatusQueued
 	marshal, err := json.Marshal(s)
 	assert.NilError(t, err)

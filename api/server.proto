@@ -1,10 +1,12 @@
 syntax = "proto3";
 import "entity.proto";
+import "tools/protopatch/patch/go.proto";
 option go_package = "github.com/cox96de/runner/api";
 
 service Server {
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
   rpc RequestJob(RequestJobRequest) returns (RequestJobResponse) {}
+  rpc UpdateJobExecution(UpdateJobExecutionRequest) returns (UpdateJobExecutionResponse) {}
 }
 
 message CreatePipelineRequest {
@@ -20,4 +22,16 @@ message RequestJobRequest {
 
 message RequestJobResponse {
   Job job = 1;
+}
+
+message UpdateJobExecutionRequest {
+  //@gotags: path:"id"
+  int64 id = 1[(go.field).name = 'ID'];
+  //@gotags: path:"job_id"
+  int64 JobID = 2[(go.field).name = "JobID"];
+  optional Status status = 3;
+}
+
+message UpdateJobExecutionResponse {
+  JobExecution job = 1;
 }
