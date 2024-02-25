@@ -5,6 +5,7 @@ coverage:
     project:
       default:
         target: "50%"
+comment: false
 ignore:
   - "**/*.pb.go"
   - "**/mock/*"
