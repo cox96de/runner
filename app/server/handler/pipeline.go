@@ -2,32 +2,14 @@ package handler
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/cox96de/runner/api"
 
 	"github.com/cox96de/runner/log"
 
 	"github.com/cox96de/runner/db"
-	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 )
-
-func (h *Handler) CreatePipelineHandler(c *gin.Context) {
-	var req api.CreatePipelineRequest
-	if err := Bind(c, &req); err != nil {
-		c.JSON(http.StatusBadRequest, &Message{Message: err})
-		return
-	}
-	logger := log.ExtractLogger(c)
-	response, err := h.CreatePipeline(c, &req)
-	if err != nil {
-		logger.Errorf("failed to create pipeline: %v", err)
-		c.JSON(http.StatusInternalServerError, &Message{Message: err})
-		return
-	}
-	JSON(c, http.StatusOK, response)
-}
 
 func (h *Handler) CreatePipeline(ctx context.Context, request *api.CreatePipelineRequest) (*api.CreatePipelineResponse, error) {
 	logger := log.ExtractLogger(ctx)
