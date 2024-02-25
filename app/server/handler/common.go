@@ -15,7 +15,7 @@ type Message struct {
 }
 
 func (m *Message) MarshalJSON() ([]byte, error) {
-	mm := map[string]interface{}{"message": m.Message}
+	mm := map[string]interface{}{"message": m.Message.Error()}
 	return json.Marshal(mm)
 }
 
