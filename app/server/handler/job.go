@@ -18,22 +18,22 @@ import (
 func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJobExecutionRequest) (*api.UpdateJobExecutionResponse, error) {
 	logger := log.ExtractLogger(ctx).WithFields(log.Fields{
 		"job_id":           request.JobID,
-		"job_execution_id": request.ID,
+		"job_execution_id": request.JobExecutionID,
 	})
-	lock, err := h.locker.Lock(ctx, lib.BuildJobExecutionLockKey(request.ID), "update_job_execution", time.Second)
+	lock, err := h.locker.Lock(ctx, lib.BuildJobExecutionLockKey(request.JobExecutionID), "update_job_execution", time.Second)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "failed to lock job execution '%d'", request.ID)
+		return nil, errors.WithMessagef(err, "failed to lock job execution '%d'", request.JobExecutionID)
 	}
 	// May be delay and retry ?
 	if !lock {
-		return nil, errors.Errorf("job execution '%d' is locked", request.ID)
+		return nil, errors.Errorf("job execution '%d' is locked", request.JobExecutionID)
 	}
 	defer func() {
-		_, _ = h.locker.Unlock(ctx, lib.BuildJobExecutionLockKey(request.ID))
+		_, _ = h.locker.Unlock(ctx, lib.BuildJobExecutionLockKey(request.JobExecutionID))
 	}()
-	jobExecution, err := h.db.GetJobExecution(ctx, request.ID)
+	jobExecution, err := h.db.GetJobExecution(ctx, request.JobExecutionID)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "failed to get job execution '%d'", request.ID)
+		return nil, errors.WithMessagef(err, "failed to get job execution '%d'", request.JobExecutionID)
 	}
 	if request.Status != nil {
 		logger.Infof("update job execution status from %s to '%s'", jobExecution.Status, *request.Status)
@@ -55,7 +55,7 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 		}
 		err := h.db.UpdateJobExecution(ctx, updateJobExecutionOption)
 		if err != nil {
-			return nil, errors.WithMessagef(err, "failed to update job execution '%d'", request.ID)
+			return nil, errors.WithMessagef(err, "failed to update job execution '%d'", request.JobExecutionID)
 		}
 	}
 	return &api.UpdateJobExecutionResponse{
