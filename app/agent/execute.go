@@ -63,9 +63,9 @@ func (e *Execution) Execute(ctx context.Context) error {
 
 func (e *Execution) updateStatus(ctx context.Context, status api.Status) error {
 	execution, err := e.client.UpdateJobExecution(ctx, &api.UpdateJobExecutionRequest{
-		JobID:  e.job.ID,
-		ID:     e.execution.ID,
-		Status: &status,
+		JobID:          e.job.ID,
+		JobExecutionID: e.execution.ID,
+		Status:         &status,
 	})
 	if err != nil {
 		return errors.WithMessagef(err, "failed to update job execution to %s", status)

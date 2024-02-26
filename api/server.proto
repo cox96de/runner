@@ -25,8 +25,8 @@ message RequestJobResponse {
 }
 
 message UpdateJobExecutionRequest {
-  //@gotags: path:"id"
-  int64 id = 1[(go.field).name = 'ID'];
+  //@gotags: path:"job_execution_id"
+  int64 JobExecutionID = 1[(go.field).name = 'JobExecutionID'];
   //@gotags: path:"job_id"
   int64 JobID = 2[(go.field).name = "JobID"];
   optional Status status = 3;

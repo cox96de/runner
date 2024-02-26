@@ -33,7 +33,7 @@ type Client struct {
 func (c *Client) UpdateJobExecution(ctx context.Context, in *api.UpdateJobExecutionRequest,
 	opts ...grpc.CallOption,
 ) (*api.UpdateJobExecutionResponse, error) {
-	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/executions/%d", in.JobID, in.ID))
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/executions/%d", in.JobID, in.JobExecutionID))
 	resp := &api.UpdateJobExecutionResponse{}
 	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
 	if err != nil {
