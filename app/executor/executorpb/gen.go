@@ -1,4 +1,4 @@
 package executorpb
 
-//go:generate protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative service.proto
+//go:generate protoc  -I ../../.. -I . --go-patch_out=plugin=go,paths=source_relative:. --go-patch_out=plugin=go-grpc,paths=source_relative:. service.proto
 //go:generate mockgen -destination mock/mockgen.go -package mock . ExecutorClient
