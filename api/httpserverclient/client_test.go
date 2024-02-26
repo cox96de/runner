@@ -6,6 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/cox96de/runner/app/server/logstorage"
 	"github.com/samber/lo"
 
 	"github.com/cox96de/runner/api"
@@ -22,7 +25,8 @@ func TestNewClient(t *testing.T) {
 	pipelineService := pipeline.NewService(dbClient)
 	dispatchService := dispatch.NewService(dbClient)
 	locker := mock.NewMockLocker()
-	h := handler.NewHandler(dbClient, pipelineService, dispatchService, locker)
+	redis := mock.NewMockRedis(t)
+	h := handler.NewHandler(dbClient, pipelineService, dispatchService, locker, logstorage.NewService(redis))
 	engine := gin.New()
 	h.RegisterRouter(engine.Group("/api/v1"))
 	server := httptest.NewServer(engine)
@@ -58,6 +62,33 @@ func TestNewClient(t *testing.T) {
 			})
 			assert.NilError(t, err)
 			assert.Assert(t, updateJobExecutionResponse.Job.Status == api.StatusPreparing)
+		})
+		t.Run("UploadLogLines", func(t *testing.T) {
+			logLines := []*api.LogLine{{
+				Timestamp: 0,
+				Number:    1,
+				Output:    []byte("hello1"),
+			}}
+			updateLogLinesResponse, err := client.UploadLogLines(ctx, &api.UpdateLogLinesRequest{
+				JobID:          1,
+				JobExecutionID: 1,
+				Name:           "step1",
+				Lines:          logLines,
+			})
+			assert.NilError(t, err)
+			assert.Assert(t, updateLogLinesResponse != nil)
+			t.Run("GetLogLines", func(t *testing.T) {
+				getLogLinesResponse, err := client.GetLogLines(ctx, &api.GetLogLinesRequest{
+					JobID:          1,
+					JobExecutionID: 1,
+					Name:           "step1",
+					Offset:         0,
+					Limit:          lo.ToPtr(int64(1000)),
+				})
+				assert.NilError(t, err)
+				assert.Assert(t, getLogLinesResponse != nil)
+				assert.DeepEqual(t, getLogLinesResponse.Lines, logLines, cmpopts.IgnoreUnexported(api.LogLine{}))
+			})
 		})
 	})
 }

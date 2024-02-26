@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/cox96de/runner/app/server/logstorage"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/external/redis"
 	"github.com/cox96de/runner/lib"
@@ -49,6 +50,11 @@ func ComposeLocker(l *Locker) (lib.Locker, error) {
 	default:
 		return nil, errors.Errorf("%s locker is not supported", l.Backend)
 	}
+}
+
+func ComposeLogStorage(l *LogStorage) *logstorage.Service {
+	composeRedis := ComposeRedis(l.Redis)
+	return logstorage.NewService(composeRedis)
 }
 
 func ComposeRedis(r *Redis) *redis.Client {

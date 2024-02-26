@@ -30,6 +30,34 @@ type Client struct {
 	u      *url.URL
 }
 
+func (c *Client) UploadLogLines(ctx context.Context, in *api.UpdateLogLinesRequest, opts ...grpc.CallOption) (*api.UpdateLogLinesResponse, error) {
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/executions/%d/logs", in.JobID, in.JobExecutionID))
+	resp := &api.UpdateLogLinesResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (c *Client) GetLogLines(ctx context.Context, in *api.GetLogLinesRequest, opts ...grpc.CallOption) (*api.GetLogLinesResponse, error) {
+	url := fmt.Sprintf("/api/v1/jobs/%d/executions/%d/logs/%s", in.JobID, in.JobExecutionID, in.Name)
+
+	u := c.u.JoinPath(url)
+	query := u.Query()
+	query.Add("offset", fmt.Sprintf("%d", in.Offset))
+	if in.Limit != nil {
+		query.Add("limit", fmt.Sprintf("%d", *in.Limit))
+	}
+	u.RawQuery = query.Encode()
+	resp := &api.GetLogLinesResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodGet, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (c *Client) UpdateJobExecution(ctx context.Context, in *api.UpdateJobExecutionRequest,
 	opts ...grpc.CallOption,
 ) (*api.UpdateJobExecutionResponse, error) {

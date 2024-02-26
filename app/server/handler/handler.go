@@ -3,6 +3,8 @@ package handler
 import (
 	"net/http"
 
+	"github.com/cox96de/runner/app/server/logstorage"
+
 	"github.com/cox96de/runner/api"
 
 	"github.com/cox96de/runner/app/server/dispatch"
@@ -22,6 +24,7 @@ type Handler struct {
 	db              *db.Client
 	pipelineService *pipeline.Service
 	dispatchService *dispatch.Service
+	logService      *logstorage.Service
 	locker          lib.Locker
 }
 
@@ -30,9 +33,12 @@ func (h *Handler) mustEmbedUnimplementedServerServer() {
 }
 
 func NewHandler(db *db.Client, pipelineService *pipeline.Service, dispatchService *dispatch.Service,
-	locker lib.Locker,
+	locker lib.Locker, logService *logstorage.Service,
 ) *Handler {
-	return &Handler{db: db, pipelineService: pipelineService, dispatchService: dispatchService, locker: locker}
+	return &Handler{
+		db: db, pipelineService: pipelineService, dispatchService: dispatchService, locker: locker,
+		logService: logService,
+	}
 }
 
 func (h *Handler) PingHandler(c *gin.Context) {

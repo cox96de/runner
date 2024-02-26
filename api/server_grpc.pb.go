@@ -25,6 +25,8 @@ type ServerClient interface {
 	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
 	RequestJob(ctx context.Context, in *RequestJobRequest, opts ...grpc.CallOption) (*RequestJobResponse, error)
 	UpdateJobExecution(ctx context.Context, in *UpdateJobExecutionRequest, opts ...grpc.CallOption) (*UpdateJobExecutionResponse, error)
+	UploadLogLines(ctx context.Context, in *UpdateLogLinesRequest, opts ...grpc.CallOption) (*UpdateLogLinesResponse, error)
+	GetLogLines(ctx context.Context, in *GetLogLinesRequest, opts ...grpc.CallOption) (*GetLogLinesResponse, error)
 }
 
 type serverClient struct {
@@ -62,6 +64,24 @@ func (c *serverClient) UpdateJobExecution(ctx context.Context, in *UpdateJobExec
 	return out, nil
 }
 
+func (c *serverClient) UploadLogLines(ctx context.Context, in *UpdateLogLinesRequest, opts ...grpc.CallOption) (*UpdateLogLinesResponse, error) {
+	out := new(UpdateLogLinesResponse)
+	err := c.cc.Invoke(ctx, "/Server/UploadLogLines", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serverClient) GetLogLines(ctx context.Context, in *GetLogLinesRequest, opts ...grpc.CallOption) (*GetLogLinesResponse, error) {
+	out := new(GetLogLinesResponse)
+	err := c.cc.Invoke(ctx, "/Server/GetLogLines", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ServerServer is the server API for Server service.
 // All implementations must embed UnimplementedServerServer
 // for forward compatibility
@@ -69,6 +89,8 @@ type ServerServer interface {
 	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
 	RequestJob(context.Context, *RequestJobRequest) (*RequestJobResponse, error)
 	UpdateJobExecution(context.Context, *UpdateJobExecutionRequest) (*UpdateJobExecutionResponse, error)
+	UploadLogLines(context.Context, *UpdateLogLinesRequest) (*UpdateLogLinesResponse, error)
+	GetLogLines(context.Context, *GetLogLinesRequest) (*GetLogLinesResponse, error)
 	mustEmbedUnimplementedServerServer()
 }
 
@@ -84,6 +106,12 @@ func (UnimplementedServerServer) RequestJob(context.Context, *RequestJobRequest)
 }
 func (UnimplementedServerServer) UpdateJobExecution(context.Context, *UpdateJobExecutionRequest) (*UpdateJobExecutionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateJobExecution not implemented")
+}
+func (UnimplementedServerServer) UploadLogLines(context.Context, *UpdateLogLinesRequest) (*UpdateLogLinesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadLogLines not implemented")
+}
+func (UnimplementedServerServer) GetLogLines(context.Context, *GetLogLinesRequest) (*GetLogLinesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLogLines not implemented")
 }
 func (UnimplementedServerServer) mustEmbedUnimplementedServerServer() {}
 
@@ -152,6 +180,42 @@ func _Server_UpdateJobExecution_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Server_UploadLogLines_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateLogLinesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServerServer).UploadLogLines(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Server/UploadLogLines",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServerServer).UploadLogLines(ctx, req.(*UpdateLogLinesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Server_GetLogLines_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLogLinesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServerServer).GetLogLines(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Server/GetLogLines",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServerServer).GetLogLines(ctx, req.(*GetLogLinesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Server_ServiceDesc is the grpc.ServiceDesc for Server service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -170,6 +234,14 @@ var Server_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateJobExecution",
 			Handler:    _Server_UpdateJobExecution_Handler,
+		},
+		{
+			MethodName: "UploadLogLines",
+			Handler:    _Server_UploadLogLines_Handler,
+		},
+		{
+			MethodName: "GetLogLines",
+			Handler:    _Server_GetLogLines_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

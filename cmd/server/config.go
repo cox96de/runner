@@ -14,7 +14,8 @@ type Config struct {
 	// DB is the database configuration.
 	DB *DB `json:"db" yaml:"db"`
 	// Locker is the config of distribute locker.
-	Locker *Locker `json:"locker" yaml:"locker"`
+	Locker     *Locker     `json:"locker" yaml:"locker"`
+	LogStorage *LogStorage `json:"log_storage" yaml:"log_storage"`
 }
 
 type DB struct {
@@ -48,6 +49,10 @@ type Redis struct {
 	PoolTimeout        time.Duration `json:"pool_timeout" yaml:"pool_timeout"`
 	IdleTimeout        time.Duration `json:"idle_timeout" yaml:"idle_timeout"`
 	IdleCheckFrequency time.Duration `json:"idle_check_frequency" yaml:"idle_check_frequency"`
+}
+
+type LogStorage struct {
+	Redis *Redis `json:"redis" yaml:"redis"`
 }
 
 func LoadConfig(path string) (*Config, error) {

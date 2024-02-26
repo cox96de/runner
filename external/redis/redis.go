@@ -8,11 +8,11 @@ import (
 )
 
 type Client struct {
-	conn *redis.Client
+	*redis.Client
 }
 
 func (c *Client) Lock(ctx context.Context, key, value string, expiresIn time.Duration) (bool, error) {
-	ok, err := c.conn.SetNX(ctx, key, value, expiresIn).Result()
+	ok, err := c.Client.SetNX(ctx, key, value, expiresIn).Result()
 	if err != nil {
 		return false, err
 	}
@@ -20,10 +20,10 @@ func (c *Client) Lock(ctx context.Context, key, value string, expiresIn time.Dur
 }
 
 func (c *Client) Unlock(ctx context.Context, key string) (bool, error) {
-	result, err := c.conn.Del(ctx, key).Result()
+	result, err := c.Client.Del(ctx, key).Result()
 	return result == 1, err
 }
 
 func NewClient(conn *redis.Client) *Client {
-	return &Client{conn: conn}
+	return &Client{Client: conn}
 }
