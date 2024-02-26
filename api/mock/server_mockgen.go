@@ -80,6 +80,50 @@ func (c *ServerClientCreatePipelineCall) DoAndReturn(f func(context.Context, *ap
 	return c
 }
 
+// GetLogLines mocks base method.
+func (m *MockServerClient) GetLogLines(arg0 context.Context, arg1 *api.GetLogLinesRequest, arg2 ...grpc.CallOption) (*api.GetLogLinesResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetLogLines", varargs...)
+	ret0, _ := ret[0].(*api.GetLogLinesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLogLines indicates an expected call of GetLogLines.
+func (mr *MockServerClientMockRecorder) GetLogLines(arg0, arg1 interface{}, arg2 ...interface{}) *ServerClientGetLogLinesCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogLines", reflect.TypeOf((*MockServerClient)(nil).GetLogLines), varargs...)
+	return &ServerClientGetLogLinesCall{Call: call}
+}
+
+// ServerClientGetLogLinesCall wrap *gomock.Call
+type ServerClientGetLogLinesCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *ServerClientGetLogLinesCall) Return(arg0 *api.GetLogLinesResponse, arg1 error) *ServerClientGetLogLinesCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *ServerClientGetLogLinesCall) Do(f func(context.Context, *api.GetLogLinesRequest, ...grpc.CallOption) (*api.GetLogLinesResponse, error)) *ServerClientGetLogLinesCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *ServerClientGetLogLinesCall) DoAndReturn(f func(context.Context, *api.GetLogLinesRequest, ...grpc.CallOption) (*api.GetLogLinesResponse, error)) *ServerClientGetLogLinesCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // RequestJob mocks base method.
 func (m *MockServerClient) RequestJob(arg0 context.Context, arg1 *api.RequestJobRequest, arg2 ...grpc.CallOption) (*api.RequestJobResponse, error) {
 	m.ctrl.T.Helper()
@@ -164,6 +208,50 @@ func (c *ServerClientUpdateJobExecutionCall) Do(f func(context.Context, *api.Upd
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *ServerClientUpdateJobExecutionCall) DoAndReturn(f func(context.Context, *api.UpdateJobExecutionRequest, ...grpc.CallOption) (*api.UpdateJobExecutionResponse, error)) *ServerClientUpdateJobExecutionCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// UploadLogLines mocks base method.
+func (m *MockServerClient) UploadLogLines(arg0 context.Context, arg1 *api.UpdateLogLinesRequest, arg2 ...grpc.CallOption) (*api.UpdateLogLinesResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UploadLogLines", varargs...)
+	ret0, _ := ret[0].(*api.UpdateLogLinesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UploadLogLines indicates an expected call of UploadLogLines.
+func (mr *MockServerClientMockRecorder) UploadLogLines(arg0, arg1 interface{}, arg2 ...interface{}) *ServerClientUploadLogLinesCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadLogLines", reflect.TypeOf((*MockServerClient)(nil).UploadLogLines), varargs...)
+	return &ServerClientUploadLogLinesCall{Call: call}
+}
+
+// ServerClientUploadLogLinesCall wrap *gomock.Call
+type ServerClientUploadLogLinesCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *ServerClientUploadLogLinesCall) Return(arg0 *api.UpdateLogLinesResponse, arg1 error) *ServerClientUploadLogLinesCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *ServerClientUploadLogLinesCall) Do(f func(context.Context, *api.UpdateLogLinesRequest, ...grpc.CallOption) (*api.UpdateLogLinesResponse, error)) *ServerClientUploadLogLinesCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *ServerClientUploadLogLinesCall) DoAndReturn(f func(context.Context, *api.UpdateLogLinesRequest, ...grpc.CallOption) (*api.UpdateLogLinesResponse, error)) *ServerClientUploadLogLinesCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

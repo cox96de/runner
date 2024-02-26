@@ -3,6 +3,7 @@ module github.com/cox96de/runner
 go 1.20
 
 require (
+	github.com/alicebob/miniredis/v2 v2.31.1
 	github.com/alta/protopatch v0.5.3
 	github.com/bytedance/go-tagexpr/v2 v2.9.8
 	github.com/cox96de/containervm v0.0.1
@@ -36,6 +37,7 @@ require (
 )
 
 require (
+	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/andeya/ameda v1.5.3 // indirect
 	github.com/andeya/goutil v1.0.1 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
@@ -97,6 +99,7 @@ require (
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	github.com/vishvananda/netlink v1.1.0 // indirect
 	github.com/vishvananda/netns v0.0.0-20191106174202-0a2b9b5464df // indirect
+	github.com/yuin/gopher-lua v1.1.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/net v0.16.0 // indirect

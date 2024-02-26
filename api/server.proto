@@ -7,6 +7,8 @@ service Server {
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
   rpc RequestJob(RequestJobRequest) returns (RequestJobResponse) {}
   rpc UpdateJobExecution(UpdateJobExecutionRequest) returns (UpdateJobExecutionResponse) {}
+  rpc UploadLogLines(UpdateLogLinesRequest) returns (UpdateLogLinesResponse) {}
+  rpc GetLogLines(GetLogLinesRequest) returns (GetLogLinesResponse) {}
 }
 
 message CreatePipelineRequest {
@@ -34,4 +36,33 @@ message UpdateJobExecutionRequest {
 
 message UpdateJobExecutionResponse {
   JobExecution job = 1;
+}
+
+message UpdateLogLinesRequest {
+  //@gotags: path:"job_id"
+  int64 JobID = 1[(go.field).name = "JobID"];
+  //@gotags: path:"job_execution_id"
+  int64 JobExecutionID = 2[(go.field).name = "JobExecutionID"];
+  string Name = 3;
+  repeated LogLine lines = 4;
+}
+
+message UpdateLogLinesResponse {
+}
+
+message GetLogLinesRequest {
+  //@gotags: path:"job_id"
+  int64 JobID = 1[(go.field).name = "JobID"];
+  //@gotags: path:"job_execution_id"
+  int64 JobExecutionID = 2[(go.field).name = "JobExecutionID"];
+  //@gotags: path:"name"
+  string Name = 3;
+  //@gotags: query:"offset"
+  int64 Offset = 4;
+  //@gotags: query:"limit"
+  optional int64 Limit = 5;
+}
+
+message GetLogLinesResponse {
+  repeated LogLine lines = 1;
 }
