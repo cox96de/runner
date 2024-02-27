@@ -18,6 +18,7 @@ type Step struct {
 	JobID            int64     `gorm:"column:job_id"`
 	Name             string    `gorm:"column:name"`
 	User             string    `gorm:"column:user"`
+	Container        string    `gorm:"column:container"`
 	WorkingDirectory string    `gorm:"column:working_directory"`
 	Commands         []byte    `gorm:"column:commands"`
 	EnvVar           []byte    `gorm:"column:env_var"`
@@ -35,6 +36,7 @@ type CreateStepOption struct {
 	JobID            int64
 	Name             string
 	User             string
+	Container        string
 	WorkingDirectory string
 	EnvVar           map[string]string
 	DependsOn        []string
@@ -51,6 +53,7 @@ func (c *Client) CreateSteps(ctx context.Context, options []*CreateStepOption) (
 			Name:             option.Name,
 			User:             option.User,
 			WorkingDirectory: option.WorkingDirectory,
+			Container:        option.Container,
 		}
 		var err error
 		step.EnvVar, err = json.Marshal(option.EnvVar)
@@ -113,8 +116,9 @@ func PackStep(step *Step, executions []*StepExecution) (*api.Step, error) {
 		PipelineID:       step.PipelineID,
 		JobID:            step.JobID,
 		Name:             step.Name,
-		User:             step.User,
 		WorkingDirectory: step.WorkingDirectory,
+		User:             step.User,
+		Container:        step.Container,
 		CreatedAt:        api.ConvertTime(step.CreatedAt),
 		UpdatedAt:        api.ConvertTime(step.UpdatedAt),
 	}

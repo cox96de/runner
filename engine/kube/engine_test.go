@@ -122,7 +122,6 @@ func TestEngine_CreateRunner(t *testing.T) {
 					}},
 				},
 			},
-			Steps: []*api.Step{{Name: "step1", Container: "", Commands: []string{"echo", "hello"}}},
 		})
 		assert.NilError(t, err)
 		t.Cleanup(func() {
@@ -130,7 +129,7 @@ func TestEngine_CreateRunner(t *testing.T) {
 		})
 		err = runner.Start(context.Background())
 		assert.NilError(t, err)
-		executor, err := runner.GetExecutor(context.Background(), "step1")
+		executor, err := runner.GetExecutor(context.Background(), "test")
 		assert.NilError(t, err)
 		environment, err := executor.Environment(context.Background(), &executorpb.EnvironmentRequest{})
 		assert.NilError(t, err)
