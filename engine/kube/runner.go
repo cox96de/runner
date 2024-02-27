@@ -119,11 +119,7 @@ func (r *Runner) waitPodReady(ctx context.Context) error {
 	}
 }
 
-func (r *Runner) GetExecutor(ctx context.Context, stepName string) (executorpb.ExecutorClient, error) {
-	containerName := r.stepsContainer[stepName]
-	if containerName == "" {
-		return nil, errors.Errorf("the step %s not found", stepName)
-	}
+func (r *Runner) GetExecutor(ctx context.Context, containerName string) (executorpb.ExecutorClient, error) {
 	if r.portForwarder != nil {
 		return r.getExecutorFromPortForward(containerName)
 	}
