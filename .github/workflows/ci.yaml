@@ -19,8 +19,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "1.20"
-      - &linux_cache
-        uses: actions/cache@v3
+      - uses: actions/cache@v3
         with:
           path: |
             ~/.cache/go-build
@@ -51,7 +50,14 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: "1.20"
-      - *linux_cache
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: Build
         run: go build ./...
 
@@ -61,7 +67,9 @@ jobs:
           if [[ ${{ matrix.os }} == 'ubuntu-latest' ]]; then
             sudo apt-get update && sudo apt-get install -y genisoimage
           fi
-
+      # https://minikube.sigs.k8s.io/docs/tutorials/setup_minikube_in_github_actions/
+      - name: Start minikube
+        uses: medyagh/setup-minikube@master
       - name: Test
         run: go test -race -coverprofile cover.out -coverpkg=./... ./...
       - name: Upload coverage reports to Codecov with GitHub Action

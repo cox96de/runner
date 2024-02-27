@@ -2,8 +2,14 @@ package kube
 
 import (
 	"context"
+	"os"
 	"runtime"
+	"strings"
 	"testing"
+
+	"github.com/cox96de/runner/app/executor/executorpb"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/cox96de/runner/api"
 
@@ -13,6 +19,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
+
+var (
+	clientset *kubernetes.Clientset
+	restconf  *rest.Config
+)
+
+func TestMain(m *testing.M) {
+	configfile := os.ExpandEnv("$HOME/.kube/config")
+	if _, err := os.Lstat(configfile); err == nil {
+		clientset, restconf, _ = ComposeKubeClientFromFile(configfile)
+	}
+	os.Exit(m.Run())
+}
 
 func TestEngine_Ping(t *testing.T) {
 	// FIXME: All tests should be skipped in windows automatically.
@@ -42,8 +61,8 @@ func TestEngine_CreateRunner(t *testing.T) {
 		t.Skip("Skip test on windows")
 	}
 	namespace := "kube"
-	clientset := fake.NewSimpleClientset()
-	e, err := NewEngine(clientset, &Option{
+	fakeclientset := fake.NewSimpleClientset()
+	e, err := NewEngine(fakeclientset, &Option{
 		ExecutorImage: "executor_image",
 		ExecutorPath:  "/path/executor",
 		Namespace:     namespace,
@@ -77,7 +96,46 @@ func TestEngine_CreateRunner(t *testing.T) {
 		testtool.DeepEqualObject(t, runner.pod, "testdata/pod.json")
 	})
 	t.Run("port_forward", func(t *testing.T) {
-		// TODO: hard to mock RESTClient
+		if clientset == nil {
+			t.Skip("no client set")
+		}
+		namespace := "default"
+		e, err := NewEngine(clientset, &Option{
+			ExecutorImage:  "cox96de/runner-executor:master",
+			ExecutorPath:   "/executor",
+			Namespace:      namespace,
+			UsePortForward: true,
+			KubeConfig:     restconf,
+		})
+		assert.NilError(t, err)
+		runner, err := e.CreateRunner(context.Background(), &api.Job{
+			Name: "test",
+			RunsOn: &api.RunsOn{
+				Docker: &api.Docker{
+					DefaultContainer: "test",
+					Containers: []*api.Container{
+						{Image: "debian", Name: "test", VolumeMounts: []*api.VolumeMount{{Name: "test", MountPath: "/test"}}},
+					},
+					Volumes: []*api.Volume{{
+						Name:     "test",
+						EmptyDir: &api.EmptyDirVolumeSource{},
+					}},
+				},
+			},
+			Steps: []*api.Step{{Name: "step1", Container: "", Commands: []string{"echo", "hello"}}},
+		})
+		assert.NilError(t, err)
+		t.Cleanup(func() {
+			_ = runner.Stop(context.Background())
+		})
+		err = runner.Start(context.Background())
+		assert.NilError(t, err)
+		executor, err := runner.GetExecutor(context.Background(), "step1")
+		assert.NilError(t, err)
+		environment, err := executor.Environment(context.Background(), &executorpb.EnvironmentRequest{})
+		assert.NilError(t, err)
+		assert.Assert(t, strings.Contains(strings.Join(environment.Environment, ""),
+			"KUBERNETES_PORT_443_TCP_ADDR"))
 	})
 }
 

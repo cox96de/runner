@@ -109,10 +109,8 @@ func (r *Runner) waitPodReady(ctx context.Context) error {
 				case corev1.PodRunning:
 					r.pod = pod
 					return nil
-				case corev1.PodSucceeded:
-					return errors.New("pod is succeeded")
-				case corev1.PodFailed:
-					return errors.New("pod is failed")
+				case corev1.PodSucceeded, corev1.PodFailed:
+					return errors.Errorf("pod is %s", pod.Status.Phase)
 				default:
 					return errors.Errorf("unknown pod phase %s", pod.Status.Phase)
 				}
