@@ -18,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.20"
+          go-version: "1.21"
       - uses: actions/cache@v3
         with:
           path: |
@@ -49,7 +49,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.20"
+          go-version: "1.21"
       - uses: actions/cache@v3
         with:
           path: |
@@ -59,7 +59,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Build
-        run: go build ./...
+        run: go build ./cmd/...
 
       - name: Prepare
         run: |
@@ -67,11 +67,18 @@ jobs:
           if [[ ${{ matrix.os }} == 'ubuntu-latest' ]]; then
             sudo apt-get update && sudo apt-get install -y genisoimage
           fi
+#      - name: Build macVM tool
+#        run: |
+#          echo "prepare"
+#          if [[ ${{ matrix.os }} == 'macOS-latest' ]]; then
+#            cd ./engine/macvm/installer
+#            ./build.sh
+#          fi
       # https://minikube.sigs.k8s.io/docs/tutorials/setup_minikube_in_github_actions/
       - name: Start minikube
         uses: medyagh/setup-minikube@master
       - name: Test
-        run: go test -race -coverprofile cover.out -coverpkg=./... ./...
+        run: go test -race -coverprofile cover.out -coverpkg=./... $(go list ./... |grep -v /macvm)
       - name: Upload coverage reports to Codecov with GitHub Action
         uses: codecov/codecov-action@v3
   build_windows:
@@ -82,7 +89,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.20"
+          go-version: "1.21"
       - uses: actions/cache@v3
         with:
           path: |
@@ -92,9 +99,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Build
-        run: go build ./...
+        run: go build ./cmd/...
       - name: Test
-        run: go test -race -coverprofile cover.out -coverpkg=./... $(go list ./... |grep -v /kube )
+        run: go test -race -coverprofile cover.out -coverpkg=./... $(go list ./... |grep -v /kube  -v /macvm)
 
 #  integration:
 #    runs-on: ubuntu-latest

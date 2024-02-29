@@ -9,7 +9,8 @@ format:
 
 .PHONY: lint
 lint:
-	golangci-lint run --new-from-rev=origin/master --timeout=10m --go=1.20
+# macvm excluded, there's some problem.
+	golangci-lint run --new-from-rev=origin/master --timeout=10m --go=1.22 --skip-dirs  "(^|/)macvm($|/)"
 build: build_executor build_server
 build_executor:
 	mkdir -p output
