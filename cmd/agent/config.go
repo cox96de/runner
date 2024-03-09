@@ -1,10 +1,8 @@
 package main
 
 import (
-	"os"
-
+	"github.com/jinzhu/configor"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -18,17 +16,22 @@ type Engine struct {
 }
 
 type Kube struct {
-	Config string `json:"config" yaml:"config"`
+	Config         string `json:"config" yaml:"config"`
+	ExecutorImage  string `json:"executor_image" yaml:"executor_image"`
+	ExecutorPath   string `json:"executor_path" yaml:"executor_path"`
+	Namespace      string `json:"namespace" yaml:"namespace"`
+	UsePortForward bool   `json:"use_port_forward" yaml:"use_port_forward"`
 }
 
 func LoadConfig(path string) (*Config, error) {
-	file, err := os.ReadFile(path)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to read config file")
-	}
+	configLoader := configor.New(&configor.Config{
+		Verbose:   true,
+		ENVPrefix: "AGENT_CONFIG",
+	})
 	var config Config
-	if err := yaml.Unmarshal(file, &config); err != nil {
-		return nil, errors.WithMessage(err, "failed to unmarshal config file")
+	err := configLoader.Load(&config, path)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to load config")
 	}
 	return &config, nil
 }

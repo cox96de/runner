@@ -138,11 +138,19 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 			}
 		}()
 		for {
+			select {
+			case <-ctx.Done():
+				logger.Warnf("context is done, stop getting command log")
+				return
+			default:
+			}
 			commandLog, err := getCommandLogResp.Recv()
 			if err != nil {
 				if err == io.EOF {
 					return
 				}
+				time.Sleep(time.Second)
+				logger.Errorf("failed to get command log: %v", err)
 				continue
 			}
 			_, err = collector.Write(commandLog.Output)
