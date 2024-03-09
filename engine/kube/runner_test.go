@@ -12,13 +12,13 @@ import (
 func TestRunner_GetExecutor(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		r := &Runner{
-			executorPortMap: map[string]int32{"test": 1},
+			executorPortMap:  map[string]int32{"test": 1},
+			defaultContainer: "test",
 			pod: &corev1.Pod{
 				Status: corev1.PodStatus{PodIP: "192.168.31.2"},
 			},
-			stepsContainer: map[string]string{"test": "test"},
 		}
-		executor, err := r.GetExecutor(context.Background(), "test")
+		executor, err := r.GetExecutor(context.Background())
 		assert.NilError(t, err)
 		assert.Assert(t, executor != nil)
 	})
@@ -26,16 +26,16 @@ func TestRunner_GetExecutor(t *testing.T) {
 		r := &Runner{
 			executorPortMap: map[string]int32{},
 		}
-		_, err := r.GetExecutor(context.Background(), "test")
+		_, err := r.GetExecutor(context.Background())
 		assert.ErrorContains(t, err, "not found")
 	})
 	t.Run("port_forward", func(t *testing.T) {
 		r := &Runner{
 			portForwarder:      &portforward.PortForwarder{},
+			defaultContainer:   "test",
 			portForwardPortMap: map[string]int32{"test": 1},
-			stepsContainer:     map[string]string{"test": "test"},
 		}
-		executor, err := r.GetExecutor(context.Background(), "test")
+		executor, err := r.GetExecutor(context.Background())
 		assert.NilError(t, err)
 		assert.Assert(t, executor != nil)
 	})

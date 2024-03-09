@@ -62,3 +62,7 @@ func (l *Logger) WithField(key string, value interface{}) *Logger {
 	e := l.Entry.WithField(key, value)
 	return &Logger{Entry: e}
 }
+
+func Errorf(s string, err error) {
+	defaultLogger.Errorf(s, err)
+}

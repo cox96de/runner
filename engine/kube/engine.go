@@ -65,19 +65,11 @@ func (e *Engine) CreateRunner(ctx context.Context, spec *api.Job) (engine.Runner
 	c := newCompiler(e.executorImage, e.executorPath)
 	compile := c.Compile(strconv.FormatInt(spec.ID, 10), spec.RunsOn)
 	r := &Runner{
-		client:          e.client,
-		pod:             compile.pod,
-		executorPortMap: c.executorPortMap,
-		namespace:       e.namespace,
-		stepsContainer:  map[string]string{},
-	}
-	defaultContainerName := spec.RunsOn.Docker.DefaultContainer
-	for _, step := range spec.Steps {
-		containerName := step.Container
-		if containerName == "" {
-			containerName = defaultContainerName
-		}
-		r.stepsContainer[step.Name] = containerName
+		defaultContainer: spec.RunsOn.Docker.DefaultContainer,
+		client:           e.client,
+		pod:              compile.pod,
+		executorPortMap:  c.executorPortMap,
+		namespace:        e.namespace,
 	}
 	if e.usePortForward {
 		ports := make([]string, 0, len(c.executorPortMap))

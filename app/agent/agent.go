@@ -4,11 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/cox96de/runner/log"
+
 	"github.com/cox96de/runner/api"
-
-	"github.com/pkg/errors"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/cox96de/runner/engine"
 )
@@ -40,15 +38,22 @@ func (a *Agent) poll(ctx context.Context, interval time.Duration) (*api.Job, err
 
 func (a *Agent) Run(ctx context.Context) error {
 	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
 		job, err := a.poll(ctx, time.Second)
 		if err != nil {
-			return errors.WithMessage(err, "failed to poll job")
+			log.Errorf("failed to poll job: %v", err)
+			continue
 		}
-		log.Infof("got job: %d, execution: %d", job.ID, job.Executions[0].ID)
+		logger := log.ExtractLogger(ctx).WithFields(log.Fields{"job": job.ID, "job_execution": job.Executions[0].ID})
+		logger.Infof("got job")
 		err = NewExecution(a.engine, job, a.client).
-			Execute(ctx)
+			Execute(log.WithLogger(ctx, logger))
 		if err != nil {
-			log.Errorf("failed to execute job: %v", err)
+			logger.Errorf("failed to execute job: %v", err)
 		}
 	}
 }

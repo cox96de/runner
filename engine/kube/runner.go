@@ -24,6 +24,7 @@ import (
 )
 
 type Runner struct {
+	defaultContainer   string
 	client             kubernetes.Interface
 	pod                *v1.Pod
 	executorPortMap    map[string]int32
@@ -31,7 +32,6 @@ type Runner struct {
 	namespace          string
 	portForwarder      *portforward.PortForwarder
 	portForwardStop    chan struct{}
-	stepsContainer     map[string]string
 }
 
 func (r *Runner) Start(ctx context.Context) (startErr error) {
@@ -119,7 +119,11 @@ func (r *Runner) waitPodReady(ctx context.Context) error {
 	}
 }
 
-func (r *Runner) GetExecutor(ctx context.Context, containerName string) (executorpb.ExecutorClient, error) {
+func (r *Runner) GetExecutor(ctx context.Context) (executorpb.ExecutorClient, error) {
+	return r.GetContainerExecutor(ctx, r.defaultContainer)
+}
+
+func (r *Runner) GetContainerExecutor(ctx context.Context, containerName string) (executorpb.ExecutorClient, error) {
 	if r.portForwarder != nil {
 		return r.getExecutorFromPortForward(containerName)
 	}
