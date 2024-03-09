@@ -13,13 +13,13 @@ type Handler struct {
 	// commandLock to protect the commands map.
 	commandLock sync.RWMutex
 	// commands is a map of commandID to command.
-	commands map[int]*command
+	commands map[string]*command
 }
 
 // NewHandler creates a new Handler.
 func NewHandler() *Handler {
 	return &Handler{
-		commands: make(map[int]*command),
+		commands: make(map[string]*command),
 	}
 }
 

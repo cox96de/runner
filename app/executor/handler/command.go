@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/cox96de/runner/util"
+
 	"github.com/cox96de/runner/log"
 
 	"github.com/cox96de/runner/app/executor/executorpb"
@@ -20,10 +22,10 @@ const (
 
 func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server executorpb.Executor_GetCommandLogServer) error {
 	h.commandLock.RLock()
-	c, ok := h.commands[int(request.Pid)]
+	c, ok := h.commands[request.CommandID]
 	h.commandLock.RUnlock()
 	if !ok {
-		return errors.Errorf("command with pid %d not found", request.Pid)
+		return errors.Errorf("command with pid %s not found", request.GetCommandID())
 	}
 	bufSize := 1024
 	logBuf := make([]byte, bufSize)
@@ -70,8 +72,10 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 	if err := c.Start(); err != nil {
 		return nil, errors.WithMessage(err, "failed to start command")
 	}
+	commandID := util.RandomString(10)
+	// TODO: check if the commandID is already in use.
 	h.commandLock.Lock()
-	h.commands[cmd.Process.Pid] = c
+	h.commands[commandID] = c
 	h.commandLock.Unlock()
 	logger := log.ExtractLogger(ctx)
 	go func() {
@@ -79,6 +83,7 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 		logger.Infof("process %d exited", c.Process.Pid)
 	}()
 	return &executorpb.StartCommandResponse{
+		CommandID: commandID,
 		Status: &executorpb.ProcessStatus{
 			Pid:   int32(cmd.Process.Pid),
 			Exit:  false,
@@ -89,10 +94,10 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 
 func (h *Handler) WaitCommand(ctx context.Context, request *executorpb.WaitCommandRequest) (*executorpb.WaitCommandResponse, error) {
 	h.commandLock.RLock()
-	c, ok := h.commands[int(request.Pid)]
+	c, ok := h.commands[request.CommandID]
 	h.commandLock.RUnlock()
 	if !ok {
-		return nil, errors.Errorf("command with pid %d not found", request.Pid)
+		return nil, errors.Errorf("command with pid %s not found", request.CommandID)
 	}
 	select {
 	case <-time.After(time.Duration(request.Timeout)):
@@ -115,10 +120,8 @@ func (h *Handler) WaitCommand(ctx context.Context, request *executorpb.WaitComma
 		if c.waitError != nil {
 			s.Status.Error = c.waitError.Error()
 		}
-		// Just like linux does.
-		h.commandLock.Lock()
-		delete(h.commands, int(request.Pid))
-		h.commandLock.Unlock()
+		// Here, we keep the command id.
+		// It's a leak, but it's not a big deal. The executor will be ended soon.
 		return s, nil
 
 	}
@@ -132,7 +135,11 @@ type command struct {
 }
 
 func newCommand(cmd *exec.Cmd, logWriter io.ReadWriteCloser) *command {
-	return &command{Cmd: cmd, logWriter: logWriter, runningCh: make(chan struct{})}
+	return &command{
+		Cmd:       cmd,
+		logWriter: logWriter,
+		runningCh: make(chan struct{}),
+	}
 }
 
 func (c *command) Start() error {
@@ -149,14 +156,4 @@ func (c *command) Wait() {
 	c.waitError = c.Cmd.Wait()
 	_ = c.logWriter.Close()
 	close(c.runningCh)
-}
-
-// Exited returns true if the command has exited.
-func (c *command) Exited() bool {
-	select {
-	case _, chanOpen := <-c.runningCh:
-		return !chanOpen
-	default:
-		return false
-	}
 }

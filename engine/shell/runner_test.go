@@ -32,7 +32,9 @@ func TestRunner_Start(t *testing.T) {
 		})
 	}
 	assert.NilError(t, err)
-	getCommandLogResp, err := e.GetCommandLog(ctx, &executorpb.GetCommandLogRequest{Pid: startCommandResp.Status.Pid})
+	getCommandLogResp, err := e.GetCommandLog(ctx, &executorpb.GetCommandLogRequest{
+		CommandID: startCommandResp.CommandID,
+	})
 	assert.NilError(t, err)
 	all, err := executorpb.ReadAllFromCommandLog(getCommandLogResp)
 	assert.NilError(t, err)

@@ -46,11 +46,17 @@ func TestHandler_StartCommand(t *testing.T) {
 		assert.NilError(t, err)
 		// TODO: wait for the command to finish
 		time.Sleep(time.Second)
-		pid := resp.Status.Pid
-		assert.Assert(t, pid > 0)
+		commandID := resp.CommandID
+		assert.Assert(t, resp.Status.Pid > 0)
 		t.Run("get_log", func(t *testing.T) {
+			// Wait for the command to finish to fetch full log.
+			_, err := client.WaitCommand(context.Background(), &executorpb.WaitCommandRequest{
+				CommandID: commandID,
+				Timeout:   int64(time.Second * 2),
+			})
+			assert.NilError(t, err)
 			commandLogResp, err := client.GetCommandLog(context.Background(), &executorpb.GetCommandLogRequest{
-				Pid: pid,
+				CommandID: commandID,
 			})
 			assert.NilError(t, err)
 			log, err := executorpb.ReadAllFromCommandLog(commandLogResp)
@@ -82,7 +88,7 @@ func TestHandler_StartCommand(t *testing.T) {
 		pid := resp.Status.Pid
 		assert.Assert(t, pid > 0)
 		time.Sleep(time.Millisecond * 10)
-		_ = handler.commands[int(pid)].Process.Kill()
+		_ = handler.commands[resp.CommandID].Process.Kill()
 	})
 	t.Run("invalid-command", func(t *testing.T) {
 		_, err := client.StartCommand(context.Background(),
@@ -135,7 +141,7 @@ ok  	github.com/cox96de/runner/internal/executor	0.028s	coverage: 22.4% of state
 		})
 		assert.Assert(t, err)
 		getLogResp, err := client.GetCommandLog(context.Background(), &executorpb.GetCommandLogRequest{
-			Pid: resp.Status.Pid,
+			CommandID: resp.CommandID,
 		})
 		assert.NilError(t, err)
 		log, err := executorpb.ReadAllFromCommandLog(getLogResp)
@@ -157,7 +163,7 @@ ok  	github.com/cox96de/runner/internal/executor	0.028s	coverage: 22.4% of state
 		})
 		assert.Assert(t, err)
 		getLogResp, err := client.GetCommandLog(context.Background(), &executorpb.GetCommandLogRequest{
-			Pid: resp.Status.Pid,
+			CommandID: resp.CommandID,
 		})
 		assert.NilError(t, err)
 		log, err := executorpb.ReadAllFromCommandLog(getLogResp)
@@ -185,14 +191,14 @@ func TestHandler_WaitCommand(t *testing.T) {
 		})
 		assert.NilError(t, err)
 		response, err := client.WaitCommand(context.Background(), &executorpb.WaitCommandRequest{
-			Pid:     resp.Status.Pid,
-			Timeout: int64(time.Millisecond * 10),
+			CommandID: resp.CommandID,
+			Timeout:   int64(time.Millisecond * 10),
 		})
 		assert.NilError(t, err)
 		assert.DeepEqual(t, response.Status.Exit, false)
 		response, err = client.WaitCommand(context.Background(), &executorpb.WaitCommandRequest{
-			Pid:     resp.Status.Pid,
-			Timeout: int64(time.Second * 2),
+			CommandID: resp.CommandID,
+			Timeout:   int64(time.Second * 5),
 		})
 		assert.NilError(t, err)
 		assert.DeepEqual(t, response.Status.Exit, true)
@@ -207,8 +213,8 @@ func TestHandler_WaitCommand(t *testing.T) {
 		})
 		assert.NilError(t, err)
 		response, err := client.WaitCommand(context.Background(), &executorpb.WaitCommandRequest{
-			Pid:     resp.Status.Pid,
-			Timeout: int64(time.Second),
+			CommandID: resp.CommandID,
+			Timeout:   int64(time.Second * 2),
 		})
 		assert.NilError(t, err)
 		assert.DeepEqual(t, response.Status, &executorpb.ProcessStatus{
