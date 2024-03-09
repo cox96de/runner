@@ -16,6 +16,7 @@ import (
 
 // logCollector reads log from executor or other source and upload to server.
 type logCollector struct {
+	jobExecution *api.JobExecution
 	// logger is used to log error.
 	logger  *log.Logger
 	client  api.ServerClient
@@ -36,9 +37,12 @@ type logCollector struct {
 	flushInterval time.Duration
 }
 
-func newLogCollector(client api.ServerClient, logName string, logger *log.Logger, flushInterval time.Duration) *logCollector {
+func newLogCollector(client api.ServerClient, jobExecution *api.JobExecution, logName string, logger *log.Logger,
+	flushInterval time.Duration,
+) *logCollector {
 	l := &logCollector{
 		client:        client,
+		jobExecution:  jobExecution,
 		logName:       logName,
 		logger:        logger,
 		start:         time.Now(),
@@ -124,8 +128,10 @@ func (l *logCollector) flush() error {
 	}
 	// TODO: use context with timeout.
 	_, err := l.client.UploadLogLines(context.Background(), &api.UpdateLogLinesRequest{
-		Name:  l.logName,
-		Lines: l.logs,
+		JobID:          l.jobExecution.JobID,
+		JobExecutionID: l.jobExecution.ID,
+		Name:           l.logName,
+		Lines:          l.logs,
 	})
 	if err == nil {
 		l.lock.Lock()

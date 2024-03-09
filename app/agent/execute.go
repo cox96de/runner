@@ -119,7 +119,13 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to get command log")
 	}
+	collector := newLogCollector(e.client, e.execution, step.Name, logger, time.Second)
 	go func() {
+		defer func() {
+			if err := collector.Close(); err != nil {
+				logger.Errorf("failed to close log collector: %v", err)
+			}
+		}()
 		for {
 			commandLog, err := getCommandLogResp.Recv()
 			if err != nil {
@@ -128,8 +134,10 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 				}
 				continue
 			}
-			// TODO: write log to io.Writer.
-			logger.Debugf("command log: %v", commandLog)
+			_, err = collector.Write(commandLog.Output)
+			if err != nil {
+				logger.Errorf("failed to write log: %v", err)
+			}
 		}
 	}()
 	var processStatus *executorpb.ProcessStatus

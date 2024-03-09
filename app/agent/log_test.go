@@ -35,7 +35,7 @@ func Test_newLogCollector(t *testing.T) {
 		)
 		mockServerClient := getMockServerClient(t, &logs, &l)
 		flushInterval := time.Millisecond * 10
-		collector := newLogCollector(mockServerClient, logName, log.ExtractLogger(context.Background()), flushInterval)
+		collector := newLogCollector(mockServerClient, &api.JobExecution{}, logName, log.ExtractLogger(context.Background()), flushInterval)
 		_, err := collector.Write([]byte("a\nb\n"))
 		assert.NilError(t, err)
 		time.Sleep(flushInterval * 2)
@@ -51,7 +51,7 @@ func Test_newLogCollector(t *testing.T) {
 		)
 		mockServerClient := getMockServerClient(t, &logs, &l)
 		flushInterval := time.Millisecond * 10
-		collector := newLogCollector(mockServerClient, logName, log.ExtractLogger(context.Background()), flushInterval)
+		collector := newLogCollector(mockServerClient, &api.JobExecution{}, logName, log.ExtractLogger(context.Background()), flushInterval)
 		_, err := collector.Write([]byte("a\nb\nc"))
 		assert.NilError(t, err)
 		time.Sleep(flushInterval * 2)
@@ -79,7 +79,7 @@ func Test_newLogCollector(t *testing.T) {
 		)
 		mockServerClient := getMockServerClient(t, &logs, &l)
 		flushInterval := time.Millisecond * 10
-		collector := newLogCollector(mockServerClient, logName, log.ExtractLogger(context.Background()), flushInterval)
+		collector := newLogCollector(mockServerClient, &api.JobExecution{}, logName, log.ExtractLogger(context.Background()), flushInterval)
 		_, err := collector.Write([]byte("\r\na\nb\rc"))
 		assert.NilError(t, err)
 		time.Sleep(flushInterval * 2)
@@ -118,7 +118,7 @@ func validateLogs(t *testing.T, loglines []*api.LogLine, expected []string) {
 
 func Test_logCollector_Close(t *testing.T) {
 	t.Run("multiple_close", func(t *testing.T) {
-		collector := newLogCollector(nil, "", nil, 0)
+		collector := newLogCollector(nil, &api.JobExecution{}, "", nil, 0)
 		err := collector.Close()
 		assert.NilError(t, err)
 		err = collector.Close()
@@ -127,7 +127,7 @@ func Test_logCollector_Close(t *testing.T) {
 	t.Run("retry_to_flush", func(t *testing.T) {
 		mockServerClient := mockapi.NewMockServerClient(gomock.NewController(t))
 		mockServerClient.EXPECT().UploadLogLines(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("something error")).AnyTimes()
-		collector := newLogCollector(mockServerClient, t.Name(), log.ExtractLogger(context.Background()), 0)
+		collector := newLogCollector(mockServerClient, &api.JobExecution{}, t.Name(), log.ExtractLogger(context.Background()), 0)
 		_, err := collector.Write([]byte("abcd"))
 		assert.NilError(t, err)
 		err = collector.Close()
