@@ -15,7 +15,7 @@ func TestRunner_Start(t *testing.T) {
 	ctx := context.Background()
 	err := r.Start(ctx)
 	assert.NilError(t, err)
-	e, err := r.GetExecutor(ctx, "")
+	e, err := r.GetExecutor(ctx)
 	assert.NilError(t, err)
 	_, err = e.Ping(ctx, &executorpb.PingRequest{})
 	assert.NilError(t, err)

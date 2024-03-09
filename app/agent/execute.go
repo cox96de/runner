@@ -34,6 +34,8 @@ func NewExecution(engine engine.Engine, job *api.Job, client api.ServerClient) *
 
 // Execute executes the job.
 func (e *Execution) Execute(ctx context.Context) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	var err error
 	if err = e.updateStatus(ctx, api.StatusPreparing); err != nil {
 		return errors.WithMessage(err, "failed to update status")
@@ -92,9 +94,18 @@ func (e *Execution) executeSteps(ctx context.Context) error {
 	return nil
 }
 
+func (e *Execution) getExecutor(ctx context.Context, runner engine.Runner, step *api.Step) (executorpb.ExecutorClient, error) {
+	if multipleContainerRunner, ok := runner.(engine.MultipleContainerRunner); ok {
+		if step.Container != "" {
+			return multipleContainerRunner.GetContainerExecutor(ctx, step.Container)
+		}
+	}
+	return runner.GetExecutor(ctx)
+}
+
 func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	logger := log.ExtractLogger(ctx).WithField("step", step.Name)
-	executor, err := e.runner.GetExecutor(ctx, step.Name)
+	executor, err := e.getExecutor(ctx, e.runner, step)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get executor")
 	}

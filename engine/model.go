@@ -25,9 +25,17 @@ type Runner interface {
 	Start(ctx context.Context) error
 	// GetExecutor gets an executor from the runner.
 	// The Executor is a client to operate in the runner such run commands, read files.
-	// The containerName is the name of the container to run the executor.
-	// For non-container runner, the containerName can be ignored.
-	GetExecutor(ctx context.Context, containerName string) (executorpb.ExecutorClient, error)
+	GetExecutor(ctx context.Context) (executorpb.ExecutorClient, error)
 	// Stop stops the runner. All resources should be released.
 	Stop(ctx context.Context) error
+}
+
+// MultipleContainerRunner is a runner that has multiple containers.
+type MultipleContainerRunner interface {
+	Runner
+	// GetContainerExecutor gets an executor from the runner.
+	// The Executor is a client to operate in the runner such run commands, read files.
+	// The containerName is the name of the container to run the executor.
+	// For non-container runner, the containerName can be ignored.
+	GetContainerExecutor(ctx context.Context, containerName string) (executorpb.ExecutorClient, error)
 }

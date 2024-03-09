@@ -129,7 +129,7 @@ func TestEngine_CreateRunner(t *testing.T) {
 		})
 		err = runner.Start(context.Background())
 		assert.NilError(t, err)
-		executor, err := runner.GetExecutor(context.Background(), "test")
+		executor, err := runner.GetExecutor(context.Background())
 		assert.NilError(t, err)
 		environment, err := executor.Environment(context.Background(), &executorpb.EnvironmentRequest{})
 		assert.NilError(t, err)
