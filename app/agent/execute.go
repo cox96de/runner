@@ -125,7 +125,7 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	}
 	logger.Infof("success to start command with pid: %d", startCommandResponse.Status.Pid)
 	getCommandLogResp, err := executor.GetCommandLog(ctx, &executorpb.GetCommandLogRequest{
-		Pid: startCommandResponse.Status.Pid,
+		CommandID: startCommandResponse.CommandID,
 	})
 	if err != nil {
 		return errors.WithMessage(err, "failed to get command log")
@@ -162,8 +162,8 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	var processStatus *executorpb.ProcessStatus
 	for {
 		commandResponse, err := executor.WaitCommand(ctx, &executorpb.WaitCommandRequest{
-			Pid:     startCommandResponse.Status.Pid,
-			Timeout: int64(time.Hour), // TODO: change it, it should refer to step timeout.
+			CommandID: startCommandResponse.CommandID,
+			Timeout:   int64(time.Hour), // TODO: change it, it should refer to step timeout.
 		})
 		if err != nil {
 			// TODO: auto retry.

@@ -53,6 +53,8 @@ func TestExecutor_executeJob(t *testing.T) {
 			Status: *request.Status,
 		}}, nil
 	}).AnyTimes()
+	client.EXPECT().UploadLogLines(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(&api.UpdateLogLinesResponse{}, nil).AnyTimes()
 	execution := NewExecution(e, job, client)
 	err = execution.Execute(context.Background())
 	assert.NilError(t, err)

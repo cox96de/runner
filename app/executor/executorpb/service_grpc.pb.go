@@ -22,10 +22,16 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExecutorClient interface {
+	// Ping is used to check if the executor is alive.
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	// Environment returns the environment variables of the executor.
+	// Just like the os.Environ() function in Go.
 	Environment(ctx context.Context, in *EnvironmentRequest, opts ...grpc.CallOption) (*EnvironmentResponse, error)
+	// StartCommand starts a command in the executor.
 	StartCommand(ctx context.Context, in *StartCommandRequest, opts ...grpc.CallOption) (*StartCommandResponse, error)
+	// WaitCommand waits for a command to finish.
 	WaitCommand(ctx context.Context, in *WaitCommandRequest, opts ...grpc.CallOption) (*WaitCommandResponse, error)
+	// GetCommandLog returns the log of a command.
 	GetCommandLog(ctx context.Context, in *GetCommandLogRequest, opts ...grpc.CallOption) (Executor_GetCommandLogClient, error)
 }
 
@@ -109,10 +115,16 @@ func (x *executorGetCommandLogClient) Recv() (*Log, error) {
 // All implementations must embed UnimplementedExecutorServer
 // for forward compatibility
 type ExecutorServer interface {
+	// Ping is used to check if the executor is alive.
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	// Environment returns the environment variables of the executor.
+	// Just like the os.Environ() function in Go.
 	Environment(context.Context, *EnvironmentRequest) (*EnvironmentResponse, error)
+	// StartCommand starts a command in the executor.
 	StartCommand(context.Context, *StartCommandRequest) (*StartCommandResponse, error)
+	// WaitCommand waits for a command to finish.
 	WaitCommand(context.Context, *WaitCommandRequest) (*WaitCommandResponse, error)
+	// GetCommandLog returns the log of a command.
 	GetCommandLog(*GetCommandLogRequest, Executor_GetCommandLogServer) error
 	mustEmbedUnimplementedExecutorServer()
 }
