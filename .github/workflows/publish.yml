@@ -13,6 +13,13 @@ on:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - dockerfile: build/executor.Dockerfile
+            image: cox96de/runner-executor
+          - dockerfile: build/agent.Dockerfile
+            image: cox96de/runner-agent
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,7 +29,7 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            cox96de/runner-executor
+            ${{ matrix.image }}
           # generate Docker tags based on the following events/attributes
           tags: |
             type=schedule
@@ -46,6 +53,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
