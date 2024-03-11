@@ -60,7 +60,7 @@ func (r *RingBuffer) Write(p []byte) (n int, err error) {
 func (r *RingBuffer) Read(p []byte) (n int, err error) {
 	for {
 		n, err = r.r.Read(p)
-		if n == 0 && err == ringbuffer.ErrIsEmpty {
+		if n == 0 && errors.Is(err, ringbuffer.ErrIsEmpty) {
 			if r.closed.Load() {
 				// Double check before returning EOF.
 				// Some data might be written and closed the ring buffer after the previous read.
