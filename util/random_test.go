@@ -1,6 +1,10 @@
 package util
 
-import "testing"
+import (
+	"testing"
+
+	"gotest.tools/v3/assert"
+)
 
 func TestRandomInt(t *testing.T) {
 	max := int64(100)
@@ -10,4 +14,9 @@ func TestRandomInt(t *testing.T) {
 			t.Errorf("RandomInt(%d) = %d, out of range", max, n)
 		}
 	}
+}
+
+func TestRandomBytes(t *testing.T) {
+	bytes := RandomBytes(10)
+	assert.Equal(t, len(bytes), 10)
 }
