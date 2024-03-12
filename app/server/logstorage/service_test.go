@@ -23,7 +23,7 @@ func TestService_Append(t *testing.T) {
 		assert.Equal(t, len(logs), 99)
 		for i := 0; i < 99; i++ {
 			assert.Equal(t, logs[i].Number, int64(i))
-			assert.Equal(t, string(logs[i].Output), fmt.Sprintf("line %d", i))
+			assert.Equal(t, logs[i].Output, fmt.Sprintf("line %d", i))
 		}
 	})
 	t.Run("get_more", func(t *testing.T) {
@@ -32,7 +32,7 @@ func TestService_Append(t *testing.T) {
 		assert.Equal(t, len(logs), 100)
 		for i := 0; i < 100; i++ {
 			assert.Equal(t, logs[i].Number, int64(i))
-			assert.Equal(t, string(logs[i].Output), fmt.Sprintf("line %d", i))
+			assert.Equal(t, logs[i].Output, fmt.Sprintf("line %d", i))
 		}
 	})
 	err = service.Append(context.Background(), 1, 1, "test2", generateTestLog(100))
@@ -52,7 +52,7 @@ func generateTestLog(lines int) []*api.LogLine {
 		logs = append(logs, &api.LogLine{
 			Timestamp: int64(i),
 			Number:    int64(i),
-			Output:    []byte(fmt.Sprintf("line %d", i)),
+			Output:    fmt.Sprintf("line %d", i),
 		})
 	}
 	return logs

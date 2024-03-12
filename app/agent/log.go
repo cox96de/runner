@@ -67,7 +67,7 @@ func (l *logCollector) Write(p []byte) (n int, err error) {
 		l.logs = append(l.logs, &api.LogLine{
 			Timestamp: int64(t),
 			Number:    l.lineNo,
-			Output:    []byte(line),
+			Output:    line,
 		})
 	}
 	l.incompleteBytes = buf.Bytes()
@@ -122,6 +122,7 @@ func (l *logCollector) notifyWrite() {
 func (l *logCollector) flush() error {
 	l.lock.Lock()
 	size := len(l.logs)
+	logs := l.logs[:size]
 	l.lock.Unlock()
 	if size == 0 {
 		return nil
@@ -131,7 +132,7 @@ func (l *logCollector) flush() error {
 		JobID:          l.jobExecution.JobID,
 		JobExecutionID: l.jobExecution.ID,
 		Name:           l.logName,
-		Lines:          l.logs,
+		Lines:          logs,
 	})
 	if err == nil {
 		l.lock.Lock()
