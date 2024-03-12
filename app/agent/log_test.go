@@ -112,7 +112,7 @@ func validateLogs(t *testing.T, loglines []*api.LogLine, expected []string) {
 	for i, line := range loglines {
 		assert.Assert(t, line.Timestamp >= time, i)
 		assert.Equal(t, line.Number, int64(i)+offset, i)
-		assert.Equal(t, string(line.Output), expected[i])
+		assert.Equal(t, line.Output, expected[i])
 	}
 }
 

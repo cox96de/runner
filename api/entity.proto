@@ -153,5 +153,5 @@ message StepExecution {
 message LogLine{
   int64 Timestamp = 1;
   int64 Number = 2;
-  bytes Output = 3;
+  string Output = 3;
 }

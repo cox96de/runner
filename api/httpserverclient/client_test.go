@@ -67,7 +67,7 @@ func TestNewClient(t *testing.T) {
 			logLines := []*api.LogLine{{
 				Timestamp: 0,
 				Number:    1,
-				Output:    []byte("hello1"),
+				Output:    "hello1",
 			}}
 			updateLogLinesResponse, err := client.UploadLogLines(ctx, &api.UpdateLogLinesRequest{
 				JobID:          1,
