@@ -37,7 +37,7 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 	}
 	if request.Status != nil {
 		logger.Infof("update job execution status from %s to '%s'", jobExecution.Status, *request.Status)
-		if !dispatch.CheckStatus(jobExecution.Status, *request.Status) {
+		if !dispatch.CheckJobStatus(jobExecution.Status, *request.Status) {
 			return nil, errors.Errorf("invalid status transition from '%s' to '%s'", jobExecution.Status, *request.Status)
 		}
 		jobExecution.Status = *request.Status
@@ -59,6 +59,6 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 		}
 	}
 	return &api.UpdateJobExecutionResponse{
-		Job: db.PackJobExecution(jobExecution),
+		Job: db.PackJobExecution(jobExecution, nil),
 	}, nil
 }

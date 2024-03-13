@@ -7,6 +7,7 @@ service Server {
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
   rpc RequestJob(RequestJobRequest) returns (RequestJobResponse) {}
   rpc UpdateJobExecution(UpdateJobExecutionRequest) returns (UpdateJobExecutionResponse) {}
+  rpc UpdateStepExecution(UpdateStepExecutionRequest) returns (UpdateStepExecutionResponse) {}
   rpc UploadLogLines(UpdateLogLinesRequest) returns (UpdateLogLinesResponse) {}
   rpc GetLogLines(GetLogLinesRequest) returns (GetLogLinesResponse) {}
 }
@@ -36,6 +37,24 @@ message UpdateJobExecutionRequest {
 
 message UpdateJobExecutionResponse {
   JobExecution job = 1;
+}
+
+message UpdateStepExecutionRequest{
+  // (JobID + JobExecutionID + StepExecutionID) or (JobID + StepID + StepExecutionID) must be set
+  //@gotags: path:"step_execution_id"
+  int64 StepExecutionID = 1;
+  //@gotags: path:"step_id"
+  int64 StepID = 2;
+  //@gotags: path:"job_execution_id"
+  int64 JobExecutionID = 3;
+  //@gotags: path:"job_id"
+  int64 JobID = 4;
+  optional Status status = 5;
+  optional uint32 exit_code = 6;
+}
+
+message UpdateStepExecutionResponse{
+  StepExecution step = 1;
 }
 
 message UpdateLogLinesRequest {

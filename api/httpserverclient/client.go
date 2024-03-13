@@ -30,6 +30,17 @@ type Client struct {
 	u      *url.URL
 }
 
+func (c *Client) UpdateStepExecution(ctx context.Context, in *api.UpdateStepExecutionRequest, opts ...grpc.CallOption) (*api.UpdateStepExecutionResponse, error) {
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/executions/%d/steps/%d", in.JobID, in.JobExecutionID,
+		in.StepExecutionID))
+	resp := &api.UpdateStepExecutionResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (c *Client) UploadLogLines(ctx context.Context, in *api.UpdateLogLinesRequest, opts ...grpc.CallOption) (*api.UpdateLogLinesResponse, error) {
 	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/executions/%d/logs", in.JobID, in.JobExecutionID))
 	resp := &api.UpdateLogLinesResponse{}

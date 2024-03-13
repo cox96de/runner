@@ -90,5 +90,15 @@ func TestNewClient(t *testing.T) {
 				assert.DeepEqual(t, getLogLinesResponse.Lines, logLines, cmpopts.IgnoreUnexported(api.LogLine{}))
 			})
 		})
+		t.Run("UpdateStepExecution", func(t *testing.T) {
+			execution, err := client.UpdateStepExecution(ctx, &api.UpdateStepExecutionRequest{
+				JobID:           requestedJob.ID,
+				JobExecutionID:  requestedJob.Executions[0].ID,
+				StepExecutionID: requestedJob.Executions[0].Steps[0].ID,
+				Status:          lo.ToPtr(api.StatusRunning),
+			})
+			assert.NilError(t, err)
+			assert.Assert(t, execution != nil)
+		})
 	})
 }

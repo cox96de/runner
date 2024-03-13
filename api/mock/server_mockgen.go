@@ -212,6 +212,50 @@ func (c *ServerClientUpdateJobExecutionCall) DoAndReturn(f func(context.Context,
 	return c
 }
 
+// UpdateStepExecution mocks base method.
+func (m *MockServerClient) UpdateStepExecution(arg0 context.Context, arg1 *api.UpdateStepExecutionRequest, arg2 ...grpc.CallOption) (*api.UpdateStepExecutionResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateStepExecution", varargs...)
+	ret0, _ := ret[0].(*api.UpdateStepExecutionResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateStepExecution indicates an expected call of UpdateStepExecution.
+func (mr *MockServerClientMockRecorder) UpdateStepExecution(arg0, arg1 interface{}, arg2 ...interface{}) *ServerClientUpdateStepExecutionCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStepExecution", reflect.TypeOf((*MockServerClient)(nil).UpdateStepExecution), varargs...)
+	return &ServerClientUpdateStepExecutionCall{Call: call}
+}
+
+// ServerClientUpdateStepExecutionCall wrap *gomock.Call
+type ServerClientUpdateStepExecutionCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *ServerClientUpdateStepExecutionCall) Return(arg0 *api.UpdateStepExecutionResponse, arg1 error) *ServerClientUpdateStepExecutionCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *ServerClientUpdateStepExecutionCall) Do(f func(context.Context, *api.UpdateStepExecutionRequest, ...grpc.CallOption) (*api.UpdateStepExecutionResponse, error)) *ServerClientUpdateStepExecutionCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *ServerClientUpdateStepExecutionCall) DoAndReturn(f func(context.Context, *api.UpdateStepExecutionRequest, ...grpc.CallOption) (*api.UpdateStepExecutionResponse, error)) *ServerClientUpdateStepExecutionCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // UploadLogLines mocks base method.
 func (m *MockServerClient) UploadLogLines(arg0 context.Context, arg1 *api.UpdateLogLinesRequest, arg2 ...grpc.CallOption) (*api.UpdateLogLinesResponse, error) {
 	m.ctrl.T.Helper()

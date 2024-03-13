@@ -25,6 +25,7 @@ type ServerClient interface {
 	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
 	RequestJob(ctx context.Context, in *RequestJobRequest, opts ...grpc.CallOption) (*RequestJobResponse, error)
 	UpdateJobExecution(ctx context.Context, in *UpdateJobExecutionRequest, opts ...grpc.CallOption) (*UpdateJobExecutionResponse, error)
+	UpdateStepExecution(ctx context.Context, in *UpdateStepExecutionRequest, opts ...grpc.CallOption) (*UpdateStepExecutionResponse, error)
 	UploadLogLines(ctx context.Context, in *UpdateLogLinesRequest, opts ...grpc.CallOption) (*UpdateLogLinesResponse, error)
 	GetLogLines(ctx context.Context, in *GetLogLinesRequest, opts ...grpc.CallOption) (*GetLogLinesResponse, error)
 }
@@ -64,6 +65,15 @@ func (c *serverClient) UpdateJobExecution(ctx context.Context, in *UpdateJobExec
 	return out, nil
 }
 
+func (c *serverClient) UpdateStepExecution(ctx context.Context, in *UpdateStepExecutionRequest, opts ...grpc.CallOption) (*UpdateStepExecutionResponse, error) {
+	out := new(UpdateStepExecutionResponse)
+	err := c.cc.Invoke(ctx, "/Server/UpdateStepExecution", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *serverClient) UploadLogLines(ctx context.Context, in *UpdateLogLinesRequest, opts ...grpc.CallOption) (*UpdateLogLinesResponse, error) {
 	out := new(UpdateLogLinesResponse)
 	err := c.cc.Invoke(ctx, "/Server/UploadLogLines", in, out, opts...)
@@ -89,6 +99,7 @@ type ServerServer interface {
 	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
 	RequestJob(context.Context, *RequestJobRequest) (*RequestJobResponse, error)
 	UpdateJobExecution(context.Context, *UpdateJobExecutionRequest) (*UpdateJobExecutionResponse, error)
+	UpdateStepExecution(context.Context, *UpdateStepExecutionRequest) (*UpdateStepExecutionResponse, error)
 	UploadLogLines(context.Context, *UpdateLogLinesRequest) (*UpdateLogLinesResponse, error)
 	GetLogLines(context.Context, *GetLogLinesRequest) (*GetLogLinesResponse, error)
 	mustEmbedUnimplementedServerServer()
@@ -106,6 +117,9 @@ func (UnimplementedServerServer) RequestJob(context.Context, *RequestJobRequest)
 }
 func (UnimplementedServerServer) UpdateJobExecution(context.Context, *UpdateJobExecutionRequest) (*UpdateJobExecutionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateJobExecution not implemented")
+}
+func (UnimplementedServerServer) UpdateStepExecution(context.Context, *UpdateStepExecutionRequest) (*UpdateStepExecutionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateStepExecution not implemented")
 }
 func (UnimplementedServerServer) UploadLogLines(context.Context, *UpdateLogLinesRequest) (*UpdateLogLinesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadLogLines not implemented")
@@ -180,6 +194,24 @@ func _Server_UpdateJobExecution_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Server_UpdateStepExecution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateStepExecutionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServerServer).UpdateStepExecution(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Server/UpdateStepExecution",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServerServer).UpdateStepExecution(ctx, req.(*UpdateStepExecutionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Server_UploadLogLines_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateLogLinesRequest)
 	if err := dec(in); err != nil {
@@ -234,6 +266,10 @@ var Server_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateJobExecution",
 			Handler:    _Server_UpdateJobExecution_Handler,
+		},
+		{
+			MethodName: "UpdateStepExecution",
+			Handler:    _Server_UpdateStepExecution_Handler,
 		},
 		{
 			MethodName: "UploadLogLines",
