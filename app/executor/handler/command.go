@@ -29,9 +29,10 @@ func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server
 	}
 	bufSize := 1024
 	logBuf := make([]byte, bufSize)
+	ctx := server.Context()
 	for {
 		select {
-		case <-server.Context().Done():
+		case <-ctx.Done():
 			return nil
 		default:
 
@@ -51,7 +52,7 @@ func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server
 		}
 		if n < bufSize {
 			// Cool down a bit.
-			time.Sleep(flushLogInterval)
+			_ = util.Wait(ctx, flushLogInterval)
 		}
 	}
 }

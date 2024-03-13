@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"io"
 	"time"
 
 	"github.com/cox96de/runner/api"
@@ -101,79 +100,4 @@ func (e *Execution) getExecutor(ctx context.Context, runner engine.Runner, step 
 		}
 	}
 	return runner.GetExecutor(ctx)
-}
-
-func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
-	logger := log.ExtractLogger(ctx).WithField("step", step.Name)
-	executor, err := e.getExecutor(ctx, e.runner, step)
-	if err != nil {
-		return errors.WithMessage(err, "failed to get executor")
-	}
-	commands := []string{"/bin/sh", "-c", "printf '%s' \"$RUNNER_SCRIPT\" | /bin/sh"}
-	script := compileUnixScript(step.Commands)
-	environment, err := executor.Environment(ctx, &executorpb.EnvironmentRequest{})
-	if err != nil {
-		return errors.WithMessage(err, "failed to get environment")
-	}
-	startCommandResponse, err := executor.StartCommand(ctx, &executorpb.StartCommandRequest{
-		Commands: commands,
-		Dir:      step.WorkingDirectory,
-		Env:      append(environment.Environment, "RUNNER_SCRIPT="+script),
-	})
-	if err != nil {
-		return errors.WithMessage(err, "failed to start command")
-	}
-	logger.Infof("success to start command with pid: %d", startCommandResponse.Status.Pid)
-	getCommandLogResp, err := executor.GetCommandLog(ctx, &executorpb.GetCommandLogRequest{
-		CommandID: startCommandResponse.CommandID,
-	})
-	if err != nil {
-		return errors.WithMessage(err, "failed to get command log")
-	}
-	collector := newLogCollector(e.client, e.execution, step.Name, logger, time.Second)
-	go func() {
-		defer func() {
-			if err := collector.Close(); err != nil {
-				logger.Errorf("failed to close log collector: %v", err)
-			}
-		}()
-		for {
-			select {
-			case <-ctx.Done():
-				logger.Warnf("context is done, stop getting command log")
-				return
-			default:
-			}
-			commandLog, err := getCommandLogResp.Recv()
-			if err != nil {
-				if err == io.EOF {
-					return
-				}
-				time.Sleep(time.Second)
-				logger.Errorf("failed to get command log: %v", err)
-				continue
-			}
-			_, err = collector.Write(commandLog.Output)
-			if err != nil {
-				logger.Errorf("failed to write log: %v", err)
-			}
-		}
-	}()
-	var processStatus *executorpb.ProcessStatus
-	for {
-		commandResponse, err := executor.WaitCommand(ctx, &executorpb.WaitCommandRequest{
-			CommandID: startCommandResponse.CommandID,
-			Timeout:   int64(time.Hour), // TODO: change it, it should refer to step timeout.
-		})
-		if err != nil {
-			// TODO: auto retry.
-			return errors.WithMessage(err, "failed to wait command")
-		}
-		processStatus = commandResponse.Status
-		if commandResponse.Status.Exit {
-			break
-		}
-	}
-	logger.Infof("command is completed, exit code: %+v", processStatus.ExitCode)
-	return nil
 }
