@@ -34,15 +34,32 @@ func TestExecutor_executeJob(t *testing.T) {
 				Name:             "step1",
 				Commands:         []string{"ls -alh"},
 				WorkingDirectory: gitRoot,
+				Executions: []*api.StepExecution{
+					{
+						ID: 1,
+					},
+				},
 			},
 			{
 				Name:             "step2",
 				Commands:         []string{"pwd"},
 				WorkingDirectory: gitRoot,
+				Executions: []*api.StepExecution{
+					{
+						ID: 2,
+					},
+				},
 			},
 		},
 		Executions: []*api.JobExecution{
-			{},
+			{
+				Steps: []*api.StepExecution{
+					{
+						ID:             1,
+						JobExecutionID: 1,
+					},
+				},
+			},
 		},
 	}
 	client := mockapi.NewMockServerClient(gomock.NewController(t))
@@ -50,6 +67,13 @@ func TestExecutor_executeJob(t *testing.T) {
 		request *api.UpdateJobExecutionRequest, option ...grpc.CallOption,
 	) (*api.UpdateJobExecutionResponse, error) {
 		return &api.UpdateJobExecutionResponse{Job: &api.JobExecution{
+			Status: *request.Status,
+		}}, nil
+	}).AnyTimes()
+	client.EXPECT().UpdateStepExecution(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context,
+		request *api.UpdateStepExecutionRequest, option ...grpc.CallOption,
+	) (*api.UpdateStepExecutionResponse, error) {
+		return &api.UpdateStepExecutionResponse{Step: &api.StepExecution{
 			Status: *request.Status,
 		}}, nil
 	}).AnyTimes()

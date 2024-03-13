@@ -200,7 +200,7 @@ func (c *Client) CreateStepExecutions(ctx context.Context, options []*CreateStep
 // GetStepExecutionsID returns step executions by id.
 func (c *Client) GetStepExecutionsID(ctx context.Context, id int64) (*StepExecution, error) {
 	var step StepExecution
-	if err := c.conn.WithContext(ctx).Find(&step, "id = ?", id).Error; err != nil {
+	if err := c.conn.WithContext(ctx).First(&step, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	return &step, nil

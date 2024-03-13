@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/cox96de/runner/util"
+
 	"github.com/cox96de/runner/log"
 
 	"github.com/cox96de/runner/api"
@@ -24,14 +26,19 @@ func (a *Agent) poll(ctx context.Context, interval time.Duration) (*api.Job, err
 	for {
 		requestJobResponse, err := a.client.RequestJob(ctx, &api.RequestJobRequest{})
 		if err != nil {
-			return nil, err
+			log.Errorf("failed to request job: %v", err)
+			if err := util.Wait(ctx, interval); err != nil {
+				return nil, err
+			}
 		}
 		job := requestJobResponse.Job
 		if job != nil {
 			return job, nil
 		}
 		if job == nil {
-			time.Sleep(interval)
+			if err := util.Wait(ctx, interval); err != nil {
+				return nil, err
+			}
 		}
 	}
 }
@@ -43,10 +50,10 @@ func (a *Agent) Run(ctx context.Context) error {
 			return ctx.Err()
 		default:
 		}
-		job, err := a.poll(ctx, time.Second)
+		interval := time.Second
+		job, err := a.poll(ctx, interval)
 		if err != nil {
-			log.Errorf("failed to poll job: %v", err)
-			continue
+			return err
 		}
 		logger := log.ExtractLogger(ctx).WithFields(log.Fields{"job": job.ID, "job_execution": job.Executions[0].ID})
 		logger.Infof("got job")
