@@ -105,7 +105,7 @@ func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions [
 		WorkingDirectory: j.WorkingDirectory,
 		EnvVar:           envVar,
 		Executions: lo.Map(executions, func(e *JobExecution, _ int) *api.JobExecution {
-			return PackJobExecution(e)
+			return PackJobExecution(e, stepExecutions)
 		}),
 		Steps:     packSteps,
 		DependsOn: dependsOn,
@@ -114,11 +114,18 @@ func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions [
 	}, nil
 }
 
-func PackJobExecution(j *JobExecution) *api.JobExecution {
+// PackJobExecution packs a job execution into api.JobExecution.
+// If steps is nil, it will not pack steps.
+func PackJobExecution(j *JobExecution, steps []*StepExecution) *api.JobExecution {
+	stepExecutions := lo.Map(steps, func(e *StepExecution, _ int) *api.StepExecution {
+		return PackStepExecution(e)
+	})
+	// TODO: sort step.
 	return &api.JobExecution{
 		ID:          j.ID,
 		JobID:       j.JobID,
 		Status:      j.Status,
+		Steps:       stepExecutions,
 		StartedAt:   api.ConvertTime(j.StartedAt),
 		CompletedAt: api.ConvertTime(j.CompletedAt),
 		CreatedAt:   api.ConvertTime(j.CreatedAt),

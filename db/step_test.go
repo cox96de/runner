@@ -4,6 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/api"
+	"github.com/samber/lo"
+
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"gotest.tools/v3/assert"
@@ -65,4 +68,40 @@ func TestClient_CreateStepExecutions(t *testing.T) {
 		assert.NilError(t, err)
 		assert.DeepEqual(t, stepExecutions, stepExecutions, cmpopts.IgnoreFields(StepExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
 	})
+	t.Run("GetStepExecutionsID", func(t *testing.T) {
+		for _, stepExecution := range stepExecutions {
+			stepExecutionByID, err := db.GetStepExecutionsID(context.Background(), stepExecution.ID)
+			assert.NilError(t, err)
+			assert.DeepEqual(t, stepExecution, stepExecutionByID)
+		}
+	})
+}
+
+func TestClient_UpdateStepExecution(t *testing.T) {
+	db := NewMockDB(t, &StepExecution{})
+	stepExecutions, err := db.CreateStepExecutions(context.Background(), []*CreateStepExecutionOption{
+		{
+			JobExecutionID: 1,
+			StepID:         1,
+			Status:         0,
+		},
+	})
+	assert.NilError(t, err)
+	execution := stepExecutions[0]
+	err = db.UpdateStepExecution(context.Background(), &UpdateStepExecutionOption{
+		ID:     execution.ID,
+		Status: lo.ToPtr(api.StatusRunning),
+	})
+	assert.NilError(t, err)
+	execution, err = db.GetStepExecutionsID(context.Background(), execution.ID)
+	assert.NilError(t, err)
+	assert.Equal(t, api.StatusRunning, execution.Status)
+	err = db.UpdateStepExecution(context.Background(), &UpdateStepExecutionOption{
+		ID:       execution.ID,
+		ExitCode: lo.ToPtr(uint32(1)),
+	})
+	assert.NilError(t, err)
+	execution, err = db.GetStepExecutionsID(context.Background(), execution.ID)
+	assert.NilError(t, err)
+	assert.Equal(t, uint32(1), execution.ExitCode)
 }

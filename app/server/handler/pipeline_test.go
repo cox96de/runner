@@ -49,6 +49,11 @@ func TestHandler_createPipeline(t *testing.T) {
 				Executions: []*api.JobExecution{
 					{
 						Status: api.StatusCreated,
+						Steps: []*api.StepExecution{
+							{
+								Status: api.StatusCreated,
+							},
+						},
 					},
 				},
 				Steps: []*api.Step{

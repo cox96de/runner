@@ -64,7 +64,7 @@ func (s *Service) getLogNameSet(ctx context.Context, jobID int64, jobExecutionID
 	return logNames, nil
 }
 
-// GetLogNames returns the log lines for a job execution.
+// GetLogLines returns the log lines for a job execution.
 // start is the start index of the log lines. It is 0-based.
 // limit is the maximum number of log lines to return.
 func (s *Service) GetLogLines(ctx context.Context, jobID int64, jobExecutionID int64, logName string, start int64,

@@ -138,12 +138,13 @@ func PackStep(step *Step, executions []*StepExecution) (*api.Step, error) {
 		}
 	}
 	s.Executions = lo.Map(executions, func(e *StepExecution, i int) *api.StepExecution {
-		return packStepExecution(e)
+		return PackStepExecution(e)
 	})
 	return s, nil
 }
 
-func packStepExecution(s *StepExecution) *api.StepExecution {
+// PackStepExecution packs a step execution into api.StepExecution.
+func PackStepExecution(s *StepExecution) *api.StepExecution {
 	return &api.StepExecution{
 		ID:             s.ID,
 		JobExecutionID: s.JobExecutionID,
@@ -161,7 +162,7 @@ type StepExecution struct {
 	JobExecutionID int64      `gorm:"column:job_execution_id"`
 	StepID         int64      `gorm:"column:step_id"`
 	Status         api.Status `gorm:"column:status"`
-	ExitCode       int32      `gorm:"column:exit_code"`
+	ExitCode       uint32     `gorm:"column:exit_code"`
 	StartedAt      *time.Time `gorm:"column:started_at"`
 	CompletedAt    *time.Time `gorm:"column:completed_at"`
 	CreatedAt      time.Time  `gorm:"column:created_at;autoCreateTime"`
@@ -196,6 +197,15 @@ func (c *Client) CreateStepExecutions(ctx context.Context, options []*CreateStep
 	return executions, nil
 }
 
+// GetStepExecutionsID returns step executions by id.
+func (c *Client) GetStepExecutionsID(ctx context.Context, id int64) (*StepExecution, error) {
+	var step StepExecution
+	if err := c.conn.WithContext(ctx).Find(&step, "id = ?", id).Error; err != nil {
+		return nil, err
+	}
+	return &step, nil
+}
+
 // GetStepExecutionsByJobExecutionID returns step executions by job execution id.
 func (c *Client) GetStepExecutionsByJobExecutionID(ctx context.Context, jobExecutionID int64) ([]*StepExecution, error) {
 	var steps []*StepExecution
@@ -203,4 +213,30 @@ func (c *Client) GetStepExecutionsByJobExecutionID(ctx context.Context, jobExecu
 		return nil, err
 	}
 	return steps, nil
+}
+
+type UpdateStepExecutionOption struct {
+	ID          int64
+	Status      *api.Status
+	ExitCode    *uint32
+	StartedAt   *time.Time
+	CompletedAt *time.Time
+}
+
+// UpdateStepExecution updates a step execution.
+func (c *Client) UpdateStepExecution(ctx context.Context, option *UpdateStepExecutionOption) error {
+	updateField := map[string]interface{}{}
+	if option.Status != nil {
+		updateField["status"] = *option.Status
+	}
+	if option.ExitCode != nil {
+		updateField["exit_code"] = *option.ExitCode
+	}
+	if option.StartedAt != nil {
+		updateField["started_at"] = *option.StartedAt
+	}
+	if option.CompletedAt != nil {
+		updateField["completed_at"] = *option.CompletedAt
+	}
+	return c.conn.WithContext(ctx).Model(&StepExecution{}).Where("id = ?", option.ID).Updates(updateField).Error
 }
