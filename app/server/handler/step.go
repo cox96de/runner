@@ -19,10 +19,10 @@ func (h *Handler) UpdateStepExecution(ctx context.Context, request *api.UpdateSt
 	})
 	stepExecution, err := h.db.GetStepExecutionsID(ctx, request.StepExecutionID)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "failed to get job execution '%d'", request.JobExecutionID)
+		return nil, errors.WithMessagef(err, "failed to get step execution '%d'", request.StepExecutionID)
 	}
 	if request.Status != nil {
-		logger.Infof("update job execution status from %s to '%s'", stepExecution.Status, *request.Status)
+		logger.Infof("update step execution status from %s to '%s'", stepExecution.Status, *request.Status)
 		if !dispatch.CheckStepStatus(stepExecution.Status, *request.Status) {
 			return nil, errors.Errorf("invalid status transition from '%s' to '%s'", stepExecution.Status, *request.Status)
 		}
@@ -42,7 +42,7 @@ func (h *Handler) UpdateStepExecution(ctx context.Context, request *api.UpdateSt
 		}
 		err := h.db.UpdateStepExecution(ctx, updateStepExecutionOption)
 		if err != nil {
-			return nil, errors.WithMessagef(err, "failed to update job execution '%d'", request.JobExecutionID)
+			return nil, errors.WithMessagef(err, "failed to update step execution '%d'", request.JobExecutionID)
 		}
 	}
 	return &api.UpdateStepExecutionResponse{
