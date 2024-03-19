@@ -100,5 +100,13 @@ func TestNewClient(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Assert(t, execution != nil)
 		})
+		t.Run("ListJobExecutions", func(t *testing.T) {
+			listJobExecutionsResponse, err := client.ListJobExecutions(ctx, &api.ListJobExecutionsRequest{
+				JobID: requestedJob.ID,
+			})
+			assert.NilError(t, err)
+			assert.Assert(t, listJobExecutionsResponse != nil)
+			assert.Assert(t, len(listJobExecutionsResponse.Jobs) == 1)
+		})
 	})
 }

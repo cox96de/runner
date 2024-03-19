@@ -62,3 +62,23 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 		Job: db.PackJobExecution(jobExecution, nil),
 	}, nil
 }
+
+func (h *Handler) ListJobExecutions(ctx context.Context, in *api.ListJobExecutionsRequest) (*api.ListJobExecutionsResponse, error) {
+	logger := log.ExtractLogger(ctx)
+	logger.Infof("list job executions for job '%d'", in.JobID)
+	jobExecutions, err := h.db.GetJobExecutionsByJobID(ctx, in.JobID)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to list job executions for job '%d'", in.JobID)
+	}
+	stepExecutionMap, err := h.db.GetStepExecutionsByJobExecutionIDs(ctx, lo.Map(jobExecutions, func(item *db.JobExecution, _ int) int64 {
+		return item.ID
+	}))
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to list step executions for job '%d'", in.JobID)
+	}
+	return &api.ListJobExecutionsResponse{
+		Jobs: lo.Map(jobExecutions, func(item *db.JobExecution, _ int) *api.JobExecution {
+			return db.PackJobExecution(item, stepExecutionMap[item.ID])
+		}),
+	}, nil
+}
