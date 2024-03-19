@@ -176,6 +176,14 @@ func (c *Client) GetJobExecution(ctx context.Context, id int64) (*JobExecution, 
 	return execution, nil
 }
 
+func (c *Client) GetJobExecutionsByJobID(ctx context.Context, jobID int64) ([]*JobExecution, error) {
+	var executions []*JobExecution
+	if err := c.conn.WithContext(ctx).Find(&executions, "job_id = ?", jobID).Error; err != nil {
+		return nil, err
+	}
+	return executions, nil
+}
+
 type UpdateJobExecutionOption struct {
 	ID          int64
 	Status      *api.Status

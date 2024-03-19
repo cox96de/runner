@@ -46,7 +46,7 @@ func TestClient_CreateJobs(t *testing.T) {
 
 func TestClient_CreateJobExecutions(t *testing.T) {
 	db := NewMockDB(t, &JobExecution{})
-	jobs, err := db.CreateJobExecutions(context.Background(), []*CreateJobExecutionOption{
+	jobExecutions, err := db.CreateJobExecutions(context.Background(), []*CreateJobExecutionOption{
 		{
 			JobID:  1,
 			Status: 0,
@@ -57,7 +57,7 @@ func TestClient_CreateJobExecutions(t *testing.T) {
 		},
 	})
 	assert.NilError(t, err)
-	assert.DeepEqual(t, jobs, []*JobExecution{
+	assert.DeepEqual(t, jobExecutions, []*JobExecution{
 		{
 			JobID:  1,
 			Status: 0,
@@ -68,11 +68,16 @@ func TestClient_CreateJobExecutions(t *testing.T) {
 		},
 	}, cmpopts.IgnoreFields(JobExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
 	t.Run("GetJobByID", func(t *testing.T) {
-		for _, job := range jobs {
+		for _, job := range jobExecutions {
 			jobByID, err := db.GetJobExecution(context.Background(), job.ID)
 			assert.NilError(t, err, job.JobID)
 			assert.DeepEqual(t, job, jobByID)
 		}
+	})
+	t.Run("GetJobExecutionsByJobID", func(t *testing.T) {
+		jobExecutions, err := db.GetJobExecutionsByJobID(context.Background(), 1)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, jobExecutions, []*JobExecution{jobExecutions[0]})
 	})
 }
 

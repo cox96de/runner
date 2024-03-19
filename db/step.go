@@ -208,11 +208,22 @@ func (c *Client) GetStepExecutionsID(ctx context.Context, id int64) (*StepExecut
 
 // GetStepExecutionsByJobExecutionID returns step executions by job execution id.
 func (c *Client) GetStepExecutionsByJobExecutionID(ctx context.Context, jobExecutionID int64) ([]*StepExecution, error) {
-	var steps []*StepExecution
-	if err := c.conn.WithContext(ctx).Find(&steps, "job_execution_id = ?", jobExecutionID).Error; err != nil {
+	stepExecutions, err := c.GetStepExecutionsByJobExecutionIDs(ctx, []int64{jobExecutionID})
+	if err != nil {
 		return nil, err
 	}
-	return steps, nil
+	return stepExecutions[jobExecutionID], nil
+}
+
+// GetStepExecutionsByJobExecutionIDs returns step executions by job execution id list.
+func (c *Client) GetStepExecutionsByJobExecutionIDs(ctx context.Context, jobExecutionIDs []int64) (map[int64][]*StepExecution, error) {
+	var steps []*StepExecution
+	if err := c.conn.WithContext(ctx).Find(&steps, "job_execution_id in ?", jobExecutionIDs).Error; err != nil {
+		return nil, err
+	}
+	return lo.GroupBy(steps, func(item *StepExecution) int64 {
+		return item.JobExecutionID
+	}), nil
 }
 
 type UpdateStepExecutionOption struct {

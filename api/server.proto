@@ -6,6 +6,7 @@ option go_package = "github.com/cox96de/runner/api";
 service Server {
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
   rpc RequestJob(RequestJobRequest) returns (RequestJobResponse) {}
+  rpc ListJobExecutions(ListJobExecutionsRequest) returns (ListJobExecutionsResponse) {}
   rpc UpdateJobExecution(UpdateJobExecutionRequest) returns (UpdateJobExecutionResponse) {}
   rpc UpdateStepExecution(UpdateStepExecutionRequest) returns (UpdateStepExecutionResponse) {}
   rpc UploadLogLines(UpdateLogLinesRequest) returns (UpdateLogLinesResponse) {}
@@ -37,6 +38,15 @@ message UpdateJobExecutionRequest {
 
 message UpdateJobExecutionResponse {
   JobExecution job = 1;
+}
+
+message ListJobExecutionsRequest {
+  //@gotags: path:"job_id"
+  int64 JobID = 1[(go.field).name = "JobID"];
+}
+
+message ListJobExecutionsResponse {
+  repeated JobExecution jobs = 1;
 }
 
 message UpdateStepExecutionRequest{

@@ -64,9 +64,14 @@ func TestClient_CreateStepExecutions(t *testing.T) {
 		},
 	}, cmpopts.IgnoreFields(StepExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
 	t.Run("GetStepExecutionsByJobExecutionID", func(t *testing.T) {
-		stepExecutions, err := db.GetStepExecutionsByJobExecutionID(context.Background(), 1)
+		got, err := db.GetStepExecutionsByJobExecutionID(context.Background(), 1)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, stepExecutions, stepExecutions, cmpopts.IgnoreFields(StepExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
+		assert.DeepEqual(t, got, stepExecutions, cmpopts.IgnoreFields(StepExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
+	})
+	t.Run("GetStepExecutionsByJobExecutionIDs", func(t *testing.T) {
+		got, err := db.GetStepExecutionsByJobExecutionIDs(context.Background(), []int64{1})
+		assert.NilError(t, err)
+		assert.DeepEqual(t, got, map[int64][]*StepExecution{1: stepExecutions}, cmpopts.IgnoreFields(StepExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
 	})
 	t.Run("GetStepExecutionsID", func(t *testing.T) {
 		for _, stepExecution := range stepExecutions {

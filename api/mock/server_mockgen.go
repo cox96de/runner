@@ -124,6 +124,50 @@ func (c *ServerClientGetLogLinesCall) DoAndReturn(f func(context.Context, *api.G
 	return c
 }
 
+// ListJobExecutions mocks base method.
+func (m *MockServerClient) ListJobExecutions(arg0 context.Context, arg1 *api.ListJobExecutionsRequest, arg2 ...grpc.CallOption) (*api.ListJobExecutionsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListJobExecutions", varargs...)
+	ret0, _ := ret[0].(*api.ListJobExecutionsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListJobExecutions indicates an expected call of ListJobExecutions.
+func (mr *MockServerClientMockRecorder) ListJobExecutions(arg0, arg1 interface{}, arg2 ...interface{}) *ServerClientListJobExecutionsCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListJobExecutions", reflect.TypeOf((*MockServerClient)(nil).ListJobExecutions), varargs...)
+	return &ServerClientListJobExecutionsCall{Call: call}
+}
+
+// ServerClientListJobExecutionsCall wrap *gomock.Call
+type ServerClientListJobExecutionsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *ServerClientListJobExecutionsCall) Return(arg0 *api.ListJobExecutionsResponse, arg1 error) *ServerClientListJobExecutionsCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *ServerClientListJobExecutionsCall) Do(f func(context.Context, *api.ListJobExecutionsRequest, ...grpc.CallOption) (*api.ListJobExecutionsResponse, error)) *ServerClientListJobExecutionsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *ServerClientListJobExecutionsCall) DoAndReturn(f func(context.Context, *api.ListJobExecutionsRequest, ...grpc.CallOption) (*api.ListJobExecutionsResponse, error)) *ServerClientListJobExecutionsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // RequestJob mocks base method.
 func (m *MockServerClient) RequestJob(arg0 context.Context, arg1 *api.RequestJobRequest, arg2 ...grpc.CallOption) (*api.RequestJobResponse, error) {
 	m.ctrl.T.Helper()

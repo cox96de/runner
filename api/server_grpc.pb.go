@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 type ServerClient interface {
 	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
 	RequestJob(ctx context.Context, in *RequestJobRequest, opts ...grpc.CallOption) (*RequestJobResponse, error)
+	ListJobExecutions(ctx context.Context, in *ListJobExecutionsRequest, opts ...grpc.CallOption) (*ListJobExecutionsResponse, error)
 	UpdateJobExecution(ctx context.Context, in *UpdateJobExecutionRequest, opts ...grpc.CallOption) (*UpdateJobExecutionResponse, error)
 	UpdateStepExecution(ctx context.Context, in *UpdateStepExecutionRequest, opts ...grpc.CallOption) (*UpdateStepExecutionResponse, error)
 	UploadLogLines(ctx context.Context, in *UpdateLogLinesRequest, opts ...grpc.CallOption) (*UpdateLogLinesResponse, error)
@@ -50,6 +51,15 @@ func (c *serverClient) CreatePipeline(ctx context.Context, in *CreatePipelineReq
 func (c *serverClient) RequestJob(ctx context.Context, in *RequestJobRequest, opts ...grpc.CallOption) (*RequestJobResponse, error) {
 	out := new(RequestJobResponse)
 	err := c.cc.Invoke(ctx, "/Server/RequestJob", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serverClient) ListJobExecutions(ctx context.Context, in *ListJobExecutionsRequest, opts ...grpc.CallOption) (*ListJobExecutionsResponse, error) {
+	out := new(ListJobExecutionsResponse)
+	err := c.cc.Invoke(ctx, "/Server/ListJobExecutions", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -98,6 +108,7 @@ func (c *serverClient) GetLogLines(ctx context.Context, in *GetLogLinesRequest, 
 type ServerServer interface {
 	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
 	RequestJob(context.Context, *RequestJobRequest) (*RequestJobResponse, error)
+	ListJobExecutions(context.Context, *ListJobExecutionsRequest) (*ListJobExecutionsResponse, error)
 	UpdateJobExecution(context.Context, *UpdateJobExecutionRequest) (*UpdateJobExecutionResponse, error)
 	UpdateStepExecution(context.Context, *UpdateStepExecutionRequest) (*UpdateStepExecutionResponse, error)
 	UploadLogLines(context.Context, *UpdateLogLinesRequest) (*UpdateLogLinesResponse, error)
@@ -114,6 +125,9 @@ func (UnimplementedServerServer) CreatePipeline(context.Context, *CreatePipeline
 }
 func (UnimplementedServerServer) RequestJob(context.Context, *RequestJobRequest) (*RequestJobResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestJob not implemented")
+}
+func (UnimplementedServerServer) ListJobExecutions(context.Context, *ListJobExecutionsRequest) (*ListJobExecutionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListJobExecutions not implemented")
 }
 func (UnimplementedServerServer) UpdateJobExecution(context.Context, *UpdateJobExecutionRequest) (*UpdateJobExecutionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateJobExecution not implemented")
@@ -172,6 +186,24 @@ func _Server_RequestJob_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ServerServer).RequestJob(ctx, req.(*RequestJobRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Server_ListJobExecutions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListJobExecutionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServerServer).ListJobExecutions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Server/ListJobExecutions",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServerServer).ListJobExecutions(ctx, req.(*ListJobExecutionsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -262,6 +294,10 @@ var Server_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RequestJob",
 			Handler:    _Server_RequestJob_Handler,
+		},
+		{
+			MethodName: "ListJobExecutions",
+			Handler:    _Server_ListJobExecutions_Handler,
 		},
 		{
 			MethodName: "UpdateJobExecution",
