@@ -30,6 +30,7 @@ func (a *Agent) poll(ctx context.Context, interval time.Duration) (*api.Job, err
 			if err := util.Wait(ctx, interval); err != nil {
 				return nil, err
 			}
+			continue
 		}
 		job := requestJobResponse.Job
 		if job != nil {
