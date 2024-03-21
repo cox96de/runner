@@ -59,7 +59,7 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 		}
 	}
 	return &api.UpdateJobExecutionResponse{
-		Job: db.PackJobExecution(jobExecution, nil),
+		JobExecution: db.PackJobExecution(jobExecution, nil),
 	}, nil
 }
 

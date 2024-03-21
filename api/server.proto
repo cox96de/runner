@@ -37,7 +37,7 @@ message UpdateJobExecutionRequest {
 }
 
 message UpdateJobExecutionResponse {
-  JobExecution job = 1;
+  JobExecution JobExecution = 1;
 }
 
 message ListJobExecutionsRequest {
@@ -64,7 +64,7 @@ message UpdateStepExecutionRequest{
 }
 
 message UpdateStepExecutionResponse{
-  StepExecution step = 1;
+  StepExecution StepExecution = 1;
 }
 
 message UpdateLogLinesRequest {
