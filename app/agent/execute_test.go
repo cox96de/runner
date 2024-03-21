@@ -66,14 +66,14 @@ func TestExecutor_executeJob(t *testing.T) {
 	client.EXPECT().UpdateJobExecution(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context,
 		request *api.UpdateJobExecutionRequest, option ...grpc.CallOption,
 	) (*api.UpdateJobExecutionResponse, error) {
-		return &api.UpdateJobExecutionResponse{Job: &api.JobExecution{
+		return &api.UpdateJobExecutionResponse{JobExecution: &api.JobExecution{
 			Status: *request.Status,
 		}}, nil
 	}).AnyTimes()
 	client.EXPECT().UpdateStepExecution(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context,
 		request *api.UpdateStepExecutionRequest, option ...grpc.CallOption,
 	) (*api.UpdateStepExecutionResponse, error) {
-		return &api.UpdateStepExecutionResponse{Step: &api.StepExecution{
+		return &api.UpdateStepExecutionResponse{StepExecution: &api.StepExecution{
 			Status: *request.Status,
 		}}, nil
 	}).AnyTimes()

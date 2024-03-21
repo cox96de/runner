@@ -71,7 +71,7 @@ func (e *Execution) updateStatus(ctx context.Context, status api.Status) error {
 	if err != nil {
 		return errors.WithMessagef(err, "failed to update job execution to %s", status)
 	}
-	e.execution = execution.Job
+	e.execution = execution.JobExecution
 	return nil
 }
 

@@ -46,6 +46,6 @@ func (h *Handler) UpdateStepExecution(ctx context.Context, request *api.UpdateSt
 		}
 	}
 	return &api.UpdateStepExecutionResponse{
-		Step: db.PackStepExecution(stepExecution),
+		StepExecution: db.PackStepExecution(stepExecution),
 	}, nil
 }
