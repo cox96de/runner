@@ -111,9 +111,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Build
-        run: go build ./...
+        run: make build
       - name: Test
-        run: go test -race -coverprofile cover.out -coverpkg=./... $(go list ./... |grep -v /kube )
+        run: |
+          $packages = go list ./... | Where-Object { $_ -notmatch "/kube|/zombies" }
+          go test -race -coverprofile cover.out  $packages
 
 #  integration:
 #    runs-on: ubuntu-latest
