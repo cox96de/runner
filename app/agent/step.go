@@ -50,12 +50,14 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 		return errors.WithMessage(err, "failed to get command log")
 	}
 	collector := newLogCollector(e.client, e.execution, step.Name, logger, time.Second)
+	logCh := make(chan struct{})
 	go func() {
 		defer func() {
 			if err := collector.Close(); err != nil {
 				logger.Errorf("failed to close log collector: %v", err)
 			}
 		}()
+		defer close(logCh)
 		for {
 			select {
 			case <-ctx.Done():
@@ -97,11 +99,18 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	if processStatus.ExitCode != 0 {
 		stepStatus = api.StatusFailed
 	}
+	select {
+	case <-logCh:
+		logger.Infof("log collector is successful closed")
+	case <-time.After(time.Second * 5):
+		logger.Warnf("log collector is not closed in time")
+	}
 	if _, err = e.client.UpdateStepExecution(ctx, &api.UpdateStepExecutionRequest{
 		StepExecutionID: step.Executions[0].ID,
 		JobExecutionID:  e.job.Executions[0].ID,
 		JobID:           e.job.ID,
 		Status:          &stepStatus,
+		ExitCode:        lo.ToPtr(uint32(processStatus.ExitCode)),
 	}); err != nil {
 		// TODO: retry if failed.
 		return errors.WithMessage(err, "failed to update step execution")

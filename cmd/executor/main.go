@@ -5,10 +5,11 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/cox96de/runner/log"
+
 	"github.com/pkg/errors"
 
 	"github.com/cox96de/runner/app/executor"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 )
 
@@ -26,6 +27,7 @@ func main() {
 	listener, err := composeListener(config)
 	checkError(err)
 	app := executor.NewApp()
+	log.Infof("listening on %s", listener.Addr())
 	if err := app.Run(listener); err != nil {
 		log.Fatal(err)
 	}

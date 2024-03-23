@@ -14,6 +14,8 @@ import (
 
 func (h *Handler) UpdateStepExecution(ctx context.Context, request *api.UpdateStepExecutionRequest) (*api.UpdateStepExecutionResponse, error) {
 	logger := log.ExtractLogger(ctx).WithFields(log.Fields{
+		"job":               request.JobID,
+		"job_execution_id":  request.JobExecutionID,
 		"step_id":           request.StepID,
 		"step_execution_id": request.StepExecutionID,
 	})

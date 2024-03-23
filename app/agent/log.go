@@ -30,7 +30,7 @@ type logCollector struct {
 	logs []*api.LogLine
 	// incompleteBytes is the buffer of incomplete line.
 	incompleteBytes []byte
-	lock            sync.Mutex
+	lock            sync.RWMutex
 	// notify is used to notify the work routine to flush logs.
 	notify        chan struct{}
 	close         chan struct{}
@@ -120,10 +120,10 @@ func (l *logCollector) notifyWrite() {
 }
 
 func (l *logCollector) flush() error {
-	l.lock.Lock()
+	l.lock.RLock()
 	size := len(l.logs)
 	logs := l.logs[:size]
-	l.lock.Unlock()
+	l.lock.RUnlock()
 	if size == 0 {
 		return nil
 	}
