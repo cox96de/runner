@@ -62,13 +62,14 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 	if len(request.Commands) == 0 {
 		return nil, errors.Errorf("no command provided")
 	}
+	log.Infof("starting command on dir: %s", request.Dir)
 	cmd := exec.Command(request.Commands[0], request.Commands[1:]...)
 	cmd.Dir = request.Dir
 	if len(request.Env) > 0 {
 		cmd.Env = request.Env
 	}
 	cmd.Stdout = rb
-	cmd.Stdout = rb
+	cmd.Stderr = rb
 	c := newCommand(cmd, rb)
 	if err := c.Start(); err != nil {
 		return nil, errors.WithMessage(err, "failed to start command")

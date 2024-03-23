@@ -95,6 +95,7 @@ func (r *Runner) waitPodReady(ctx context.Context) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
+	defer watcher.Stop()
 	for {
 		select {
 		case <-ctx.Done():
