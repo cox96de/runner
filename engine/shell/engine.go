@@ -18,6 +18,6 @@ func (e *Engine) Ping(_ context.Context) error {
 	return nil
 }
 
-func (e *Engine) CreateRunner(_ context.Context, _ *api.Job) (engine.Runner, error) {
+func (e *Engine) CreateRunner(_ context.Context, _ engine.LogProvider, _ *api.Job) (engine.Runner, error) {
 	return NewRunner(), nil
 }

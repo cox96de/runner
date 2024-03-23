@@ -2,6 +2,8 @@ package agent
 
 import (
 	"context"
+	"io"
+	"os"
 	"time"
 
 	"github.com/cox96de/runner/api"
@@ -14,20 +16,23 @@ import (
 )
 
 type Execution struct {
-	engine    engine.Engine
-	job       *api.Job
-	execution *api.JobExecution
-	client    api.ServerClient
+	engine           engine.Engine
+	job              *api.Job
+	execution        *api.JobExecution
+	client           api.ServerClient
+	logFlushInternal time.Duration
 
-	runner engine.Runner
+	runner    engine.Runner
+	logWriter *logCollector
 }
 
 func NewExecution(engine engine.Engine, job *api.Job, client api.ServerClient) *Execution {
 	return &Execution{
-		engine:    engine,
-		job:       job,
-		execution: job.Executions[len(job.Executions)-1],
-		client:    client,
+		engine:           engine,
+		job:              job,
+		execution:        job.Executions[len(job.Executions)-1],
+		client:           client,
+		logFlushInternal: time.Second,
 	}
 }
 
@@ -36,10 +41,13 @@ func (e *Execution) Execute(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	var err error
+	e.logWriter = newLogCollector(e.client, e.execution, "_", log.ExtractLogger(ctx), e.logFlushInternal)
+	logger := log.ExtractLogger(ctx).WithOutput(io.MultiWriter(os.Stdout, e.logWriter))
+	ctx = log.WithLogger(ctx, logger)
 	if err = e.updateStatus(ctx, api.StatusPreparing); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
-	e.runner, err = e.engine.CreateRunner(ctx, e.job)
+	e.runner, err = e.engine.CreateRunner(ctx, e, e.job)
 	if err != nil {
 		return err
 	}

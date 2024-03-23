@@ -58,6 +58,8 @@ func newLogCollector(client api.ServerClient, jobExecution *api.JobExecution, lo
 	return l
 }
 
+// Write writes p to the log collector.
+// It's thread safe.
 func (l *logCollector) Write(p []byte) (n int, err error) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
@@ -197,4 +199,12 @@ func dropCR(data []byte) []byte {
 		return data[0 : len(data)-1]
 	}
 	return data
+}
+
+func (e *Execution) CreateLogWriter(ctx context.Context, logName string) io.WriteCloser {
+	return newLogCollector(e.client, e.execution, logName, log.ExtractLogger(ctx), e.logFlushInternal)
+}
+
+func (e *Execution) GetDefaultLogWriter(ctx context.Context) io.WriteCloser {
+	return e.logWriter
 }

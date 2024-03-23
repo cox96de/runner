@@ -2,6 +2,7 @@ package log
 
 import (
 	"context"
+	"io"
 
 	"github.com/sirupsen/logrus"
 )
@@ -53,6 +54,20 @@ func WithLogger(ctx context.Context, logger *Logger) context.Context {
 	return context.WithValue(ctx, loggerKey, logger)
 }
 
+func (l *Logger) WithOutput(out io.Writer) *Logger {
+	logger := &logrus.Logger{
+		Out:          out,
+		Hooks:        l.Logger.Hooks,
+		Formatter:    l.Logger.Formatter,
+		ReportCaller: l.Logger.ReportCaller,
+		Level:        l.Logger.Level,
+		BufferPool:   l.Logger.BufferPool,
+	}
+	ll := l.WithFields(nil)
+	ll.Logger = logger
+	return ll
+}
+
 func (l *Logger) WithFields(f Fields) *Logger {
 	e := l.Entry.WithFields(logrus.Fields(f))
 	return &Logger{Entry: e}
@@ -69,6 +84,10 @@ func Errorf(s string, args ...interface{}) {
 
 func Infof(s string, args ...interface{}) {
 	defaultLogger.Infof(s, args...)
+}
+
+func Info(args ...interface{}) {
+	defaultLogger.Info(args...)
 }
 
 func Warningf(s string, args ...interface{}) {

@@ -13,11 +13,11 @@ lint:
 build: build_executor build_server build_agent
 build_executor:
 	mkdir -p output
-	CGO_ENABLED=0 go build -o output/executor ./cmd/executor/...
+	CGO_ENABLED=0 go build -o output/executor ./cmd/executor/
 build_server:
 	mkdir -p output
-	CGO_ENABLED=0 go build -o output/server ./cmd/server/...
+	CGO_ENABLED=0 go build -o output/server ./cmd/server/
 
 build_agent:
 	mkdir -p output
-	CGO_ENABLED=0 go build -o output/agent ./cmd/agent/...
+	CGO_ENABLED=0 go build -o output/agent ./cmd/agent/
