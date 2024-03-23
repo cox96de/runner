@@ -43,3 +43,14 @@ func TestNew(t *testing.T) {
 		assert.Assert(t, ExtractLogger(ctx) == logger)
 	})
 }
+
+func TestLogger_WithOutput(t *testing.T) {
+	logger := ExtractLogger(context.Background())
+	newLogger := logger.WithField("key", "value")
+	buf := &bytes.Buffer{}
+	newLogger = newLogger.WithOutput(buf)
+	logger.Infof("test")
+	assert.Assert(t, !strings.Contains(buf.String(), "test"))
+	newLogger.Infof("test")
+	assert.Assert(t, strings.Contains(buf.String(), "test"))
+}

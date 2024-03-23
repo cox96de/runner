@@ -49,7 +49,7 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to get command log")
 	}
-	collector := newLogCollector(e.client, e.execution, step.Name, logger, time.Second)
+	collector := newLogCollector(e.client, e.execution, step.Name, logger, e.logFlushInternal)
 	logCh := make(chan struct{})
 	go func() {
 		defer func() {

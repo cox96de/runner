@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"io"
 
 	"github.com/cox96de/runner/api"
 
@@ -14,7 +15,7 @@ type Engine interface {
 	// Ping checks the engine is working.
 	Ping(ctx context.Context) error
 	// CreateRunner creates a runner by RunnerSpec.
-	CreateRunner(ctx context.Context, option *api.Job) (Runner, error)
+	CreateRunner(ctx context.Context, logProvider LogProvider, option *api.Job) (Runner, error)
 }
 
 // Runner is an environment to run job (compile job, ci job, etc).
@@ -38,4 +39,13 @@ type MultipleContainerRunner interface {
 	// The containerName is the name of the container to run the executor.
 	// For non-container runner, the containerName can be ignored.
 	GetContainerExecutor(ctx context.Context, containerName string) (executorpb.ExecutorClient, error)
+}
+
+// LogProvider provides a log writer for a log name.
+// Engines and Runners can use the log writer to write logs of engine or runner itself, it make it easy to debug.
+type LogProvider interface {
+	// CreateLogWriter creates a log writer for a log name.
+	// The log name should be start with `_` to avoid conflict with job logs.
+	CreateLogWriter(ctx context.Context, logName string) io.WriteCloser
+	GetDefaultLogWriter(ctx context.Context) io.WriteCloser
 }

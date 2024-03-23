@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cox96de/runner/engine/mock"
+
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -69,14 +71,14 @@ func TestEngine_CreateRunner(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	t.Run("no_spec", func(t *testing.T) {
-		_, err := e.CreateRunner(context.Background(), &api.Job{
+		_, err := e.CreateRunner(context.Background(), mock.NewNopLogProvider(), &api.Job{
 			ID:     1,
 			RunsOn: &api.RunsOn{},
 		})
 		assert.ErrorContains(t, err, "is nil")
 	})
 	t.Run("success", func(t *testing.T) {
-		r, err := e.CreateRunner(context.Background(), &api.Job{
+		r, err := e.CreateRunner(context.Background(), mock.NewNopLogProvider(), &api.Job{
 			ID: 1,
 			RunsOn: &api.RunsOn{
 				Docker: &api.Docker{
@@ -109,7 +111,7 @@ func TestEngine_CreateRunner(t *testing.T) {
 			KubeConfig:     restconf,
 		})
 		assert.NilError(t, err)
-		runner, err := e.CreateRunner(context.Background(), &api.Job{
+		runner, err := e.CreateRunner(context.Background(), mock.NewNopLogProvider(), &api.Job{
 			Name: "test",
 			RunsOn: &api.RunsOn{
 				Docker: &api.Docker{
