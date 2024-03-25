@@ -61,7 +61,7 @@ func TestNewClient(t *testing.T) {
 				Status:         lo.ToPtr(api.StatusPreparing),
 			})
 			assert.NilError(t, err)
-			assert.Assert(t, updateJobExecutionResponse.Job.Status == api.StatusPreparing)
+			assert.Assert(t, updateJobExecutionResponse.JobExecution.Status == api.StatusPreparing)
 		})
 		t.Run("UploadLogLines", func(t *testing.T) {
 			logLines := []*api.LogLine{{

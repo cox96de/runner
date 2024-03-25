@@ -63,6 +63,18 @@ func (l *Logger) WithField(key string, value interface{}) *Logger {
 	return &Logger{Entry: e}
 }
 
-func Errorf(s string, err error) {
-	defaultLogger.Errorf(s, err)
+func Errorf(s string, args ...interface{}) {
+	defaultLogger.Errorf(s, args...)
+}
+
+func Infof(s string, args ...interface{}) {
+	defaultLogger.Infof(s, args...)
+}
+
+func Warningf(s string, args ...interface{}) {
+	defaultLogger.Warningf(s, args...)
+}
+
+func Fatal(args ...interface{}) {
+	defaultLogger.Fatal(args...)
 }

@@ -30,10 +30,13 @@ type logCollector struct {
 	logs []*api.LogLine
 	// incompleteBytes is the buffer of incomplete line.
 	incompleteBytes []byte
-	lock            sync.Mutex
+	lock            sync.RWMutex
 	// notify is used to notify the work routine to flush logs.
-	notify        chan struct{}
-	close         chan struct{}
+	notify chan struct{}
+	// close is used to notify the work routine to stop.
+	close chan struct{}
+	// worker indicates the work routine is running.
+	worker        chan struct{}
 	flushInterval time.Duration
 }
 
@@ -49,6 +52,7 @@ func newLogCollector(client api.ServerClient, jobExecution *api.JobExecution, lo
 		flushInterval: flushInterval,
 		notify:        make(chan struct{}, 1),
 		close:         make(chan struct{}),
+		worker:        make(chan struct{}),
 	}
 	go l.work()
 	return l
@@ -86,6 +90,17 @@ func (l *logCollector) Close() error {
 	}
 	close(l.close)
 	var err error
+	select {
+	// Wait for the worker to stop.
+	// In worker, the flush is called, concurrent flush is not allowed, it might cause data race.
+	case <-l.worker:
+	case <-time.After(time.Second):
+		return errors.WithMessage(err, "background worker is not stopped in time")
+	}
+	// `worker` is closed, no need to lock.
+	if len(l.logs) == 0 {
+		return nil
+	}
 	for i := 0; i < 3; i++ {
 		if err = l.flush(); err == nil {
 			return nil
@@ -95,6 +110,7 @@ func (l *logCollector) Close() error {
 }
 
 func (l *logCollector) work() {
+	defer close(l.worker)
 	for {
 		select {
 		case <-l.notify:
@@ -119,11 +135,13 @@ func (l *logCollector) notifyWrite() {
 	}
 }
 
+// flush flushes logs to server.
+// Notice: it is not thread safe. It should be called in a serial way.
 func (l *logCollector) flush() error {
-	l.lock.Lock()
+	l.lock.RLock()
 	size := len(l.logs)
 	logs := l.logs[:size]
-	l.lock.Unlock()
+	l.lock.RUnlock()
 	if size == 0 {
 		return nil
 	}

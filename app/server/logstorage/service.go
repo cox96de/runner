@@ -80,7 +80,11 @@ func (s *Service) GetLogLines(ctx context.Context, jobID int64, jobExecutionID i
 func (s *Service) getLogsFromRedis(ctx context.Context, jobID int64, jobExecutionID int64, logName string,
 	start int64, limit int64,
 ) ([]*api.LogLine, error) {
-	result, err := s.redis.LRange(ctx, buildLogRedisKey(jobID, jobExecutionID, logName), start, start+limit).Result()
+	end := start + limit
+	if limit < 0 {
+		end = -1
+	}
+	result, err := s.redis.LRange(ctx, buildLogRedisKey(jobID, jobExecutionID, logName), start, end).Result()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get logs from cache")
 	}
