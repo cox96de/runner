@@ -74,7 +74,22 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 		return nil, errors.WithMessage(err, "failed to start command")
 	}
 	commandID := util.RandomString(10)
+
 	// TODO: check if the commandID is already in use.
+	maxRetry := 10
+	for i := 0; i < maxRetry; i++ { // still conflit after 10 regenerate, raise error
+		if _, ok := h.commands[commandID]; ok {
+			// already in use, regenerate
+			commandID = util.RandomString(10)
+		} else {
+			// not used
+			break
+		}
+		if i == maxRetry { // raise error
+			return nil, errors.New("can not get a valid commandID")
+		}
+	}
+
 	h.commandLock.Lock()
 	h.commands[commandID] = c
 	h.commandLock.Unlock()
