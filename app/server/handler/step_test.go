@@ -27,5 +27,5 @@ func TestHandler_UpdateStepExecution(t *testing.T) {
 		Status:          lo.ToPtr(api.StatusRunning),
 	})
 	assert.NilError(t, err)
-	assert.DeepEqual(t, updateStepExecutionResponse.Step.Status, api.StatusRunning)
+	assert.DeepEqual(t, updateStepExecutionResponse.StepExecution.Status, api.StatusRunning)
 }
