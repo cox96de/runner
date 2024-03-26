@@ -58,7 +58,9 @@ func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server
 }
 
 func (h *Handler) setCommand(c *command) (string, error) {
-	for i := 0; i < 10; i++ { // if the commandID still conflits after trying 10 times, raise error.
+	h.commandLock.Lock()
+	defer h.commandLock.Unlock()
+	for i := 0; i < 10; i++ { // If the commandID still conflits after trying 10 times, raise error.
 		commandID := util.RandomString(10)
 		if _, ok := h.commands[commandID]; ok {
 			continue
@@ -88,15 +90,12 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 		return nil, errors.WithMessage(err, "failed to start command")
 	}
 
-	// check if the commandID is already in use.
-	h.commandLock.Lock()
-	defer h.commandLock.Unlock()
+	// Check if the commandID is already in use.
 	commandID, err := h.setCommand(c)
 	if err != nil {
 		return nil, err
 	}
 
-	h.commands[commandID] = c
 	logger := log.ExtractLogger(ctx)
 	go func() {
 		c.Wait()
