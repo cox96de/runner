@@ -90,7 +90,7 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 		return nil, errors.WithMessage(err, "failed to start command")
 	}
 
-	// Check if the commandID is already in use.
+	// Set the commandID.
 	commandID, err := h.setCommand(c)
 	if err != nil {
 		return nil, err
