@@ -57,6 +57,19 @@ func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server
 	}
 }
 
+func (h *Handler) setCommand(c *command) (string, error) {
+	for i := 0; i < 10; i++ { // if the commandID still conflits after trying 10 times, raise error.
+		commandID := util.RandomString(10)
+		if _, ok := h.commands[commandID]; ok {
+			continue
+		}
+		h.commands[commandID] = c
+		return commandID, nil
+
+	}
+	return "", errors.New("can not get a valid commandID")
+}
+
 func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCommandRequest) (*executorpb.StartCommandResponse, error) {
 	rb := lib.NewRingBuffer(defaultRingBufferSize)
 	if len(request.Commands) == 0 {
@@ -74,11 +87,16 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 	if err := c.Start(); err != nil {
 		return nil, errors.WithMessage(err, "failed to start command")
 	}
-	commandID := util.RandomString(10)
-	// TODO: check if the commandID is already in use.
+
+	// check if the commandID is already in use.
 	h.commandLock.Lock()
+	defer h.commandLock.Unlock()
+	commandID, err := h.setCommand(c)
+	if err != nil {
+		return nil, err
+	}
+
 	h.commands[commandID] = c
-	h.commandLock.Unlock()
 	logger := log.ExtractLogger(ctx)
 	go func() {
 		c.Wait()
