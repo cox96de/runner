@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"os/exec"
+	"sync"
 	"time"
 
 	"github.com/cox96de/runner/util"
@@ -14,6 +15,8 @@ import (
 	"github.com/cox96de/runner/lib"
 	"github.com/pkg/errors"
 )
+
+var commandLock sync.Mutex
 
 const (
 	defaultRingBufferSize = 1 << 20
@@ -82,6 +85,7 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 
 	var commandID string
 	maxRetry := 10
+
 	for i := 0; i < maxRetry; i++ { // still conflit after 10 regenerate, raise error
 		commandID := util.RandomString(10)
 		if _, ok := h.commands[commandID]; !ok {
@@ -93,6 +97,7 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 			return nil, errors.New("can not get a valid commandID")
 		}
 	}
+
 	h.commands[commandID] = c
 
 	logger := log.ExtractLogger(ctx)
