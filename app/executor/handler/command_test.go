@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -223,5 +224,72 @@ func TestHandler_WaitCommand(t *testing.T) {
 			Exit:     true,
 			Error:    "exit status 2",
 		}, cmpopts.IgnoreUnexported(executorpb.ProcessStatus{}))
+	})
+}
+
+func TestSetCommandMockRandomString(t *testing.T) {
+	// Execute normally.
+	t.Run("normal_execute", func(t *testing.T) {
+		h := &Handler{
+			commands: make(map[string]*command),
+		}
+
+		originalRandomStringFunc := randomStringFunc
+		defer func() {
+			randomStringFunc = originalRandomStringFunc
+		}()
+
+		commandID, _ := h.setCommand(&command{})
+		_, exists := h.commands[commandID]
+		assert.Assert(t, exists)
+	})
+
+	// Successfully set commandID after conflict occurs.
+	t.Run("set_commandID_after_conflict", func(t *testing.T) {
+		h := &Handler{
+			commands: make(map[string]*command),
+		}
+
+		originalRandomStringFunc := randomStringFunc
+		defer func() {
+			randomStringFunc = originalRandomStringFunc
+		}()
+
+		callCount := 0
+		mockCommandID := []int{0, 0, 0, 0, 2, 3}
+		randomStringFunc = func(length int) string {
+			callCount++
+			return fmt.Sprintf("mockID%d", mockCommandID[callCount])
+		}
+		commandID1, err1 := h.setCommand(&command{})
+		commandIDConflit, err2 := h.setCommand(&command{})
+
+		assert.Assert(t, commandID1 == "mockID0")
+		assert.Assert(t, commandIDConflit == "mockID2")
+		assert.NilError(t, err1)
+		assert.NilError(t, err2)
+	})
+
+	// After 10 conflicts, commandID failed to be set.
+	t.Run("fail_to_set_commandID", func(t *testing.T) {
+		h := &Handler{
+			commands: make(map[string]*command),
+		}
+
+		originalRandomStringFunc := randomStringFunc
+		defer func() {
+			randomStringFunc = originalRandomStringFunc
+		}()
+
+		randomStringFunc = func(length int) string {
+			return "mockID0"
+		}
+		commandID1, err1 := h.setCommand(&command{})
+		commandIDConflit, err2 := h.setCommand(&command{})
+
+		assert.Assert(t, commandID1 == "mockID0")
+		assert.Assert(t, commandIDConflit == "")
+		assert.NilError(t, err1)
+		assert.Error(t, err2, "can not get a valid commandID")
 	})
 }
