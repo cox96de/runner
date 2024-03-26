@@ -73,11 +73,27 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 	if err := c.Start(); err != nil {
 		return nil, errors.WithMessage(err, "failed to start command")
 	}
-	commandID := util.RandomString(10)
-	// TODO: check if the commandID is already in use.
+
+	// check if the commandID is already in use.
 	h.commandLock.Lock()
+
+	defer h.commandLock.Unlock()
+
+	var commandID string
+	maxRetry := 10
+	for i := 0; i < maxRetry; i++ { // still conflit after 10 regenerate, raise error
+		commandID := util.RandomString(10)
+		if _, ok := h.commands[commandID]; !ok {
+			// commandID is unique, break out of the loop
+			break
+		}
+		if i == maxRetry-1 {
+			// raise error after maxtries
+			return nil, errors.New("can not get a valid commandID")
+		}
+	}
 	h.commands[commandID] = c
-	h.commandLock.Unlock()
+
 	logger := log.ExtractLogger(ctx)
 	go func() {
 		c.Wait()
