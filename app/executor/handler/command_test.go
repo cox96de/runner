@@ -259,19 +259,16 @@ func TestSetCommandMockRandomString(t *testing.T) {
 		}()
 
 		callCount := 0
-		mock_commandID := []int{0, 0, 0, 0, 2, 3}
+		mockCommandID := []int{0, 0, 0, 0, 2, 3}
 		randomStringFunc = func(length int) string {
 			callCount++
-			return fmt.Sprintf("mockID%d", mock_commandID[callCount])
+			return fmt.Sprintf("mockID%d", mockCommandID[callCount])
 		}
 		commandID1, err1 := h.setCommand(&command{})
-		commandID_conflit, err2 := h.setCommand(&command{})
-
-		// _, exists_1 := h.commands[commandID1]
-		// _, exists_2 := h.commands[commandID_conflit]
+		commandIDConflit, err2 := h.setCommand(&command{})
 
 		assert.Assert(t, commandID1 == "mockID0")
-		assert.Assert(t, commandID_conflit == "mockID2")
+		assert.Assert(t, commandIDConflit == "mockID2")
 		assert.NilError(t, err1)
 		assert.NilError(t, err2)
 	})
@@ -288,20 +285,14 @@ func TestSetCommandMockRandomString(t *testing.T) {
 			randomStringFunc = originalRandomStringFunc
 		}()
 
-		callCount := 0
-		mock_commandID := []int{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 		randomStringFunc = func(length int) string {
-			callCount++
-			return fmt.Sprintf("mockID%d", mock_commandID[callCount])
+			return "mockID0"
 		}
 		commandID1, err1 := h.setCommand(&command{})
-		commandID_conflit, err2 := h.setCommand(&command{})
-
-		// _, exists_1 := h.commands[commandID1]
-		// _, exists_2 := h.commands[commandID_conflit]
+		commandIDConflit, err2 := h.setCommand(&command{})
 
 		assert.Assert(t, commandID1 == "mockID0")
-		assert.Assert(t, commandID_conflit == "")
+		assert.Assert(t, commandIDConflit == "")
 		assert.NilError(t, err1)
 		assert.Error(t, err2, "can not get a valid commandID")
 	})
