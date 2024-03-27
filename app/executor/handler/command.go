@@ -20,6 +20,8 @@ const (
 	flushLogInterval      = time.Millisecond * 100
 )
 
+var randomStringFunc = util.RandomString
+
 func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server executorpb.Executor_GetCommandLogServer) error {
 	h.commandLock.RLock()
 	c, ok := h.commands[request.CommandID]
@@ -61,7 +63,7 @@ func (h *Handler) setCommand(c *command) (string, error) {
 	h.commandLock.Lock()
 	defer h.commandLock.Unlock()
 	for i := 0; i < 10; i++ { // If the commandID still conflits after trying 10 times, raise error.
-		commandID := util.RandomString(10)
+		commandID := randomStringFunc(10)
 		if _, ok := h.commands[commandID]; ok {
 			continue
 		}
