@@ -26,6 +26,7 @@ func main() {
 	checkError(err)
 	listener, err := composeListener(config)
 	checkError(err)
+	reapZombies()
 	app := executor.NewApp()
 	log.Infof("listening on %s", listener.Addr())
 	if err := app.Run(listener); err != nil {
