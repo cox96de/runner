@@ -228,10 +228,8 @@ func TestHandler_WaitCommand(t *testing.T) {
 }
 
 func TestSetCommandMockRandomString(t *testing.T) {
-
 	// Execute normally.
 	t.Run("normal_execute", func(t *testing.T) {
-
 		h := &Handler{
 			commands: make(map[string]*command),
 		}
@@ -248,7 +246,6 @@ func TestSetCommandMockRandomString(t *testing.T) {
 
 	// Successfully set commandID after conflict occurs.
 	t.Run("set_commandID_after_conflict", func(t *testing.T) {
-
 		h := &Handler{
 			commands: make(map[string]*command),
 		}
@@ -275,7 +272,6 @@ func TestSetCommandMockRandomString(t *testing.T) {
 
 	// After 10 conflicts, commandID failed to be set.
 	t.Run("fail_to_set_commandID", func(t *testing.T) {
-
 		h := &Handler{
 			commands: make(map[string]*command),
 		}
