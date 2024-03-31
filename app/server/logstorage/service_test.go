@@ -14,7 +14,7 @@ import (
 )
 
 func TestService_Append(t *testing.T) {
-	service := NewService(mock.NewMockRedis(t))
+	service := NewService(mock.NewMockRedis(t), nil)
 	err := service.Append(context.Background(), 1, 1, "test", generateTestLog(100))
 	assert.NilError(t, err)
 	t.Run("get_less", func(t *testing.T) {

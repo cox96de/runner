@@ -2,7 +2,6 @@ package logstorage
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/cox96de/runner/api"
@@ -16,11 +15,13 @@ import (
 const cacheExpireTime = time.Hour
 
 type Service struct {
-	redis *redis.Client
+	redis   *redis.Client
+	oss     OSS
+	baseDir string
 }
 
-func NewService(redis *redis.Client) *Service {
-	return &Service{redis: redis}
+func NewService(redis *redis.Client, oss OSS) *Service {
+	return &Service{redis: redis, oss: oss}
 }
 
 // Append appends log lines to the log storage.
@@ -70,39 +71,15 @@ func (s *Service) getLogNameSet(ctx context.Context, jobID int64, jobExecutionID
 func (s *Service) GetLogLines(ctx context.Context, jobID int64, jobExecutionID int64, logName string, start int64,
 	limit int64,
 ) ([]*api.LogLine, error) {
-	logs, err := s.getLogsFromRedis(ctx, jobID, jobExecutionID, logName, start, start+limit-1)
+	logs, err := s.getLogsFromRedis(ctx, jobID, jobExecutionID, logName, start, limit)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get logs from cache")
 	}
-	return logs, nil
-}
-
-func (s *Service) getLogsFromRedis(ctx context.Context, jobID int64, jobExecutionID int64, logName string,
-	start int64, limit int64,
-) ([]*api.LogLine, error) {
-	end := start + limit
-	if limit < 0 {
-		end = -1
-	}
-	result, err := s.redis.LRange(ctx, buildLogRedisKey(jobID, jobExecutionID, logName), start, end).Result()
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to get logs from cache")
-	}
-	logs := make([]*api.LogLine, 0, len(result))
-	for _, item := range result {
-		log := new(api.LogLine)
-		if err := proto.Unmarshal([]byte(item), log); err != nil {
-			return nil, errors.WithMessage(err, "failed to decode log line")
+	if len(logs) == 0 {
+		logs, err = s.getLogsFromOSS(ctx, jobID, jobExecutionID, logName, start, limit)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to get logs from oss")
 		}
-		logs = append(logs, log)
 	}
 	return logs, nil
-}
-
-func buildLogRedisKey(jobID int64, jobExecutionID int64, logName string) string {
-	return "log:" + strconv.FormatInt(jobID, 10) + ":" + strconv.FormatInt(jobExecutionID, 10) + ":" + logName
-}
-
-func buildLogSetRedisKey(jobID int64, jobExecutionID int64) string {
-	return "log_set:" + strconv.FormatInt(jobID, 10) + ":" + strconv.FormatInt(jobExecutionID, 10)
 }
