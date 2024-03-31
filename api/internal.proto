@@ -1,0 +1,9 @@
+syntax = "proto3";
+import "entity.proto";
+option go_package = "github.com/cox96de/runner/api";
+
+// This file contains the protobuf entity definitions for internal usage.
+
+message ArchiveLogs {
+  repeated LogLine logs = 1;
+}

@@ -52,7 +52,13 @@ type Redis struct {
 }
 
 type LogStorage struct {
-	Redis *Redis `json:"redis" yaml:"redis"`
+	Redis      *Redis      `json:"redis" yaml:"redis"`
+	LogArchive *LogArchive `json:"log_archive" yaml:"log_archive"`
+}
+
+type LogArchive struct {
+	Backend string `json:"backend" yaml:"backend"`
+	BaseDir string `json:"base_dir" yaml:"base_dir"`
 }
 
 func LoadConfig(path string) (*Config, error) {

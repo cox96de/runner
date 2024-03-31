@@ -1,10 +1,11 @@
 module github.com/cox96de/runner
 
-go 1.20
+go 1.21
 
 require (
 	github.com/alicebob/miniredis/v2 v2.31.1
 	github.com/alta/protopatch v0.5.3
+	github.com/aws/aws-sdk-go v1.51.11
 	github.com/bytedance/go-tagexpr/v2 v2.9.8
 	github.com/cox96de/containervm v0.0.1
 	github.com/gin-gonic/gin v1.9.1
@@ -77,6 +78,7 @@ require (
 	github.com/jackpal/gateway v1.0.10 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
@@ -105,7 +107,7 @@ require (
 	github.com/yuin/gopher-lua v1.1.0 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
-	golang.org/x/net v0.16.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
 	golang.org/x/term v0.13.0 // indirect

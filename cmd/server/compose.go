@@ -52,9 +52,16 @@ func ComposeLocker(l *Locker) (lib.Locker, error) {
 	}
 }
 
-func ComposeLogStorage(l *LogStorage) *logstorage.Service {
+func ComposeLogStorage(l *LogStorage) (*logstorage.Service, error) {
 	composeRedis := ComposeRedis(l.Redis)
-	return logstorage.NewService(composeRedis)
+	var oss logstorage.OSS
+	switch l.LogArchive.Backend {
+	case "fs":
+		oss = logstorage.NewFilesystemOSS(l.LogArchive.BaseDir)
+	default:
+		return nil, errors.Errorf("%s log archive is not supported", l.LogArchive.Backend)
+	}
+	return logstorage.NewService(composeRedis, oss), nil
 }
 
 func ComposeRedis(r *Redis) *redis.Client {

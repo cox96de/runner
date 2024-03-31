@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"gotest.tools/v3/fs"
+
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/cox96de/runner/app/server/logstorage"
@@ -26,7 +28,8 @@ func TestNewClient(t *testing.T) {
 	dispatchService := dispatch.NewService(dbClient)
 	locker := mock.NewMockLocker()
 	redis := mock.NewMockRedis(t)
-	h := handler.NewHandler(dbClient, pipelineService, dispatchService, locker, logstorage.NewService(redis))
+	h := handler.NewHandler(dbClient, pipelineService, dispatchService, locker, logstorage.NewService(redis,
+		logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())))
 	engine := gin.New()
 	h.RegisterRouter(engine.Group("/api/v1"))
 	server := httptest.NewServer(engine)
