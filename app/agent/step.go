@@ -19,8 +19,25 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to get executor")
 	}
-	commands := []string{"/bin/sh", "-c", "printf '%s' \"$RUNNER_SCRIPT\" | /bin/sh"}
-	script := compileUnixScript(step.Commands)
+	getRuntimeInfoResp, err := executor.GetRuntimeInfo(ctx, &executorpb.GetRuntimeInfoRequest{})
+	if err != nil {
+		return errors.WithMessage(err, "failed to get runtime info")
+	}
+	var (
+		commands []string
+		script   string
+	)
+	switch getRuntimeInfoResp.OS {
+	case "windows":
+		commands = getWindowsCommands()
+		script = compileWindowsScript(step.Commands)
+	case "linux", "darwin":
+		commands = getUnixCommands()
+		script = compileUnixScript(step.Commands)
+	default:
+		return errors.Errorf("unsupported os: '%s'", getRuntimeInfoResp.OS)
+	}
+
 	environment, err := executor.Environment(ctx, &executorpb.EnvironmentRequest{})
 	if err != nil {
 		return errors.WithMessage(err, "failed to get environment")
@@ -56,8 +73,8 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 			if err := collector.Close(); err != nil {
 				logger.Errorf("failed to close log collector: %v", err)
 			}
+			close(logCh)
 		}()
-		defer close(logCh)
 		for {
 			select {
 			case <-ctx.Done():

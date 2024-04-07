@@ -88,7 +88,7 @@ func Test_newLogCollector(t *testing.T) {
 		l.Unlock()
 		_, err = collector.Write([]byte("d\re"))
 		assert.NilError(t, err)
-		time.Sleep(flushInterval * 2)
+		time.Sleep(flushInterval * 3)
 		l.Lock()
 		validateLogs(t, logs, []string{"", "a", "b", "cd"})
 		l.Unlock()

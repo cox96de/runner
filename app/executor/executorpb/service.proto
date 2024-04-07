@@ -2,6 +2,7 @@ syntax = "proto3";
 import "tools/protopatch/patch/go.proto";
 option go_package = "github.com/cox96de/runner/app/executor/executorpb";
 service Executor {
+  rpc GetRuntimeInfo(GetRuntimeInfoRequest)returns(GetRuntimeInfoResponse);
   // Ping is used to check if the executor is alive.
   rpc Ping(PingRequest)returns(PingResponse);
   // Environment returns the environment variables of the executor.
@@ -13,8 +14,14 @@ service Executor {
   rpc WaitCommand(WaitCommandRequest)returns(WaitCommandResponse){}
   // GetCommandLog returns the log of a command.
   rpc GetCommandLog(GetCommandLogRequest)returns(stream Log){}
-}
 
+}
+message GetRuntimeInfoRequest{
+}
+message GetRuntimeInfoResponse{
+  string os = 1[(go.field).name = "OS"];
+  string arch = 2;
+}
 message PingRequest{
 }
 
