@@ -64,7 +64,7 @@ func Test_composeListener(t *testing.T) {
 	t.Run("tcp_port", func(t *testing.T) {
 		randomPort := util.RandomInt(1024, 65535)
 		listener, err := composeListener(&Config{Port: int(randomPort)})
-		assert.NilError(nil, err)
+		assert.NilError(t, err)
 		engine := gin.New()
 		engine.Any("/ping", func(context *gin.Context) {})
 		go func() {
