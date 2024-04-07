@@ -4,13 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/cox96de/runner/util"
-
-	"github.com/cox96de/runner/log"
-
 	"github.com/cox96de/runner/api"
-
 	"github.com/cox96de/runner/engine"
+	"github.com/cox96de/runner/log"
+	"github.com/cox96de/runner/util"
 )
 
 type Agent struct {
@@ -36,10 +33,8 @@ func (a *Agent) poll(ctx context.Context, interval time.Duration) (*api.Job, err
 		if job != nil {
 			return job, nil
 		}
-		if job == nil {
-			if err := util.Wait(ctx, interval); err != nil {
-				return nil, err
-			}
+		if err := util.Wait(ctx, interval); err != nil {
+			return nil, err
 		}
 	}
 }

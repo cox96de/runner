@@ -2,11 +2,11 @@ package vm
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/cox96de/runner/api"
 
 	"github.com/cox96de/runner/engine"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -60,6 +60,13 @@ func (e *Engine) Ping(ctx context.Context) error {
 	return err
 }
 
-func (e *Engine) CreateRunner(ctx context.Context, option *api.Job) (engine.Runner, error) {
-	return nil, errors.New("not implemented")
+func (e *Engine) CreateRunner(ctx context.Context, spec *api.Job) (engine.Runner, error) {
+	c := newCompiler(e.executorImage, e.executorPath, e.runtimeImage)
+	compiledResult := c.Compile(strconv.FormatInt(spec.ID, 10), spec.RunsOn)
+	return &Runner{
+		client:          e.client,
+		pod:             compiledResult.pod,
+		namespace:       e.namespace,
+		portForwardStop: make(chan struct{}),
+	}, nil
 }
