@@ -78,6 +78,9 @@ func (s *Service) GetLogLines(ctx context.Context, jobID int64, jobExecutionID i
 	if len(logs) == 0 {
 		logs, err = s.getLogsFromOSS(ctx, jobID, jobExecutionID, logName, start, limit)
 		if err != nil {
+			if errors.Is(err, ErrNotFound) {
+				return nil, nil
+			}
 			return nil, errors.WithMessage(err, "failed to get logs from oss")
 		}
 	}
