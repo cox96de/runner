@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"gotest.tools/v3/fs"
+
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/cox96de/runner/api"
@@ -14,7 +16,7 @@ import (
 )
 
 func TestService_Append(t *testing.T) {
-	service := NewService(mock.NewMockRedis(t), nil)
+	service := NewService(mock.NewMockRedis(t), NewFilesystemOSS(fs.NewDir(t, "test").Path()))
 	err := service.Append(context.Background(), 1, 1, "test", generateTestLog(100))
 	assert.NilError(t, err)
 	t.Run("get_less", func(t *testing.T) {
@@ -34,6 +36,11 @@ func TestService_Append(t *testing.T) {
 			assert.Equal(t, logs[i].Number, int64(i))
 			assert.Equal(t, logs[i].Output, fmt.Sprintf("line %d", i))
 		}
+	})
+	t.Run("no_log", func(t *testing.T) {
+		logs, err := service.GetLogLines(context.Background(), 1, 1, "non_exists", 0, 1000)
+		assert.NilError(t, err)
+		assert.Equal(t, len(logs), 0)
 	})
 	err = service.Append(context.Background(), 1, 1, "test2", generateTestLog(100))
 	assert.NilError(t, err)
