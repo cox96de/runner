@@ -21,6 +21,7 @@ type Job struct {
 	WorkingDirectory string    `gorm:"column:working_directory"`
 	EnvVar           []byte    `gorm:"column:env_var"`
 	DependsOn        []byte    `gorm:"column:depends_on"`
+	Timeout          int32     `gorm:"column:timeout"`
 	CreatedAt        time.Time `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt        time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }
@@ -36,6 +37,7 @@ type CreateJobOption struct {
 	WorkingDirectory string
 	EnvVar           map[string]string
 	DependsOn        []string
+	Timeout          int32
 }
 
 // CreateJobs creates new jobs.
@@ -46,6 +48,7 @@ func (c *Client) CreateJobs(ctx context.Context, options []*CreateJobOption) ([]
 		job := &Job{
 			Name:             opt.Name,
 			WorkingDirectory: opt.WorkingDirectory,
+			Timeout:          opt.Timeout,
 		}
 		job.RunsOn, err = json.Marshal(opt.RunsOn)
 		if err != nil {
@@ -109,6 +112,7 @@ func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions [
 		}),
 		Steps:     packSteps,
 		DependsOn: dependsOn,
+		Timeout:   j.Timeout,
 		CreatedAt: timestamppb.New(j.CreatedAt),
 		UpdatedAt: timestamppb.New(j.UpdatedAt),
 	}, nil
