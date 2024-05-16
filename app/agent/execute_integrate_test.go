@@ -61,4 +61,35 @@ func TestExecution(t *testing.T) {
 		err = execution.Execute(ctx)
 		assert.NilError(t, err)
 	})
+	t.Run("timeout", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("skip test on windows")
+		}
+		client := newMockServerHandler(t)
+		ctx := context.Background()
+		_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
+			Pipeline: &api.PipelineDSL{
+				Jobs: []*api.JobDSL{{
+					Name:    "job1",
+					Timeout: 1,
+					Steps: []*api.StepDSL{{
+						Name:     "step1",
+						Commands: []string{"sleep 10"},
+					}},
+				}},
+			},
+		})
+		assert.NilError(t, err)
+		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
+		assert.NilError(t, err)
+		execution := NewExecution(shell.NewEngine(), requestJobResponse.Job, client)
+		assert.Assert(t, execution != nil)
+		err = execution.Execute(ctx)
+		assert.NilError(t, err)
+		executions, err := client.ListJobExecutions(ctx, &api.ListJobExecutionsRequest{
+			JobID: requestJobResponse.Job.ID,
+		})
+		assert.NilError(t, err)
+		assert.Equal(t, executions.Jobs[0].Status, api.StatusSucceeded)
+	})
 }

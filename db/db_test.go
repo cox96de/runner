@@ -30,17 +30,6 @@ func NewMockDB(t *testing.T, models ...interface{}) *Client {
 	return NewClient(SQLite, conn)
 }
 
-func migrateModels(conn *gorm.DB, models ...interface{}) error {
-	err := conn.AutoMigrate(models...)
-	if err != nil {
-		if sqlDB, err := conn.DB(); err == nil {
-			_ = sqlDB.Close()
-		}
-		return errors.WithMessage(err, "failed to migrate models")
-	}
-	return nil
-}
-
 func TestClient_Transaction(t *testing.T) {
 	client := NewMockDB(t, &Job{})
 	t.Run("success", func(t *testing.T) {

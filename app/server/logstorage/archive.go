@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/cox96de/runner/log"
+
 	"github.com/cox96de/runner/api"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
@@ -44,6 +46,8 @@ func (s *Service) getLogsFromOSS(ctx context.Context, jobID int64, jobExecutionI
 // It should be invoked when there are no more logs to be appended.
 // Typically, it is invoked after the job is finished.
 func (s *Service) Archive(ctx context.Context, jobID int64, jobExecutionID int64) error {
+	log.ExtractLogger(ctx).WithFields(log.Fields{"job_id": jobID, "job_execution_id": jobExecutionID}).
+		Infof("archive logs")
 	logNameSet, err := s.getLogNameSet(ctx, jobID, jobExecutionID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get log name set")

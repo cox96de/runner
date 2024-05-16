@@ -99,7 +99,7 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	}()
 	var processStatus *executorpb.ProcessStatus
 	for {
-		commandResponse, err := executor.WaitCommand(ctx, &executorpb.WaitCommandRequest{
+		commandResponse, err := executor.WaitCommand(e.jobTimeoutCtx, &executorpb.WaitCommandRequest{
 			CommandID: startCommandResponse.CommandID,
 			Timeout:   int64(time.Hour), // TODO: change it, it should refer to step timeout.
 		})

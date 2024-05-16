@@ -38,6 +38,7 @@ func (s *Service) CreatePipeline(ctx context.Context, pipeline *api.PipelineDSL)
 			WorkingDirectory: job.WorkingDirectory,
 			EnvVar:           job.EnvVar,
 			DependsOn:        job.DependsOn,
+			Timeout:          job.Timeout,
 		})
 		var stepOpts []*db.CreateStepOption
 		for _, step := range job.Steps {

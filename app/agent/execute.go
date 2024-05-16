@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/cox96de/runner/util"
+
 	"github.com/cox96de/runner/api"
 
 	"github.com/cox96de/runner/log"
@@ -14,6 +16,8 @@ import (
 	"github.com/cox96de/runner/engine"
 	"github.com/pkg/errors"
 )
+
+const timeoutError = util.StringError("job timeout")
 
 type Execution struct {
 	engine           engine.Engine
@@ -24,6 +28,11 @@ type Execution struct {
 
 	runner    engine.Runner
 	logWriter *logCollector
+
+	// jobTimeoutCtx is the context for the job timeout.
+	// If the job has a timeout, it will be canceled when the job is done.
+	// If subprocess should be responded to the job timeout, it should use this context.
+	jobTimeoutCtx context.Context
 }
 
 func NewExecution(engine engine.Engine, job *api.Job, client api.ServerClient) *Execution {
@@ -60,8 +69,18 @@ func (e *Execution) Execute(ctx context.Context) error {
 	if err = e.updateStatus(ctx, api.StatusRunning); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
+	if e.job.Timeout > 0 {
+		var timeoutCancel context.CancelFunc
+		e.jobTimeoutCtx, timeoutCancel = context.WithTimeoutCause(ctx, time.Duration(e.job.Timeout)*time.Second, timeoutError)
+		defer timeoutCancel()
+	} else {
+		e.jobTimeoutCtx = ctx
+	}
 	if err = e.executeSteps(ctx); err != nil {
-		return errors.WithMessage(err, "failed to execute steps")
+		if !isErrorContextCancel(err) {
+			return errors.WithMessage(err, "failed to execute steps")
+		}
+		logger.Infof("step is aborted by timeout")
 	}
 	// TODO: calculate status.
 	if err = e.updateStatus(ctx, api.StatusSucceeded); err != nil {
@@ -95,7 +114,7 @@ func (e *Execution) executeSteps(ctx context.Context) error {
 	for _, step := range e.job.Steps {
 		err := e.executeStep(ctx, step)
 		if err != nil {
-			return err
+			return errors.WithMessagef(err, "failed to execute step '%s'", step.Name)
 		}
 	}
 	return nil

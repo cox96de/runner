@@ -52,6 +52,9 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 			updateJobExecutionOption.StartedAt = lo.ToPtr(time.Now())
 		case (*request).Status.IsCompleted():
 			updateJobExecutionOption.CompletedAt = lo.ToPtr(time.Now())
+			if err := h.logService.Archive(ctx, jobExecution.JobID, jobExecution.ID); err != nil {
+				logger.WithError(err).Error("failed to archive logs")
+			}
 		}
 		err := h.db.UpdateJobExecution(ctx, updateJobExecutionOption)
 		if err != nil {

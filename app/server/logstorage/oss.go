@@ -6,8 +6,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cox96de/runner/util"
+
 	"github.com/pkg/errors"
 )
+
+const ErrNotFound = util.StringError("not found")
 
 type OSS interface {
 	Open(ctx context.Context, filename string) (io.ReadCloser, error)
@@ -23,7 +27,14 @@ func NewFilesystemOSS(baseDir string) *FilesystemOSS {
 }
 
 func (o *FilesystemOSS) Open(ctx context.Context, filename string) (io.ReadCloser, error) {
-	return os.Open(filepath.Join(o.baseDir, filename))
+	file, err := os.Open(filepath.Join(o.baseDir, filename))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
+		return nil, errors.WithMessage(err, "failed to open file")
+	}
+	return file, err
 }
 
 func (o *FilesystemOSS) Save(ctx context.Context, filename string, r io.Reader) (int64, error) {

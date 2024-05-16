@@ -13,8 +13,8 @@ message Pipeline {
   int64 id = 1[(go.field).name = "ID"];
   repeated PipelineExecution executions = 2;
   repeated Job jobs = 3;
-  google.protobuf.Timestamp created_at = 4;
-  google.protobuf.Timestamp updated_at = 5;
+  google.protobuf.Timestamp created_at = 101;
+  google.protobuf.Timestamp updated_at = 102;
 }
 
 
@@ -33,6 +33,8 @@ message JobDSL {
   map<string, string> env_var = 6;
   repeated string depends_on = 7;
   repeated StepDSL steps = 8;
+  // Timeout in seconds
+  int32 Timeout = 9;
 }
 
 message Job {
@@ -45,8 +47,9 @@ message Job {
   repeated string depends_on = 7;
   repeated Step steps = 8;
   repeated JobExecution executions = 9;
-  google.protobuf.Timestamp created_at = 10;
-  google.protobuf.Timestamp updated_at = 11;
+  int32 Timeout = 10;
+  google.protobuf.Timestamp created_at = 101;
+  google.protobuf.Timestamp updated_at = 102;
 }
 
 // Status represents the status of a step.
@@ -70,8 +73,8 @@ message JobExecution {
   repeated StepExecution steps = 4;
   google.protobuf.Timestamp started_at = 5;
   google.protobuf.Timestamp completed_at = 6;
-  google.protobuf.Timestamp created_at = 7;
-  google.protobuf.Timestamp updated_at = 8;
+  google.protobuf.Timestamp created_at = 101;
+  google.protobuf.Timestamp updated_at = 102;
 }
 
 message RunsOn {
@@ -135,8 +138,8 @@ message Step {
   repeated string commands = 9;
   map<string, string> env_var = 10;
   repeated StepExecution executions = 11;
-  google.protobuf.Timestamp created_at = 12;
-  google.protobuf.Timestamp updated_at = 13;
+  google.protobuf.Timestamp created_at = 101;
+  google.protobuf.Timestamp updated_at = 102;
 }
 
 message StepExecution {
@@ -146,8 +149,8 @@ message StepExecution {
   uint32 exit_code = 4;
   google.protobuf.Timestamp started_at = 5;
   google.protobuf.Timestamp completed_at = 6;
-  google.protobuf.Timestamp created_at = 7;
-  google.protobuf.Timestamp updated_at = 8;
+  google.protobuf.Timestamp created_at = 101;
+  google.protobuf.Timestamp updated_at = 102;
 }
 
 message LogLine{

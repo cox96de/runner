@@ -21,7 +21,7 @@ func getGinHandler[R any, P any](f func(ctx context.Context, request *R) (*P, er
 			JSON(c, http.StatusBadRequest, &Message{Message: err})
 			return
 		}
-		response, err := f(c, &request)
+		response, err := f(c.Copy(), &request)
 		if err != nil {
 			log.ExtractLogger(c).Errorf("failed to handle request: %+v", err)
 			JSON(c, http.StatusInternalServerError, &Message{Message: err})
