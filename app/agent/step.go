@@ -13,6 +13,27 @@ import (
 	"github.com/samber/lo"
 )
 
+func (e *Execution) updateStepExecution(ctx context.Context, step *api.Step, status *api.Status, exitCode *uint32) error {
+	stepExecution, ok := e.stepExecutions[step.ID]
+	if !ok {
+		return errors.Errorf("step execution not found: %d", step.ID)
+	}
+	_, err := e.client.UpdateStepExecution(ctx, &api.UpdateStepExecutionRequest{
+		StepExecutionID: stepExecution.ID,
+		JobExecutionID:  e.jobExecution.ID,
+		JobID:           e.job.ID,
+		Status:          status,
+		ExitCode:        exitCode,
+	})
+	if err != nil {
+		return err
+	}
+	if status != nil {
+		stepExecution.Status = *status
+	}
+	return nil
+}
+
 func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	logger := log.ExtractLogger(ctx).WithField("step", step.Name)
 	executor, err := e.getExecutor(ctx, e.runner, step)
@@ -42,14 +63,9 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to get environment")
 	}
-	_, err = e.client.UpdateStepExecution(ctx, &api.UpdateStepExecutionRequest{
-		StepExecutionID: step.Executions[0].ID,
-		JobExecutionID:  e.job.Executions[0].ID,
-		JobID:           e.job.ID,
-		Status:          lo.ToPtr(api.StatusRunning),
-	})
+	err = e.updateStepExecution(ctx, step, lo.ToPtr(api.StatusRunning), nil)
 	if err != nil {
-		return errors.WithMessage(err, "failed to update step execution")
+		return errors.WithMessage(err, "failed to update step jobExecution")
 	}
 	startCommandResponse, err := executor.StartCommand(ctx, &executorpb.StartCommandRequest{
 		Commands: commands,
@@ -66,7 +82,7 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to get command log")
 	}
-	collector := newLogCollector(e.client, e.execution, step.Name, logger, e.logFlushInternal)
+	collector := newLogCollector(e.client, e.jobExecution, step.Name, logger, e.logFlushInternal)
 	logCh := make(chan struct{})
 	go func() {
 		defer func() {
@@ -122,15 +138,10 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	case <-time.After(time.Second * 5):
 		logger.Warnf("log collector is not closed in time")
 	}
-	if _, err = e.client.UpdateStepExecution(ctx, &api.UpdateStepExecutionRequest{
-		StepExecutionID: step.Executions[0].ID,
-		JobExecutionID:  e.job.Executions[0].ID,
-		JobID:           e.job.ID,
-		Status:          &stepStatus,
-		ExitCode:        lo.ToPtr(uint32(processStatus.ExitCode)),
-	}); err != nil {
+
+	if err = e.updateStepExecution(ctx, step, &stepStatus, lo.ToPtr(uint32(processStatus.ExitCode))); err != nil {
 		// TODO: retry if failed.
-		return errors.WithMessage(err, "failed to update step execution")
+		return errors.WithMessage(err, "failed to update step jobExecution")
 	}
 	logger.Infof("command is completed, exit code: %+v", processStatus.ExitCode)
 	return nil

@@ -22,7 +22,8 @@ const timeoutError = util.StringError("job timeout")
 type Execution struct {
 	engine           engine.Engine
 	job              *api.Job
-	execution        *api.JobExecution
+	jobExecution     *api.JobExecution
+	stepExecutions   map[int64]*api.StepExecution
 	client           api.ServerClient
 	logFlushInternal time.Duration
 
@@ -36,13 +37,18 @@ type Execution struct {
 }
 
 func NewExecution(engine engine.Engine, job *api.Job, client api.ServerClient) *Execution {
-	return &Execution{
+	e := &Execution{
 		engine:           engine,
 		job:              job,
-		execution:        job.Executions[len(job.Executions)-1],
+		jobExecution:     job.Executions[len(job.Executions)-1],
+		stepExecutions:   map[int64]*api.StepExecution{},
 		client:           client,
 		logFlushInternal: time.Second,
 	}
+	for _, step := range e.jobExecution.Steps {
+		e.stepExecutions[step.StepID] = step
+	}
+	return e
 }
 
 // Execute executes the job.
@@ -50,10 +56,10 @@ func (e *Execution) Execute(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	var err error
-	e.logWriter = newLogCollector(e.client, e.execution, "_", log.ExtractLogger(ctx), e.logFlushInternal)
+	e.logWriter = newLogCollector(e.client, e.jobExecution, "_", log.ExtractLogger(ctx), e.logFlushInternal)
 	logger := log.ExtractLogger(ctx).WithOutput(io.MultiWriter(os.Stdout, e.logWriter))
 	ctx = log.WithLogger(ctx, logger)
-	if err = e.updateStatus(ctx, api.StatusPreparing); err != nil {
+	if err = e.updateJobStatus(ctx, api.StatusPreparing); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
 	e.runner, err = e.engine.CreateRunner(ctx, e, e.job)
@@ -66,7 +72,7 @@ func (e *Execution) Execute(ctx context.Context) error {
 		return err
 	}
 	defer e.stop(ctx)
-	if err = e.updateStatus(ctx, api.StatusRunning); err != nil {
+	if err = e.updateJobStatus(ctx, api.StatusRunning); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
 	if e.job.Timeout > 0 {
@@ -80,26 +86,41 @@ func (e *Execution) Execute(ctx context.Context) error {
 		if !isErrorContextCancel(err) {
 			return errors.WithMessage(err, "failed to execute steps")
 		}
-		logger.Infof("step is aborted by timeout")
+		logger.Infof("step is aborted")
 	}
-	// TODO: calculate status.
-	if err = e.updateStatus(ctx, api.StatusSucceeded); err != nil {
+	jobStatus := e.calculateJobStatus()
+	logger.Infof("job status is %s", jobStatus)
+	if err = e.updateJobStatus(ctx, jobStatus); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
 	return nil
 }
 
-func (e *Execution) updateStatus(ctx context.Context, status api.Status) error {
+func (e *Execution) updateJobStatus(ctx context.Context, status api.Status) error {
 	execution, err := e.client.UpdateJobExecution(ctx, &api.UpdateJobExecutionRequest{
 		JobID:          e.job.ID,
-		JobExecutionID: e.execution.ID,
+		JobExecutionID: e.jobExecution.ID,
 		Status:         &status,
 	})
 	if err != nil {
-		return errors.WithMessagef(err, "failed to update job execution to %s", status)
+		return errors.WithMessagef(err, "failed to update job jobExecution to %s", status)
 	}
-	e.execution = execution.JobExecution
+	e.jobExecution.Status = execution.JobExecution.Status
 	return nil
+}
+
+func (e *Execution) calculateJobStatus() api.Status {
+	status := api.StatusSucceeded
+	for _, step := range e.stepExecutions {
+		if !step.Status.IsCompleted() {
+			// FIXME: It's bad status. Handle it.
+			return e.jobExecution.Status
+		}
+		if step.Status == api.StatusFailed {
+			return api.StatusFailed
+		}
+	}
+	return status
 }
 
 func (e *Execution) stop(loggerCtx context.Context) {
