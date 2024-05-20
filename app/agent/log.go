@@ -202,7 +202,7 @@ func dropCR(data []byte) []byte {
 }
 
 func (e *Execution) CreateLogWriter(ctx context.Context, logName string) io.WriteCloser {
-	return newLogCollector(e.client, e.execution, logName, log.ExtractLogger(ctx), e.logFlushInternal)
+	return newLogCollector(e.client, e.jobExecution, logName, log.ExtractLogger(ctx), e.logFlushInternal)
 }
 
 func (e *Execution) GetDefaultLogWriter(ctx context.Context) io.WriteCloser {

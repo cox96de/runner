@@ -75,5 +75,6 @@ func TestHandler_createPipeline(t *testing.T) {
 		cmpopts.IgnoreFields(api.Job{}, "PipelineID", "ID", "CreatedAt", "UpdatedAt"),
 		cmpopts.IgnoreFields(api.JobExecution{}, "JobID", "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"),
 		cmpopts.IgnoreFields(api.Step{}, "PipelineID", "JobID", "ID", "CreatedAt", "UpdatedAt"),
-		cmpopts.IgnoreFields(api.StepExecution{}, "JobExecutionID", "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
+		cmpopts.IgnoreFields(api.StepExecution{}, "JobExecutionID", "StepID", "ID", "CreatedAt", "UpdatedAt",
+			"StartedAt", "CompletedAt"))
 }

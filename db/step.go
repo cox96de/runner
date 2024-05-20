@@ -148,6 +148,7 @@ func PackStepExecution(s *StepExecution) *api.StepExecution {
 	return &api.StepExecution{
 		ID:             s.ID,
 		JobExecutionID: s.JobExecutionID,
+		StepID:         s.StepID,
 		Status:         s.Status,
 		ExitCode:       s.ExitCode,
 		StartedAt:      api.ConvertTime(s.StartedAt),

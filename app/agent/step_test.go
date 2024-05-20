@@ -43,11 +43,10 @@ func TestExecution_executeStep(t *testing.T) {
 			t.Skip("windows")
 		}
 		e.jobTimeoutCtx = context.Background()
+		e.stepExecutions[1] = &api.StepExecution{}
 		err = e.executeStep(context.Background(), &api.Step{
-			Name: "test",
-			Executions: []*api.StepExecution{
-				{},
-			},
+			Name:     "test",
+			ID:       1,
 			Commands: []string{"echo hello"},
 		})
 		assert.NilError(t, err)
@@ -58,11 +57,10 @@ func TestExecution_executeStep(t *testing.T) {
 			t.Skip("not windows")
 		}
 		e.jobTimeoutCtx = context.Background()
+		e.stepExecutions[1] = &api.StepExecution{}
 		err = e.executeStep(context.Background(), &api.Step{
-			Name: "test",
-			Executions: []*api.StepExecution{
-				{},
-			},
+			Name:     "test",
+			ID:       1,
 			Commands: []string{"Write-Output hello"},
 		})
 		assert.NilError(t, err)

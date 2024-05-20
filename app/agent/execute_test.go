@@ -83,3 +83,32 @@ func TestExecutor_executeJob(t *testing.T) {
 	err = execution.Execute(context.Background())
 	assert.NilError(t, err)
 }
+
+func TestExecution_calculateJobStatus(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		e := NewExecution(nil, &api.Job{Executions: []*api.JobExecution{
+			{
+				Steps: []*api.StepExecution{
+					{
+						Status: api.StatusSucceeded,
+					},
+				},
+			},
+		}}, nil)
+		status := e.calculateJobStatus()
+		assert.Equal(t, status, api.StatusSucceeded)
+	})
+	t.Run("failed", func(t *testing.T) {
+		e := NewExecution(nil, &api.Job{Executions: []*api.JobExecution{
+			{
+				Steps: []*api.StepExecution{
+					{
+						Status: api.StatusFailed,
+					},
+				},
+			},
+		}}, nil)
+		status := e.calculateJobStatus()
+		assert.Equal(t, status, api.StatusFailed)
+	})
+}
