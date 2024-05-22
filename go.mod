@@ -15,6 +15,7 @@ require (
 	github.com/jinzhu/configor v1.2.2
 	github.com/json-iterator/go v1.1.12
 	github.com/modern-go/reflect2 v1.0.2
+	github.com/natessilva/dag v0.0.0-20180124060714-7194b8dcc5c4
 	github.com/pkg/errors v0.9.1
 	github.com/rs/xid v1.5.0
 	github.com/samber/lo v1.38.1
