@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/cox96de/runner/app/agent/dag"
+
 	"github.com/cox96de/runner/lib"
 	"github.com/samber/lo"
 
@@ -147,7 +149,26 @@ func (e *Execution) stop(loggerCtx context.Context) {
 	}
 }
 
+func (e *Execution) normalizeSerialSteps() {
+	if e.isSerialSteps() {
+		for i := 1; i < len(e.job.Steps); i++ {
+			e.job.Steps[i].DependsOn = []string{e.job.Steps[i-1].Name}
+		}
+	}
+}
+
+func (e *Execution) isSerialSteps() bool {
+	for _, step := range e.job.Steps {
+		if len(step.DependsOn) > 0 {
+			return false
+		}
+	}
+	return true
+}
+
 func (e *Execution) executeSteps(ctx context.Context) error {
+	e.normalizeSerialSteps()
+	dagRunner := dag.NewRunner()
 	for _, step := range e.job.Steps {
 		err := e.executeStep(ctx, step)
 		if err != nil {
@@ -159,7 +180,7 @@ func (e *Execution) executeSteps(ctx context.Context) error {
 			}
 		}
 	}
-	return nil
+	return dagRunner.Run()
 }
 
 func (e *Execution) getExecutor(ctx context.Context, runner engine.Runner, step *api.Step) (executorpb.ExecutorClient, error) {
