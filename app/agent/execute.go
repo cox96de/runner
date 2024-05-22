@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/cox96de/runner/app/agent/dag"
+
 	"github.com/cox96de/runner/util"
 
 	"github.com/cox96de/runner/api"
@@ -131,14 +133,36 @@ func (e *Execution) stop(loggerCtx context.Context) {
 	}
 }
 
-func (e *Execution) executeSteps(ctx context.Context) error {
-	for _, step := range e.job.Steps {
-		err := e.executeStep(ctx, step)
-		if err != nil {
-			return errors.WithMessagef(err, "failed to execute step '%s'", step.Name)
+func (e *Execution) normalizeSerialSteps() {
+	if e.isSerialSteps() {
+		for i := 1; i < len(e.job.Steps); i++ {
+			e.job.Steps[i].DependsOn = []string{e.job.Steps[i-1].Name}
 		}
 	}
-	return nil
+}
+
+func (e *Execution) isSerialSteps() bool {
+	for _, step := range e.job.Steps {
+		if len(step.DependsOn) > 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func (e *Execution) executeSteps(ctx context.Context) error {
+	e.normalizeSerialSteps()
+	dagRunner := dag.NewRunner()
+	for _, step := range e.job.Steps {
+		step := step
+		dagRunner.AddVertex(step.Name, func() error {
+			return errors.WithMessagef(e.executeStep(ctx, step), "failed to execute step '%s'", step.Name)
+		})
+		for _, depend := range step.DependsOn {
+			dagRunner.AddEdge(depend, step.Name)
+		}
+	}
+	return dagRunner.Run()
 }
 
 func (e *Execution) getExecutor(ctx context.Context, runner engine.Runner, step *api.Step) (executorpb.ExecutorClient, error) {
