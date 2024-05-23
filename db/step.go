@@ -23,6 +23,7 @@ type Step struct {
 	Commands         []byte    `gorm:"column:commands"`
 	EnvVar           []byte    `gorm:"column:env_var"`
 	DependsOn        []byte    `gorm:"column:depends_on"`
+	If               string    `gorm:"column:if"`
 	CreatedAt        time.Time `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt        time.Time `gorm:"column:updated_at;autoUpdateTime"`
 }
@@ -41,6 +42,7 @@ type CreateStepOption struct {
 	EnvVar           map[string]string
 	DependsOn        []string
 	Commands         []string
+	If               string
 }
 
 // CreateSteps creates new steps.
@@ -54,6 +56,7 @@ func (c *Client) CreateSteps(ctx context.Context, options []*CreateStepOption) (
 			User:             option.User,
 			WorkingDirectory: option.WorkingDirectory,
 			Container:        option.Container,
+			If:               option.If,
 		}
 		var err error
 		step.EnvVar, err = json.Marshal(option.EnvVar)
@@ -119,6 +122,7 @@ func PackStep(step *Step, executions []*StepExecution) (*api.Step, error) {
 		WorkingDirectory: step.WorkingDirectory,
 		User:             step.User,
 		Container:        step.Container,
+		If:               step.If,
 		CreatedAt:        api.ConvertTime(step.CreatedAt),
 		UpdatedAt:        api.ConvertTime(step.UpdatedAt),
 	}

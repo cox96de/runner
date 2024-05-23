@@ -141,6 +141,7 @@ message Step {
   map<string, string> env_var = 10;
   repeated StepExecution executions = 11;
   StepExecution execution = 12;
+  string if = 13;
   google.protobuf.Timestamp created_at = 101;
   google.protobuf.Timestamp updated_at = 102;
 }

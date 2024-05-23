@@ -67,3 +67,82 @@ func TestExecution_executeStep(t *testing.T) {
 		assert.Assert(t, strings.Contains(logBuf.String(), "hello"), logBuf.String())
 	})
 }
+
+func TestExecution_evalExpression(t *testing.T) {
+	type args struct {
+		expression string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "True",
+			args: args{
+				expression: "True",
+			},
+			want: true,
+		},
+		{
+			name: "False",
+			args: args{
+				expression: "False",
+			},
+			want: false,
+		},
+		{
+			name: "true",
+			args: args{
+				expression: "true",
+			},
+			want: true,
+		},
+		{
+			name: "false",
+			args: args{
+				expression: "false",
+			},
+			want: false,
+		},
+		{
+			name: "1+1>2",
+			args: args{
+				expression: "1+1>2",
+			},
+			want: false,
+		},
+		{
+			name: "1+1>1",
+			args: args{
+				expression: "1+1>1",
+			},
+			want: true,
+		},
+		{
+			name: "def",
+			args: args{
+				expression: `
+def ok():
+  return True
+ok()
+`,
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Execution{}
+			got, err := e.evalExpression(context.Background(), tt.args.expression)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("evalExpression() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("evalExpression() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

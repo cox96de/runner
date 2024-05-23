@@ -157,25 +157,3 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	logger.Infof("command is completed, exit code: %+v", processStatus.ExitCode)
 	return nil
 }
-
-func (e *Execution) continueWhenNoPreFailed(step *api.Step) (bool, error) {
-	deepPres, err := e.dag.DeepPre(step.Name)
-	if err != nil {
-		return false, errors.WithMessage(err, "failed to get deep previous steps")
-	}
-	for _, pre := range deepPres {
-		if e.stepExecutions[pre.Step.ID].Status == api.StatusFailed {
-			return false, nil
-		}
-	}
-	return true, nil
-}
-
-func (e *Execution) preStep(step *api.Step) (bool, error) {
-	select {
-	case <-e.jobTimeoutCtx.Done():
-		return false, nil
-	default:
-	}
-	return e.continueWhenNoPreFailed(step)
-}
