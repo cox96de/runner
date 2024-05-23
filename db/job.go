@@ -80,7 +80,16 @@ func (c *Client) GetJobByID(ctx context.Context, id int64) (*Job, error) {
 }
 
 // PackJob packs a job into api.Job.
-func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions []*StepExecution) (*api.Job, error) {
+// latestExecution is the latest job execution.
+// executions are all job executions.
+// steps are all steps of the job.
+// stepExecutions are all step executions of the job.
+func PackJob(j *Job, latestExecution *JobExecution, executions []*JobExecution, steps []*Step,
+	stepExecutions []*StepExecution,
+) (*api.Job, error) {
+	executionsByJobExecutionID := lo.GroupBy(stepExecutions, func(item *StepExecution) int64 {
+		return item.JobExecutionID
+	})
 	runsOn := &api.RunsOn{}
 	err := json.Unmarshal(j.RunsOn, runsOn)
 	if err != nil {
@@ -110,6 +119,7 @@ func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions [
 		Executions: lo.Map(executions, func(e *JobExecution, _ int) *api.JobExecution {
 			return PackJobExecution(e, stepExecutions)
 		}),
+		Execution: PackJobExecution(latestExecution, executionsByJobExecutionID[latestExecution.ID]),
 		Steps:     packSteps,
 		DependsOn: dependsOn,
 		Timeout:   j.Timeout,
@@ -121,6 +131,9 @@ func PackJob(j *Job, executions []*JobExecution, steps []*Step, stepExecutions [
 // PackJobExecution packs a job execution into api.JobExecution.
 // If steps is nil, it will not pack steps.
 func PackJobExecution(j *JobExecution, steps []*StepExecution) *api.JobExecution {
+	if j == nil {
+		return nil
+	}
 	stepExecutions := lo.Map(steps, func(e *StepExecution, _ int) *api.StepExecution {
 		return PackStepExecution(e)
 	})
