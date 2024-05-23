@@ -35,7 +35,7 @@ func TestHandler_requestJobHandler(t *testing.T) {
 	assert.NilError(t, err)
 	job := response.Job
 	assert.Equal(t, job.ID, createPipelineResponse.Pipeline.Jobs[0].ID)
-	assert.Equal(t, job.Executions[0].ID, createPipelineResponse.Pipeline.Jobs[0].Executions[0].ID)
+	assert.Equal(t, job.Execution.ID, createPipelineResponse.Pipeline.Jobs[0].Execution.ID)
 	t.Run("get_empty_job", func(t *testing.T) {
 		requestJobResponse, err := handler.RequestJob(context.Background(), &api.RequestJobRequest{})
 		assert.NilError(t, err)

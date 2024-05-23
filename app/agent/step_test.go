@@ -29,9 +29,7 @@ func TestExecution_executeStep(t *testing.T) {
 		}).AnyTimes()
 	eng := shell.NewEngine()
 	e := NewExecution(eng, &api.Job{
-		Executions: []*api.JobExecution{
-			{},
-		},
+		Execution: &api.JobExecution{},
 	}, client)
 	var err error
 	e.runner, err = eng.CreateRunner(context.Background(), e, &api.Job{})
