@@ -36,6 +36,18 @@ func (e *Execution) updateStepExecution(ctx context.Context, step *api.Step, sta
 
 func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	logger := log.ExtractLogger(ctx).WithField("step", step.Name)
+	continueExecute, err := e.preStep(step)
+	if err != nil {
+		// TODO: update to failed.
+		return errors.WithMessage(err, "failed to pre step")
+	}
+	if !continueExecute {
+		logger.Infof("skip step")
+		if err := e.updateStepExecution(ctx, step, lo.ToPtr(api.StatusSkipped), nil); err != nil {
+			return errors.WithMessage(err, "failed to update step jobExecution")
+		}
+		return nil
+	}
 	executor, err := e.getExecutor(ctx, e.runner, step)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get executor")
@@ -145,4 +157,21 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	}
 	logger.Infof("command is completed, exit code: %+v", processStatus.ExitCode)
 	return nil
+}
+
+func (e *Execution) continueWhenNoPreFailed(step *api.Step) (bool, error) {
+	deepPres, err := e.dag.DeepPre(step.Name)
+	if err != nil {
+		return false, errors.WithMessage(err, "failed to get deep previous steps")
+	}
+	for _, pre := range deepPres {
+		if e.stepExecutions[pre.Step.ID].Status == api.StatusFailed {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func (e *Execution) preStep(step *api.Step) (bool, error) {
+	return e.continueWhenNoPreFailed(step)
 }

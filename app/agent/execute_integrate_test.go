@@ -113,6 +113,11 @@ func TestExecution(t *testing.T) {
 							Name:     "step2",
 							Commands: []string{"exit 1"},
 						},
+						{
+							Name:      "step3",
+							Commands:  []string{"exit 2"},
+							DependsOn: []string{"step2"},
+						},
 					},
 				}},
 			},
@@ -129,6 +134,7 @@ func TestExecution(t *testing.T) {
 		})
 		assert.NilError(t, err)
 		assert.Equal(t, executions.Jobs[0].Status, api.StatusFailed)
+		assert.Equal(t, executions.Jobs[0].Steps[2].Status, api.StatusSkipped)
 	})
 	t.Run("bad_dag", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
