@@ -40,7 +40,7 @@ func NewExecution(engine engine.Engine, job *api.Job, client api.ServerClient) *
 	e := &Execution{
 		engine:           engine,
 		job:              job,
-		jobExecution:     job.Executions[len(job.Executions)-1],
+		jobExecution:     job.Execution,
 		stepExecutions:   map[int64]*api.StepExecution{},
 		client:           client,
 		logFlushInternal: time.Second,

@@ -77,7 +77,7 @@ func (h *Handler) packJob(ctx context.Context, jobExecution *db.JobExecution) (*
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get step executions")
 	}
-	packJob, err := db.PackJob(job, []*db.JobExecution{jobExecution}, steps, stepExecutions)
+	packJob, err := db.PackJob(job, jobExecution, nil, steps, stepExecutions)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to pack job")
 	}

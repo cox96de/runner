@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/cox96de/runner/lib"
 
 	"github.com/cox96de/runner/util"
 
@@ -292,4 +295,13 @@ func TestSetCommandMockRandomString(t *testing.T) {
 		assert.NilError(t, err1)
 		assert.Error(t, err2, "can not get a valid commandID")
 	})
+}
+
+func Test_newCommand(t *testing.T) {
+	cmd := exec.Command("python3", "-m", "non-exists")
+	rb := lib.NewRingBuffer(defaultRingBufferSize)
+	c := newCommand(cmd, rb)
+	err := c.Start()
+	assert.NilError(t, err)
+	c.Wait()
 }

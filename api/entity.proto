@@ -11,12 +11,12 @@ message PipelineDSL {
 
 message Pipeline {
   int64 id = 1[(go.field).name = "ID"];
-  repeated PipelineExecution executions = 2;
-  repeated Job jobs = 3;
+  repeated Job jobs = 2;
+  repeated PipelineExecution executions = 3;
+  PipelineExecution execution = 4;
   google.protobuf.Timestamp created_at = 101;
   google.protobuf.Timestamp updated_at = 102;
 }
-
 
 message PipelineExecution {
   int64 id = 1;
@@ -47,7 +47,8 @@ message Job {
   repeated string depends_on = 7;
   repeated Step steps = 8;
   repeated JobExecution executions = 9;
-  int32 Timeout = 10;
+  JobExecution execution = 10;
+  int32 Timeout = 11;
   google.protobuf.Timestamp created_at = 101;
   google.protobuf.Timestamp updated_at = 102;
 }
@@ -124,6 +125,7 @@ message StepDSL {
   repeated string depends_on = 8;
   repeated string commands = 9;
   map<string, string> env_var = 10;
+  string if = 11;
 }
 
 message Step {
@@ -138,6 +140,7 @@ message Step {
   repeated string commands = 9;
   map<string, string> env_var = 10;
   repeated StepExecution executions = 11;
+  StepExecution execution = 12;
   google.protobuf.Timestamp created_at = 101;
   google.protobuf.Timestamp updated_at = 102;
 }

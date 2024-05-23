@@ -60,7 +60,7 @@ func TestNewClient(t *testing.T) {
 		t.Run("UpdateJobExecution", func(t *testing.T) {
 			updateJobExecutionResponse, err := client.UpdateJobExecution(ctx, &api.UpdateJobExecutionRequest{
 				JobID:          requestedJob.ID,
-				JobExecutionID: requestedJob.Executions[0].ID,
+				JobExecutionID: requestedJob.Execution.ID,
 				Status:         lo.ToPtr(api.StatusPreparing),
 			})
 			assert.NilError(t, err)
@@ -96,8 +96,8 @@ func TestNewClient(t *testing.T) {
 		t.Run("UpdateStepExecution", func(t *testing.T) {
 			execution, err := client.UpdateStepExecution(ctx, &api.UpdateStepExecutionRequest{
 				JobID:           requestedJob.ID,
-				JobExecutionID:  requestedJob.Executions[0].ID,
-				StepExecutionID: requestedJob.Executions[0].Steps[0].ID,
+				JobExecutionID:  requestedJob.Execution.ID,
+				StepExecutionID: requestedJob.Execution.Steps[0].ID,
 				Status:          lo.ToPtr(api.StatusRunning),
 			})
 			assert.NilError(t, err)

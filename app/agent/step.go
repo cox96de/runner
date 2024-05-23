@@ -5,6 +5,9 @@ import (
 	"io"
 	"time"
 
+	"go.starlark.net/starlark"
+	"go.starlark.net/syntax"
+
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/log"
@@ -12,6 +15,40 @@ import (
 	"github.com/pkg/errors"
 	"github.com/samber/lo"
 )
+
+// Context is the context of the execution.
+//  context
+//    |- job
+//       |- execution
+//       |- steps
+//    |  step
+//    |  step
+
+func (e *Execution) evalExpression(ctx context.Context, expression string) (bool, error) {
+	thread := &starlark.Thread{
+		Name: "main",
+		Print: func(thread *starlark.Thread, msg string) {
+			// Nop print.
+		},
+	}
+	stringDict := starlark.StringDict{
+		"true":  starlark.True,
+		"false": starlark.False,
+	}
+	options, err := starlark.EvalOptions(&syntax.FileOptions{}, thread, "expression", expression,
+		stringDict)
+	if err != nil {
+		return false, errors.WithMessage(err, "")
+	}
+	switch options := options.(type) {
+	case starlark.Bool:
+		return bool(options), nil
+	case starlark.String:
+		return string(options) == "True" || string(options) == "true", nil
+	default:
+		return false, errors.Errorf("unsupported expression type, expect bool or string type, got %s", options.Type())
+	}
+}
 
 func (e *Execution) updateStepExecution(ctx context.Context, step *api.Step, status *api.Status, exitCode *uint32) error {
 	stepExecution, ok := e.stepExecutions[step.ID]

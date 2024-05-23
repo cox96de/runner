@@ -51,13 +51,11 @@ func TestExecutor_executeJob(t *testing.T) {
 				},
 			},
 		},
-		Executions: []*api.JobExecution{
-			{
-				Steps: []*api.StepExecution{
-					{
-						ID:             1,
-						JobExecutionID: 1,
-					},
+		Execution: &api.JobExecution{
+			Steps: []*api.StepExecution{
+				{
+					ID:             1,
+					JobExecutionID: 1,
 				},
 			},
 		},
@@ -86,12 +84,10 @@ func TestExecutor_executeJob(t *testing.T) {
 
 func TestExecution_calculateJobStatus(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		e := NewExecution(nil, &api.Job{Executions: []*api.JobExecution{
-			{
-				Steps: []*api.StepExecution{
-					{
-						Status: api.StatusSucceeded,
-					},
+		e := NewExecution(nil, &api.Job{Execution: &api.JobExecution{
+			Steps: []*api.StepExecution{
+				{
+					Status: api.StatusSucceeded,
 				},
 			},
 		}}, nil)
