@@ -6,6 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/cox96de/runner/lib"
+	"github.com/samber/lo"
+
 	"github.com/cox96de/runner/util"
 
 	"github.com/cox96de/runner/api"
@@ -28,6 +31,7 @@ type Execution struct {
 	logFlushInternal time.Duration
 
 	runner    engine.Runner
+	dag       *lib.DAG[*dagNode]
 	logWriter *logCollector
 
 	// jobTimeoutCtx is the context for the job timeout.
@@ -62,6 +66,20 @@ func (e *Execution) Execute(ctx context.Context) error {
 	if err = e.updateJobStatus(ctx, api.StatusPreparing); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
+	dag, err := lib.NewDAG[*dagNode](lo.Map(e.job.Steps, func(step *api.Step, index int) *dagNode {
+		return &dagNode{
+			Step: step,
+		}
+	})...)
+	if err != nil {
+		logger.Errorf("failed to calculate DAG: %v", err)
+		// TODO: update job status to failed with reason.
+		if err = e.updateJobStatus(ctx, api.StatusFailed); err != nil {
+			return errors.WithMessage(err, "failed to update status")
+		}
+		return nil
+	}
+	e.dag = dag
 	e.runner, err = e.engine.CreateRunner(ctx, e, e.job)
 	if err != nil {
 		return err
