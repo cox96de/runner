@@ -70,7 +70,6 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	default:
 		return errors.Errorf("unsupported os: '%s'", getRuntimeInfoResp.OS)
 	}
-
 	environment, err := executor.Environment(ctx, &executorpb.EnvironmentRequest{})
 	if err != nil {
 		return errors.WithMessage(err, "failed to get environment")
@@ -173,5 +172,10 @@ func (e *Execution) continueWhenNoPreFailed(step *api.Step) (bool, error) {
 }
 
 func (e *Execution) preStep(step *api.Step) (bool, error) {
+	select {
+	case <-e.jobTimeoutCtx.Done():
+		return false, nil
+	default:
+	}
 	return e.continueWhenNoPreFailed(step)
 }
