@@ -62,7 +62,6 @@ func TestExecution(t *testing.T) {
 		assert.NilError(t, err)
 	})
 	t.Run("timeout", func(t *testing.T) {
-		t.Skip("FIXME: timeout status")
 		if runtime.GOOS == "windows" {
 			t.Skip("skip test on windows")
 		}
@@ -73,10 +72,17 @@ func TestExecution(t *testing.T) {
 				Jobs: []*api.JobDSL{{
 					Name:    "job1",
 					Timeout: 1,
-					Steps: []*api.StepDSL{{
-						Name:     "step1",
-						Commands: []string{"sleep 10"},
-					}},
+					Steps: []*api.StepDSL{
+						{
+							Name:     "step1",
+							Commands: []string{"sleep 10"},
+						},
+						{
+							Name:      "step2",
+							Commands:  []string{"echo 'should skip'"},
+							DependsOn: []string{"step1"},
+						},
+					},
 				}},
 			},
 		})
@@ -91,7 +97,9 @@ func TestExecution(t *testing.T) {
 			JobID: requestJobResponse.Job.ID,
 		})
 		assert.NilError(t, err)
-		assert.Equal(t, executions.Jobs[0].Status, api.StatusSucceeded)
+		assert.Equal(t, executions.Jobs[0].Status, api.StatusFailed)
+		assert.Equal(t, executions.Jobs[0].Steps[0].Status, api.StatusFailed)
+		assert.Equal(t, executions.Jobs[0].Steps[1].Status, api.StatusSkipped)
 	})
 	t.Run("step_failed", func(t *testing.T) {
 		if runtime.GOOS == "windows" {

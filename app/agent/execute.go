@@ -93,12 +93,11 @@ func (e *Execution) Execute(ctx context.Context) error {
 	if err = e.updateJobStatus(ctx, api.StatusRunning); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
+	e.jobTimeoutCtx = ctx
 	if e.job.Timeout > 0 {
 		var timeoutCancel context.CancelFunc
 		e.jobTimeoutCtx, timeoutCancel = context.WithTimeoutCause(ctx, time.Duration(e.job.Timeout)*time.Second, timeoutError)
 		defer timeoutCancel()
-	} else {
-		e.jobTimeoutCtx = ctx
 	}
 	if err = e.executeSteps(ctx); err != nil {
 		if !isErrorContextCancel(err) {
@@ -153,7 +152,12 @@ func (e *Execution) executeSteps(ctx context.Context) error {
 	for _, step := range e.job.Steps {
 		err := e.executeStep(ctx, step)
 		if err != nil {
-			return errors.WithMessagef(err, "failed to execute step '%s'", step.Name)
+			if !isErrorContextCancel(err) {
+				return errors.WithMessagef(err, "failed to execute step '%s'", step.Name)
+			}
+			if err = e.updateStepExecution(ctx, step, lo.ToPtr(api.StatusFailed), nil); err != nil {
+				return errors.WithMessage(err, "failed to update step jobExecution")
+			}
 		}
 	}
 	return nil
