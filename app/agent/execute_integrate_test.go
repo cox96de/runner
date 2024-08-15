@@ -43,19 +43,27 @@ func TestExecution(t *testing.T) {
 		}
 		client := newMockServerHandler(t)
 		ctx := context.Background()
+		label := t.Name()
 		_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
 			Pipeline: &api.PipelineDSL{
-				Jobs: []*api.JobDSL{{
-					Name: "job1",
-					Steps: []*api.StepDSL{{
-						Name:     "step1",
-						Commands: []string{"echo hello"},
-					}},
-				}},
+				Jobs: []*api.JobDSL{
+					{
+						RunsOn: &api.RunsOn{
+							Label: label,
+						},
+						Name: "job1",
+						Steps: []*api.StepDSL{{
+							Name:     "step1",
+							Commands: []string{"echo hello"},
+						}},
+					},
+				},
 			},
 		})
 		assert.NilError(t, err)
-		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
+		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{
+			Label: label,
+		})
 		assert.NilError(t, err)
 		execution := NewExecution(shell.NewEngine(), requestJobResponse.Job, client)
 		assert.Assert(t, execution != nil)
@@ -68,9 +76,11 @@ func TestExecution(t *testing.T) {
 		}
 		client := newMockServerHandler(t)
 		ctx := context.Background()
+		label := t.Name()
 		_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
 			Pipeline: &api.PipelineDSL{
 				Jobs: []*api.JobDSL{{
+					RunsOn:  &api.RunsOn{Label: label},
 					Name:    "job1",
 					Timeout: 1,
 					Steps: []*api.StepDSL{
@@ -88,7 +98,7 @@ func TestExecution(t *testing.T) {
 			},
 		})
 		assert.NilError(t, err)
-		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
+		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{Label: label})
 		assert.NilError(t, err)
 		execution := NewExecution(shell.NewEngine(), requestJobResponse.Job, client)
 		assert.Assert(t, execution != nil)
@@ -111,9 +121,11 @@ func TestExecution(t *testing.T) {
 		client := newMockServerHandler(t)
 		ctx := context.Background()
 		t.Run("dag", func(t *testing.T) {
+			label := t.Name()
 			_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
 				Pipeline: &api.PipelineDSL{
 					Jobs: []*api.JobDSL{{
+						RunsOn:  &api.RunsOn{Label: label},
 						Name:    "job1",
 						Timeout: int32(time.Hour / time.Second),
 						Steps: []*api.StepDSL{
@@ -135,7 +147,9 @@ func TestExecution(t *testing.T) {
 				},
 			})
 			assert.NilError(t, err)
-			requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
+			requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{
+				Label: label,
+			})
 			assert.NilError(t, err)
 			execution := NewExecution(shell.NewEngine(), requestJobResponse.Job, client)
 			assert.Assert(t, execution != nil)
@@ -152,9 +166,11 @@ func TestExecution(t *testing.T) {
 			assert.Equal(t, jobExecution.Reason.Reason, api.FailedReasonStepFailed)
 		})
 		t.Run("seq", func(t *testing.T) {
+			label := t.Name()
 			_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
 				Pipeline: &api.PipelineDSL{
 					Jobs: []*api.JobDSL{{
+						RunsOn:  &api.RunsOn{Label: label},
 						Name:    "job1",
 						Timeout: int32(time.Hour / time.Second),
 						Steps: []*api.StepDSL{
@@ -175,7 +191,9 @@ func TestExecution(t *testing.T) {
 				},
 			})
 			assert.NilError(t, err)
-			requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
+			requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{
+				Label: label,
+			})
 			assert.NilError(t, err)
 			execution := NewExecution(shell.NewEngine(), requestJobResponse.Job, client)
 			assert.Assert(t, execution != nil)
@@ -196,9 +214,11 @@ func TestExecution(t *testing.T) {
 		}
 		client := newMockServerHandler(t)
 		ctx := context.Background()
+		label := t.Name()
 		_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
 			Pipeline: &api.PipelineDSL{
 				Jobs: []*api.JobDSL{{
+					RunsOn:  &api.RunsOn{Label: label},
 					Name:    "job1",
 					Timeout: 1,
 					Steps: []*api.StepDSL{
@@ -222,7 +242,9 @@ func TestExecution(t *testing.T) {
 			},
 		})
 		assert.NilError(t, err)
-		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
+		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{
+			Label: label,
+		})
 		assert.NilError(t, err)
 		execution := NewExecution(shell.NewEngine(), requestJobResponse.Job, client)
 		assert.Assert(t, execution != nil)
@@ -241,9 +263,11 @@ func TestExecution(t *testing.T) {
 		}
 		client := newMockServerHandler(t)
 		ctx := context.Background()
+		label := t.Name()
 		_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
 			Pipeline: &api.PipelineDSL{
 				Jobs: []*api.JobDSL{{
+					RunsOn:  &api.RunsOn{Label: label},
 					Name:    "job1",
 					Timeout: 1,
 					Steps: []*api.StepDSL{
@@ -265,7 +289,9 @@ func TestExecution(t *testing.T) {
 			},
 		})
 		assert.NilError(t, err)
-		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
+		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{
+			Label: label,
+		})
 		assert.NilError(t, err)
 		execution := NewExecution(shell.NewEngine(), requestJobResponse.Job, client)
 		assert.Assert(t, execution != nil)

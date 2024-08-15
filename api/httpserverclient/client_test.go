@@ -40,10 +40,14 @@ func TestNewClient(t *testing.T) {
 		_, err := client.Ping(context.Background(), &api.ServerPingRequest{})
 		assert.NilError(t, err)
 	})
+	label := t.Name()
 	createPipelineResponse, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
 		Pipeline: &api.PipelineDSL{
 			Jobs: []*api.JobDSL{{
 				Name: "job1",
+				RunsOn: &api.RunsOn{
+					Label: label,
+				},
 				Steps: []*api.StepDSL{{
 					Name:     "step1",
 					Commands: []string{"echo hello"},
@@ -54,11 +58,15 @@ func TestNewClient(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, len(createPipelineResponse.Pipeline.Jobs) == 1)
 	t.Run("RequestJob", func(t *testing.T) {
-		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
+		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{
+			Label: label,
+		})
 		assert.NilError(t, err)
 		assert.Assert(t, requestJobResponse.Job != nil)
 		requestedJob := requestJobResponse.Job
-		requestJobResponse, err = client.RequestJob(ctx, &api.RequestJobRequest{})
+		requestJobResponse, err = client.RequestJob(ctx, &api.RequestJobRequest{
+			Label: label,
+		})
 		assert.NilError(t, err)
 		assert.Assert(t, requestJobResponse.Job == nil)
 		t.Run("UpdateJobExecution", func(t *testing.T) {

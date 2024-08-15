@@ -13,6 +13,9 @@ import (
 
 func (h *Handler) CreatePipeline(ctx context.Context, request *api.CreatePipelineRequest) (*api.CreatePipelineResponse, error) {
 	logger := log.ExtractLogger(ctx)
+	if err := api.ValidateDSL(request.Pipeline); err != nil {
+		return nil, errors.WithMessage(err, "failed to validate pipeline DSL")
+	}
 	response, err := h.pipelineService.CreatePipeline(ctx, request.Pipeline)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create pipeline")

@@ -6,6 +6,7 @@ option go_package = "github.com/cox96de/runner/api";
 // PipelineDSL represents a pipeline definition.
 // It only used to create a pipeline.
 message PipelineDSL {
+  //@gotags: validate:"required,min=1,max=16,dive"
   repeated JobDSL jobs = 1;
 }
 
@@ -27,11 +28,14 @@ message PipelineExecution {
 // JobDSL represents a job definition.
 // It only used to create a job.
 message JobDSL {
+  //@gotags: validate:"required"
   string name = 3;
+  //@gotags: validate:"required"
   RunsOn runs_on = 4;
   string working_directory = 5;
   map<string, string> env_var = 6;
   repeated string depends_on = 7;
+  //@gotags: validate:"required,min=1,max=32,dive"
   repeated StepDSL steps = 8;
   // Timeout in seconds
   int32 Timeout = 9;
@@ -94,6 +98,7 @@ message Reason {
 }
 
 message RunsOn {
+  //@gotags: validate:"required"
   string label = 1;
   Docker docker = 2;
 }
@@ -133,11 +138,13 @@ message VolumeMount {
 // StepDSL represents a step definition.
 // It only used to create a step.
 message StepDSL {
+  //@gotags: validate:"required"
   string name = 4;
   string working_directory = 5;
   string user = 6;
   string container = 7;
   repeated string depends_on = 8;
+  //@gotags: validate:"required,min=1,max=32,dive"
   repeated string commands = 9;
   map<string, string> env_var = 10;
   string if = 11;
