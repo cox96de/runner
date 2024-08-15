@@ -79,4 +79,21 @@ func TestHandler_createPipeline(t *testing.T) {
 		cmpopts.IgnoreFields(api.Step{}, "PipelineID", "JobID", "ID", "CreatedAt", "UpdatedAt"),
 		cmpopts.IgnoreFields(api.StepExecution{}, "JobExecutionID", "StepID", "ID", "CreatedAt", "UpdatedAt",
 			"StartedAt", "CompletedAt"))
+	// Check packing pipeline.
+	for _, job := range p.Pipeline.Jobs {
+		assert.Equal(t, job.PipelineID, p.Pipeline.ID)
+		for _, step := range job.Steps {
+			assert.Equal(t, step.PipelineID, p.Pipeline.ID)
+			assert.Equal(t, step.JobID, job.ID)
+			for _, stepExecution := range step.Executions {
+				assert.Equal(t, stepExecution.StepID, step.ID)
+			}
+		}
+		for _, jobExecution := range job.Executions {
+			assert.Equal(t, jobExecution.JobID, job.ID)
+			for _, stepExecution := range jobExecution.Steps {
+				assert.Equal(t, stepExecution.JobExecutionID, jobExecution.ID)
+			}
+		}
+	}
 }
