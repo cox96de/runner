@@ -46,7 +46,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/cache@v3
         with:
           path: |
@@ -77,7 +77,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/cache@v3
         with:
           path: |
@@ -87,10 +87,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Build
-        run: go build ./...
+        run: go build ./cmd/...
 
       - name: Test
-        run: go test -race -coverprofile cover.out -coverpkg=./... ./...
+        run: go test -race -coverprofile cover.out -coverpkg=./... $(go list ./... | grep -v /runtime)
       - name: Upload coverage reports to Codecov with GitHub Action
         uses: codecov/codecov-action@v3
   build_windows:
@@ -101,7 +101,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.21"
+          go-version: "1.22"
       - uses: actions/cache@v3
         with:
           path: |
@@ -114,7 +114,7 @@ jobs:
         run: make build
       - name: Test
         run: |
-          $packages = go list ./... | Where-Object { $_ -notmatch "/kube|/zombies" }
+          $packages = go list ./... | Where-Object { $_ -notmatch "/kube|/zombies|/runtime" }
           go test -race -coverprofile cover.out  $packages
 
 #  integration:

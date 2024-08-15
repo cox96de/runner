@@ -3,84 +3,81 @@
 package test
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/cox96de/containervm/util"
+
+	"github.com/cox96de/runner/app/executor/executorpb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"gotest.tools/v3/fs"
+
 	"github.com/cox96de/runner/testtool"
 	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
-	"gotest.tools/v3/fs"
 )
 
-const imageName = "vm-runtime"
-
-func dockerBuild() error {
-	return run("docker", "build", "-t", imageName, "-f", "engine/vm/runtime/Dockerfile", ".")
-}
-
-func TestRuntime(t *testing.T) {
+func TestRunCMD(t *testing.T) {
 	gitRoot, err := testtool.GetRepositoryRoot()
 	assert.NilError(t, err)
 	env.ChangeWorkingDir(t, gitRoot)
-	containerName := "vm-runtime-test"
+	containerName := "vm-runtime-test-run-cmd"
 	_ = run("docker", "rm", containerName)
-	err = dockerBuild()
+	err = runtimeBuild()
 	assert.NilError(t, err)
-	imagePath := "engine/vm/runtime/debian-11-amd64.qcow2"
+	imagePath := "engine/vm/runtime/debian-11.qcow2"
 	_ = imagePath
-	cloudInitUserDataEnv := "CLOUD_INIT_USER_DATA"
-	cloudInitMetaDataEnv := "CLOUD_INIT_META_DATA"
 	metaData := `instance-id: vm-runner
 local-hostname: vm-runner
 `
 	userData := `#cloud-config
 
-users:
-- name: newsuper
-  gecos: Big Stuff
-  groups: users, admin
-  sudo: ALL=(ALL) NOPASSWD:ALL
-  shell: /bin/bash
-  lock_passwd: false
-  plain_text_passwd: password
-  ssh_authorized_keys: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDH/DwEnbEOapaUjzTXIfVX0W+zn5KZBAg7nTIRyHkpkC8WJtyn7AkbtdmdFBNUhRLLHvy33S7WkSSYG2Ch1wWQVGAD8q73F4U2tTErHcRyN6CzIrpY9plX7QowjRgyQK5uODvGZ5muImy3VbBD+PyPhn5g78gg2TXdL/8Zzd4C/qrPqMdMwyNQBYXF9ZI1O5EgkyfmKd0irigwkItEXRoJ0BIN+tO3Ag+gpHJLEkE2V+lwBDT7o8v+063XOJIzKcoKw3VOGO3adRZxP9ov0UQG69uklav6p43wx8b6wOwr0AvEnLLaoZTK5vRJhdWK9HRADsNYxCaKXb243a9Rz4oT k8sindocker`
+runcmd:
+  - [sh, -c, "nohup python3 -m http.server > /var/server.log 2>&1 &"]`
 	qemuCMD := fmt.Sprintf(
-		fmt.Sprintf("--cloud-init-user-data-env=%s ", cloudInitUserDataEnv) +
-			fmt.Sprintf("--cloud-init-meta-data-env=%s ", cloudInitMetaDataEnv) +
-			"-- " +
+		"-- " +
 			"qemu-system-x86_64 " +
 			"-nodefaults " +
 			"--nographic " +
 			"-display none " +
 			"-machine type=pc,usb=off " +
+			"-cpu host " +
+			"--enable-kvm " +
 			"-smp 4,sockets=1,cores=4,threads=1 " +
 			"-m 4096M -device virtio-balloon-pci,id=balloon0 " +
 			fmt.Sprintf("-drive file=%s,format=qcow2,if=virtio,aio=threads,media=disk,cache=unsafe,snapshot=on ", imagePath) +
 			"-serial chardev:serial0 -chardev socket,id=serial0,path=/tmp/console.sock,server=on,wait=off " +
 			"-vnc unix:/tmp/vnc.sock -device VGA ",
 	)
-	// TODO: add -enable-kvm if kvm is enabled.
 	dockerRunCMD := "docker run " +
 		"--privileged " +
-		fmt.Sprintf("-e %s='%s' ", cloudInitUserDataEnv, userData) +
-		fmt.Sprintf("-e %s='%s' ", cloudInitMetaDataEnv, metaData) +
+		fmt.Sprintf("-e CLOUD_INIT_USER_DATA='%s' ", userData) +
+		fmt.Sprintf("-e CLOUD_INIT_META_DATA='%s' ", metaData) +
 		"-v /tmp/containervm:/tmp " +
 		"-v $PWD:/root " +
 		"--name " + containerName + " " +
 		"-w /root " +
-		imageName + " " +
-		//"-- " +
+		runtimeImage + " " +
+		runtimeBinary + " " +
 		qemuCMD
-
+	dockerProcessChan := make(chan error)
 	go func() {
 		err := run("bash", "-c", dockerRunCMD)
-		assert.Check(t, err != nil)
+		if err != nil {
+			t.Logf("qemu image exit with: %+v", err)
+			dockerProcessChan <- err
+		}
 	}()
 	defer func() {
 		_ = run("docker", "stop", containerName)
@@ -89,6 +86,13 @@ users:
 
 	var ip string
 	for i := 0; i < 100; i++ {
+		select {
+		case err := <-dockerProcessChan:
+			assert.NilError(t, err)
+			t.FailNow()
+		default:
+
+		}
 		time.Sleep(time.Second * 3)
 		ip, err = getContainerIP(containerName)
 		assert.NilError(t, err)
@@ -98,49 +102,42 @@ users:
 	}
 	ip = strings.TrimRight(strings.TrimLeft(strings.TrimSpace(ip), "'"), "'")
 	t.Logf("ip: %s", ip)
-	privateKey := `-----BEGIN OPENSSH PRIVATE KEY-----
-b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
-NhAAAAAwEAAQAAAQEAx/w8BJ2xDmqWlI801yH1V9Fvs5+SmQQIO50yEch5KZAvFibcp+wJ
-G7XZnRQTVIUSyx78t90u1pEkmBtgodcFkFRgA/Ku9xeFNrUxKx3EcjegsyK6WPaZV+0KMI
-0YMkCubjg7xmeZriJst1WwQ/j8j4Z+YO/IINk13S//Gc3eAv6qz6jHTMMjUAWFxfWSNTuR
-IJMn5indIq4oMJCLRF0aCdASDfrTtwIPoKRySxJBNlfpcAQ0+6PL/tOt1ziSMynKCsN1Th
-jt2nUWcT/aL9FEBuvbpJWr+qeN8MfG+sDsK9ALxJyy2qGUyub0SYXVivR0QA7DWMQmil29
-uN2vUc+KEwAAA9CpZusiqWbrIgAAAAdzc2gtcnNhAAABAQDH/DwEnbEOapaUjzTXIfVX0W
-+zn5KZBAg7nTIRyHkpkC8WJtyn7AkbtdmdFBNUhRLLHvy33S7WkSSYG2Ch1wWQVGAD8q73
-F4U2tTErHcRyN6CzIrpY9plX7QowjRgyQK5uODvGZ5muImy3VbBD+PyPhn5g78gg2TXdL/
-8Zzd4C/qrPqMdMwyNQBYXF9ZI1O5EgkyfmKd0irigwkItEXRoJ0BIN+tO3Ag+gpHJLEkE2
-V+lwBDT7o8v+063XOJIzKcoKw3VOGO3adRZxP9ov0UQG69uklav6p43wx8b6wOwr0AvEnL
-LaoZTK5vRJhdWK9HRADsNYxCaKXb243a9Rz4oTAAAAAwEAAQAAAQA33qLR01A0q9h3lm53
-r7gAGbWwI+NrtjGqnebwCua2kt5kvOSmUQ3WXP53oLUpxqeScYy+vR8puJDVochkTlLymG
-/ein0Q8NQ5jXM4DW/lTN8rTIds9S+v3bwcBj79Qw64IiOo8SaA/IMM0PaWdsfwPO2vnS12
-59fhfFgzWE0u3oJBcjATHQhkpfyVXLI5QExQL7/1mz75OhxqZHqlNS8vtvNzL+lq5iPzVg
-3e1M9w+s0KwQGeEQu71FUEUTeG+o0yvtTf0pwpolNNEv+c/Vg0AQ1IxMnYW74WtjZUwXgC
-IqqUkNPhzu3+88yWog50pVZrrWmqE45FYqokk0+xM47pAAAAgQC1nQxDpfSVIbvF7HsDUE
-6aPABF/jDzR69qs5HxA2zuKt3qK8FRFooY97gERzgNchTx4Fc7LvwjNgPsJ/16n9QK9Z6D
-5Y8u7cvSB73bJxQbuBlBeXNSmsoDSkoBcH7AzGHLptlneJiIImOV8omHR+ZakcJpx8wJZ2
-G+dE5C2eERNAAAAIEA7M0ze83HFl+dMllscJjqzW9go7sUAqoXuP9TYnU+D0cohMWcFg4y
-grmkR8XK2vIelIIU8ij+Dgx3mHTaQjr5lcdoLT5dfJ7mhvsOezCnGynNt3ui9lcTvvMTFw
-nAMqYEIz9aWCzN4IK0ytOV24oz5BCpOFJxLZ5mm+hlu4qLGn0AAACBANgy6g2M+q/rhb29
-XOIo/z2Gt/JCVbrdWys3xSK+w7RvitutzkvcaUXS/ffPDa1a25SxyFRT2P1Q1iLhyO3FEX
-uYmwgZBgmbcKAb4K8oJaeX7iZ7xxAA+/SnGIwpU27D8By2fBvAD/hgf/ceZlzRu6P71Sh8
-PzJY8Yglizre5MvPAAAAFnhpYXppaGFvQE1hY0Jvb2subG9jYWwBAgME
------END OPENSSH PRIVATE KEY-----
-`
-	sshPrivateDir := fs.NewDir(t, "gotest", fs.WithFile("ssh.private", privateKey, fs.WithMode(0o600)))
-	testVM := func(commands ...string) (string, error) {
-		output, err := util.Run("ssh", append([]string{
-			"-i", sshPrivateDir.Join("ssh.private"), "-o",
-			"StrictHostKeyChecking=no", "newsuper@" + ip,
-		}, commands...)...)
+	testVM := func() (string, error) {
+		request, err := http.NewRequest(http.MethodGet, "http://"+ip+":8000", nil)
 		if err != nil {
 			return "", err
 		}
-		t.Logf("output: %s", output)
-		return output, nil
+		// Use custom client to disable proxy setting.
+		client := &http.Client{
+			Transport:     &http.Transport{},
+			CheckRedirect: nil,
+			Jar:           nil,
+			Timeout:       0,
+		}
+		resp, err := client.Do(request)
+		if err != nil {
+			return "", err
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+		if resp.StatusCode != 200 {
+			return string(body), errors.Errorf("status code: %d", resp.StatusCode)
+		}
+		t.Logf("output: %s", string(body))
+		return string(body), nil
 	}
 	pass := false
 	for i := 0; i < 100; i++ {
-		output, err := testVM("date")
+		select {
+		case err := <-dockerProcessChan:
+			assert.NilError(t, err)
+			t.FailNow()
+		default:
+
+		}
+		output, err := testVM()
 		if err == nil {
 			pass = true
 			break
@@ -149,6 +146,262 @@ PzJY8Yglizre5MvPAAAAFnhpYXppaGFvQE1hY0Jvb2subG9jYWwBAgME
 		time.Sleep(time.Second * 5)
 	}
 	assert.Assert(t, pass)
+}
+
+func TestMount9P(t *testing.T) {
+	gitRoot, err := testtool.GetRepositoryRoot()
+	assert.NilError(t, err)
+	env.ChangeWorkingDir(t, gitRoot)
+	containerName := "vm-runtime-test-mount-9p"
+	_ = run("docker", "rm", containerName)
+	err = runtimeBuild()
+	assert.NilError(t, err)
+	content := "hello world 9p"
+	testDir := fs.NewDir(t, "mount9p", fs.WithFile("index.html", content))
+	imagePath := "engine/vm/runtime/debian-11.qcow2"
+	metaData := `instance-id: vm-runner
+local-hostname: vm-runner
+`
+	userData := `#cloud-config
+
+runcmd:
+  - [sh, -c, "nohup python3 -m http.server > /var/server.log 2>&1 &"]
+mounts:
+  - [9ptest, /mnt/9p, "9p", "defaults", "0", "0"]
+`
+	qemuCMD := fmt.Sprintf(
+		"-- " +
+			"qemu-system-x86_64 " +
+			"-nodefaults " +
+			"--nographic " +
+			"-display none " +
+			"-machine type=pc,usb=off " +
+			"-cpu host " +
+			"--enable-kvm " +
+			"-smp 4,sockets=1,cores=4,threads=1 " +
+			"-m 4096M -device virtio-balloon-pci,id=balloon0 " +
+			"-fsdev local,security_model=passthrough,id=fsdev0,path=/mnt/9p " +
+			"-device virtio-9p-pci,fsdev=fsdev0,mount_tag=9ptest " +
+			fmt.Sprintf("-drive file=%s,format=qcow2,if=virtio,aio=threads,media=disk,cache=unsafe,snapshot=on ", imagePath) +
+			"-serial chardev:serial0 -chardev socket,id=serial0,path=/tmp/console.sock,server=on,wait=off " +
+			"-vnc unix:/tmp/vnc.sock -device VGA ",
+	)
+	dockerRunCMD := "docker run " +
+		"--privileged " +
+		fmt.Sprintf("-e CLOUD_INIT_USER_DATA='%s' ", userData) +
+		fmt.Sprintf("-e CLOUD_INIT_META_DATA='%s' ", metaData) +
+		"-v /tmp/containervm:/tmp " +
+		"-v $PWD:/root " +
+		"-v " + testDir.Path() + ":/mnt/9p " +
+		"--name " + containerName + " " +
+		"-w /root " +
+		runtimeImage + " " +
+		runtimeBinary + " " +
+		qemuCMD
+	dockerProcessChan := make(chan error)
+	go func() {
+		err := run("bash", "-c", dockerRunCMD)
+		if err != nil {
+			t.Logf("qemu image exit with: %+v", err)
+			dockerProcessChan <- err
+		}
+	}()
+	defer func() {
+		_ = run("docker", "stop", containerName)
+		_ = run("docker", "rm", containerName)
+	}()
+
+	var ip string
+	for i := 0; i < 100; i++ {
+		select {
+		case err := <-dockerProcessChan:
+			assert.NilError(t, err)
+			t.FailNow()
+		default:
+
+		}
+		time.Sleep(time.Second * 3)
+		ip, err = getContainerIP(containerName)
+		assert.NilError(t, err)
+		if ip != "" {
+			break
+		}
+	}
+	ip = strings.TrimRight(strings.TrimLeft(strings.TrimSpace(ip), "'"), "'")
+	t.Logf("ip: %s", ip)
+	testVM := func() (string, error) {
+		request, err := http.NewRequest(http.MethodGet, "http://"+ip+":8000/mnt/9p/index.html", nil)
+		if err != nil {
+			return "", err
+		}
+		// Use custom client to disable proxy setting.
+		client := &http.Client{
+			Transport:     &http.Transport{},
+			CheckRedirect: nil,
+			Jar:           nil,
+			Timeout:       0,
+		}
+		resp, err := client.Do(request)
+		if err != nil {
+			return "", err
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+		if resp.StatusCode != 200 {
+			return string(body), errors.Errorf("status code: %d", resp.StatusCode)
+		}
+		t.Logf("output: %s", string(body))
+		return string(body), nil
+	}
+	pass := false
+	for i := 0; i < 100; i++ {
+		select {
+		case err := <-dockerProcessChan:
+			assert.NilError(t, err)
+			t.FailNow()
+		default:
+
+		}
+		output, err := testVM()
+		if err == nil {
+			pass = true
+			break
+		}
+		t.Logf("error: %+v, output: %s", err, output)
+		time.Sleep(time.Second * 5)
+	}
+	assert.Assert(t, pass)
+}
+
+func TestRunExecutor(t *testing.T) {
+	gitRoot, err := testtool.GetRepositoryRoot()
+	assert.NilError(t, err)
+	env.ChangeWorkingDir(t, gitRoot)
+	containerName := "vm-runtime-test-run-executor"
+	_ = run("docker", "rm", containerName)
+	err = runtimeBuild()
+	assert.NilError(t, err)
+	err = run("bash", "-c", "CGO_ENABLED=0 go build -o output/executor ./cmd/executor")
+	assert.NilError(t, err)
+	imagePath := "engine/vm/runtime/debian-11.qcow2"
+	metaData := `instance-id: vm-runner
+local-hostname: vm-runner
+`
+	userData := `#cloud-config
+
+runcmd:
+  - [sh, -c, "while true; do if [ -f /mnt/9p/executor ]; then nohup /mnt/9p/executor > /var/server.log 2>&1 & break; else echo \"File not found. Retrying in 1 second...\"; sleep 1; fi; done"]
+mounts:
+  - [9ptest, /mnt/9p, "9p", "trans=virtio,version=9p2000.L,msize=104857600", "0", "0"]
+`
+	qemuCMD := fmt.Sprintf(
+		"-- " +
+			"qemu-system-x86_64 " +
+			"-nodefaults " +
+			"--nographic " +
+			"-display none " +
+			"-machine type=pc,usb=off " +
+			"-cpu host " +
+			"--enable-kvm " +
+			"-smp 4,sockets=1,cores=4,threads=1 " +
+			"-m 4096M -device virtio-balloon-pci,id=balloon0 " +
+			"-fsdev local,security_model=passthrough,id=fsdev0,path=/mnt/9p " +
+			"-device virtio-9p-pci,fsdev=fsdev0,mount_tag=9ptest " +
+			fmt.Sprintf("-drive file=%s,format=qcow2,if=virtio,aio=threads,media=disk,cache=unsafe,snapshot=on ", imagePath) +
+			"-serial chardev:serial0 -chardev socket,id=serial0,path=/tmp/console.sock,server=on,wait=off " +
+			"-vnc unix:/tmp/vnc.sock -device VGA ",
+	)
+	dockerRunCMD := "docker run " +
+		"--privileged " +
+		fmt.Sprintf("-e CLOUD_INIT_USER_DATA='%s' ", userData) +
+		fmt.Sprintf("-e CLOUD_INIT_META_DATA='%s' ", metaData) +
+		"-v /tmp/containervm:/tmp " +
+		"-v $PWD:/root " +
+		"-v " + "$PWD/output:/mnt/9p " +
+		"--name " + containerName + " " +
+		"-w /root " +
+		runtimeImage + " " +
+		runtimeBinary + " " +
+		qemuCMD
+	dockerProcessChan := make(chan error)
+	go func() {
+		err := run("bash", "-c", dockerRunCMD)
+		if err != nil {
+			t.Logf("qemu image exit with: %+v", err)
+			dockerProcessChan <- err
+		}
+	}()
+	defer func() {
+		_ = run("docker", "stop", containerName)
+		_ = run("docker", "rm", containerName)
+	}()
+
+	var ip string
+	for i := 0; i < 100; i++ {
+		select {
+		case err := <-dockerProcessChan:
+			assert.NilError(t, err)
+			t.FailNow()
+		default:
+
+		}
+		time.Sleep(time.Second * 3)
+		ip, err = getContainerIP(containerName)
+		assert.NilError(t, err)
+		if ip != "" {
+			break
+		}
+	}
+	ip = strings.TrimRight(strings.TrimLeft(strings.TrimSpace(ip), "'"), "'")
+	t.Logf("ip: %s", ip)
+	testVM := func() (string, error) {
+		conn, err := grpc.Dial(ip+":8080", grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithNoProxy())
+		if err != nil {
+			return "", errors.WithMessage(err, "failed to connect to executor")
+		}
+		client := executorpb.NewExecutorClient(conn)
+		_, err = client.Ping(context.Background(), &executorpb.PingRequest{})
+		if err != nil {
+			return "", errors.WithMessage(err, "failed to ping executor")
+		}
+		return "", nil
+	}
+	pass := false
+	for i := 0; i < 100; i++ {
+		select {
+		case err := <-dockerProcessChan:
+			assert.NilError(t, err)
+			t.FailNow()
+		default:
+
+		}
+		output, err := testVM()
+		if err == nil {
+			pass = true
+			break
+		}
+		t.Logf("error: %+v, output: %s", err, output)
+		time.Sleep(time.Second * 5)
+	}
+	assert.Assert(t, pass)
+}
+
+const (
+	runtimeImage  = "cox96de/qemu-static:8.0.2"
+	runtimeBinary = "engine/vm/runtime/runtime"
+)
+
+var runtimeBuildOnce = sync.Once{}
+
+func runtimeBuild() error {
+	var err error
+	runtimeBuildOnce.Do(func() {
+		err = run("bash", "-c", fmt.Sprintf("CGO_ENABLED=0 go build -o %s ./engine/vm/runtime/", runtimeBinary))
+	})
+	return err
 }
 
 func run(command string, args ...string) (err error) {

@@ -20,6 +20,8 @@ jobs:
             image: cox96de/runner-executor
           - dockerfile: build/agent.Dockerfile
             image: cox96de/runner-agent
+          - dockerfile: engine/vm/runtime/Dockerfile
+            image: cox96de/runner-vm-runtime
     steps:
       - name: Checkout
         uses: actions/checkout@v4
