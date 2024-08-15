@@ -48,7 +48,7 @@ message Job {
   repeated Step steps = 8;
   repeated JobExecution executions = 9;
   JobExecution execution = 10;
-  int32 Timeout = 11;
+  int32 timeout = 11;
   google.protobuf.Timestamp created_at = 101;
   google.protobuf.Timestamp updated_at = 102;
 }

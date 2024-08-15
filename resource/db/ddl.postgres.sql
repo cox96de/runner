@@ -24,6 +24,7 @@ CREATE TABLE "job"
     "working_directory" text,
     "env_var"           bytea,
     "depends_on"        bytea,
+    "timeout"           integer,
     "created_at"        timestamptz,
     "updated_at"        timestamptz,
     PRIMARY KEY ("id")
@@ -33,6 +34,7 @@ CREATE TABLE "job_execution"
     "id"           bigserial,
     "job_id"       bigint,
     "status"       integer,
+    "reason"       bytea,
     "started_at"   timestamptz,
     "completed_at" timestamptz,
     "created_at"   timestamptz,
@@ -64,6 +66,16 @@ CREATE TABLE "step_execution"
     "exit_code"        bigint,
     "started_at"       timestamptz,
     "completed_at"     timestamptz,
+    "created_at"       timestamptz,
+    "updated_at"       timestamptz,
+    PRIMARY KEY ("id")
+);
+CREATE TABLE "job_queue"
+(
+    "id"               bigserial,
+    "status"           integer,
+    "job_execution_id" bigint,
+    "label"            text,
     "created_at"       timestamptz,
     "updated_at"       timestamptz,
     PRIMARY KEY ("id")

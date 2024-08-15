@@ -232,7 +232,8 @@ func TestExecution(t *testing.T) {
 			JobID: requestJobResponse.Job.ID,
 		})
 		assert.NilError(t, err)
-		assert.Equal(t, executions.Jobs[0].Status, api.StatusFailed)
+		jobExecution := executions.Jobs[0]
+		assert.Equal(t, jobExecution.Status, api.StatusFailed)
 	})
 	t.Run("dag", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
@@ -274,6 +275,7 @@ func TestExecution(t *testing.T) {
 			JobID: requestJobResponse.Job.ID,
 		})
 		assert.NilError(t, err)
-		assert.Equal(t, executions.Jobs[0].Status, api.StatusFailed)
+		jobExecution := executions.Jobs[0]
+		assert.Equal(t, jobExecution.Status, api.StatusFailed)
 	})
 }

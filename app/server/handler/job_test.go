@@ -19,9 +19,10 @@ func TestHandler_UpdateJobExecution(t *testing.T) {
 		},
 	})
 	assert.NilError(t, err)
+	job := jobs[0]
 	executions, err := handler.db.CreateJobExecutions(context.Background(), []*db.CreateJobExecutionOption{
 		{
-			JobID:  jobs[0].ID,
+			JobID:  job.ID,
 			Status: api.StatusCreated,
 		},
 	})
