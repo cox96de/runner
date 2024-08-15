@@ -15,16 +15,16 @@ type Locker interface {
 }
 
 // BuildJobRequestLockKey builds a lock key for a job request.
-// The key is used to lock a job request to prevent multiple requests for the same job.
-// Server keeps the lock for a period, and waits the agent to pick up the job.
+// The key is used to lock a job request to prevent multiple requests for the same job execution.
+// Server keeps the lock for a period, and waits the agent to pick up the job execution.
 // The job request process is a 2 phase commit process. Phase 1 is to lock the job request,
-// and phase 2 is to really get the job.
-func BuildJobRequestLockKey(jobID int64) string {
-	return fmt.Sprintf("job_request:%d:lock", jobID)
+// and phase 2 is to really get the job execution.
+func BuildJobRequestLockKey(jobExecutionID int64) string {
+	return fmt.Sprintf("job_request:%d:lock", jobExecutionID)
 }
 
 // BuildJobExecutionLockKey builds a lock key for a job execution.
 // The key is used to lock a job execution to prevent concurrent update job execution.
-func BuildJobExecutionLockKey(jobID int64) string {
-	return fmt.Sprintf("job_execution:%d:lock", jobID)
+func BuildJobExecutionLockKey(jobExecutionID int64) string {
+	return fmt.Sprintf("job_execution:%d:lock", jobExecutionID)
 }

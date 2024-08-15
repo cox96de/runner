@@ -7,7 +7,8 @@ import (
 
 // AutoMigrate migrates the models.
 func (c *Client) AutoMigrate() error {
-	return migrateModels(c.conn, &Pipeline{}, &PipelineExecution{}, &Job{}, &JobExecution{}, &Step{}, &StepExecution{})
+	return migrateModels(c.conn, &Pipeline{}, &PipelineExecution{}, &Job{}, &JobExecution{}, &Step{}, &StepExecution{},
+		&JobQueue{})
 }
 
 func migrateModels(conn *gorm.DB, models ...interface{}) error {

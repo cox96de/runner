@@ -52,6 +52,7 @@ func RunAgent(configfile string) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to create server client")
 	}
-	agent := agent.NewAgent(engine, serverClient)
+	agent := agent.NewAgent(engine, serverClient, config.Label)
+	log.Infof("agent is running on '%s' with label: %s", config.ServerURL, config.Label)
 	return agent.Run(context.Background())
 }

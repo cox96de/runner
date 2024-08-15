@@ -13,9 +13,15 @@ import (
 
 func TestHandler_UpdateJobExecution(t *testing.T) {
 	handler := NewHandler(mock.NewMockDB(t), nil, nil, mock.NewMockLocker(), nil)
+	jobs, err := handler.db.CreateJobs(context.Background(), []*db.CreateJobOption{
+		{
+			PipelineID: 1,
+		},
+	})
+	assert.NilError(t, err)
 	executions, err := handler.db.CreateJobExecutions(context.Background(), []*db.CreateJobExecutionOption{
 		{
-			JobID:  1,
+			JobID:  jobs[0].ID,
 			Status: api.StatusCreated,
 		},
 	})

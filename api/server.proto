@@ -32,6 +32,7 @@ message CreatePipelineResponse {
 }
 
 message RequestJobRequest {
+  string label = 1;
 }
 
 message RequestJobResponse {
@@ -75,7 +76,6 @@ message GetStepExecutionResponse{
   StepExecution StepExecution = 1;
 }
 message UpdateStepExecutionRequest{
-  // (JobID + JobExecutionID + StepExecutionID) or (JobID + StepID + StepExecutionID) must be set
   //@gotags: path:"step_execution_id"
   int64 StepExecutionID = 1;
   optional Status status = 2;

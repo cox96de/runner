@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	ServerURL string `json:"server_url" yaml:"server_url"`
+	Label     string `json:"label" yaml:"label"`
 	Engine    Engine `json:"engine" yaml:"engine"`
 }
 

@@ -129,6 +129,15 @@ func PackJob(j *Job, latestExecution *JobExecution, executions []*JobExecution, 
 	}, nil
 }
 
+func UnmarshalRunsOn(body []byte) (*api.RunsOn, error) {
+	r := &api.RunsOn{}
+	err := json.Unmarshal(body, r)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
 // PackJobExecution packs a job execution into api.JobExecution.
 // If steps is nil, it will not pack steps.
 func PackJobExecution(j *JobExecution, steps []*StepExecution) *api.JobExecution {
@@ -209,6 +218,7 @@ type UpdateJobExecutionOption struct {
 	CompletedAt *time.Time
 }
 
+// UpdateJobExecution updates a job execution. Don't use this method directly, A helper function in dispatch.
 func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecutionOption) error {
 	updateField := map[string]interface{}{}
 	if option.Status != nil {
@@ -221,12 +231,4 @@ func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecut
 		updateField["completed_at"] = *option.CompletedAt
 	}
 	return c.conn.WithContext(ctx).Model(&JobExecution{}).Where("id = ?", option.ID).Updates(updateField).Error
-}
-
-func (c *Client) GetQueuedJobExecutions(ctx context.Context, limit int) ([]*JobExecution, error) {
-	executions := make([]*JobExecution, 0, limit)
-	if err := c.conn.WithContext(ctx).Where("status = ? order by id", api.StatusQueued).Limit(limit).Find(&executions).Error; err != nil {
-		return nil, err
-	}
-	return executions, nil
 }
