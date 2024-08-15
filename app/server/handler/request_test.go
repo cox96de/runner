@@ -20,6 +20,9 @@ func TestHandler_requestJobHandler(t *testing.T) {
 			Jobs: []*api.JobDSL{
 				{
 					Name: "test",
+					RunsOn: &api.RunsOn{
+						Label: t.Name(),
+					},
 					Steps: []*api.StepDSL{
 						{
 							Name:     "test",
@@ -31,7 +34,9 @@ func TestHandler_requestJobHandler(t *testing.T) {
 		},
 	})
 	assert.NilError(t, err)
-	response, err := handler.RequestJob(context.Background(), &api.RequestJobRequest{})
+	response, err := handler.RequestJob(context.Background(), &api.RequestJobRequest{
+		Label: t.Name(),
+	})
 	assert.NilError(t, err)
 	job := response.Job
 	assert.Equal(t, job.ID, createPipelineResponse.Pipeline.Jobs[0].ID)

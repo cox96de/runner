@@ -149,7 +149,7 @@ type PipelineDSL struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Jobs []*JobDSL `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
+	Jobs []*JobDSL `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty" validate:"required,min=1,max=16,dive"`
 }
 
 func (x *PipelineDSL) Reset() {
@@ -348,12 +348,14 @@ type JobDSL struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name             string            `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	RunsOn           *RunsOn           `protobuf:"bytes,4,opt,name=runs_on,json=runsOn,proto3" json:"runs_on,omitempty"`
+	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty" validate:"required"`
+
+	RunsOn           *RunsOn           `protobuf:"bytes,4,opt,name=runs_on,json=runsOn,proto3" json:"runs_on,omitempty" validate:"required"`
 	WorkingDirectory string            `protobuf:"bytes,5,opt,name=working_directory,json=workingDirectory,proto3" json:"working_directory,omitempty"`
 	EnvVar           map[string]string `protobuf:"bytes,6,rep,name=env_var,json=envVar,proto3" json:"env_var,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	DependsOn        []string          `protobuf:"bytes,7,rep,name=depends_on,json=dependsOn,proto3" json:"depends_on,omitempty"`
-	Steps            []*StepDSL        `protobuf:"bytes,8,rep,name=steps,proto3" json:"steps,omitempty"`
+
+	Steps []*StepDSL `protobuf:"bytes,8,rep,name=steps,proto3" json:"steps,omitempty" validate:"required,min=1,max=32,dive"`
 	// Timeout in seconds
 	Timeout int32 `protobuf:"varint,9,opt,name=Timeout,proto3" json:"Timeout,omitempty"`
 }
@@ -753,7 +755,7 @@ type RunsOn struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Label  string  `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	Label  string  `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty" validate:"required"`
 	Docker *Docker `protobuf:"bytes,2,opt,name=docker,proto3" json:"docker,omitempty"`
 }
 
@@ -1147,14 +1149,15 @@ type StepDSL struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name             string            `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
-	WorkingDirectory string            `protobuf:"bytes,5,opt,name=working_directory,json=workingDirectory,proto3" json:"working_directory,omitempty"`
-	User             string            `protobuf:"bytes,6,opt,name=user,proto3" json:"user,omitempty"`
-	Container        string            `protobuf:"bytes,7,opt,name=container,proto3" json:"container,omitempty"`
-	DependsOn        []string          `protobuf:"bytes,8,rep,name=depends_on,json=dependsOn,proto3" json:"depends_on,omitempty"`
-	Commands         []string          `protobuf:"bytes,9,rep,name=commands,proto3" json:"commands,omitempty"`
-	EnvVar           map[string]string `protobuf:"bytes,10,rep,name=env_var,json=envVar,proto3" json:"env_var,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	If               string            `protobuf:"bytes,11,opt,name=if,proto3" json:"if,omitempty"`
+	Name             string   `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty" validate:"required"`
+	WorkingDirectory string   `protobuf:"bytes,5,opt,name=working_directory,json=workingDirectory,proto3" json:"working_directory,omitempty"`
+	User             string   `protobuf:"bytes,6,opt,name=user,proto3" json:"user,omitempty"`
+	Container        string   `protobuf:"bytes,7,opt,name=container,proto3" json:"container,omitempty"`
+	DependsOn        []string `protobuf:"bytes,8,rep,name=depends_on,json=dependsOn,proto3" json:"depends_on,omitempty"`
+
+	Commands []string          `protobuf:"bytes,9,rep,name=commands,proto3" json:"commands,omitempty" validate:"required,min=1,max=32,dive"`
+	EnvVar   map[string]string `protobuf:"bytes,10,rep,name=env_var,json=envVar,proto3" json:"env_var,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	If       string            `protobuf:"bytes,11,opt,name=if,proto3" json:"if,omitempty"`
 }
 
 func (x *StepDSL) Reset() {
