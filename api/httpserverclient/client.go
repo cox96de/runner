@@ -140,6 +140,16 @@ func (c *Client) RequestJob(ctx context.Context, in *api.RequestJobRequest, opts
 	return resp, nil
 }
 
+func (c *Client) Heartbeat(ctx context.Context, in *api.HeartbeatRequest, opts ...grpc.CallOption) (*api.HeartbeatResponse, error) {
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/job_executions/%d/heartbeat", in.JobExecutionID))
+	resp := &api.HeartbeatResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func NewClient(client *http.Client, baseURL string) (*Client, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {

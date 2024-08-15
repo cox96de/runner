@@ -56,3 +56,8 @@ func (s Status) toString() string {
 func (s Status) IsCompleted() bool {
 	return s >= StatusFailed && s <= StatusSucceeded
 }
+
+// IsRunning returns true if the status is dispatched to agent.
+func (s Status) IsRunning() bool {
+	return s >= StatusPreparing && s < StatusFailed
+}

@@ -23,7 +23,7 @@ The `Runner` contains two components: `Runner Server` and `Runner Agent`.
 
 `Runner Server` is the api server for `Runner`.
 
-Install `Runner Server` by docker
+### Install `Runner Server` by docker
 
 ```bash
 docker run -p 8080:8080 cox96de/runner-server:latest
@@ -33,17 +33,23 @@ docker run -p 8080:8080 cox96de/runner-server:latest
 
 `Runner Agent` is the worker for `Runner`. It deploys on the worker machine.
 
-Install `Runner Agent` by docker
+### Install `Runner Agent` by docker
 
 ```bash
 docker run cox96de/runner-agent-debian:latest --engine shell --server_url http://{your_server_ip}:8080
 ```
 
+### Install `Runner Agent` from source
+```bash
+make build_agent
+./output/agent --engine shell --server_url http://{your_server_ip}:8080
+```
+
 Notice: replace `{your_server_ip}` with your server ip.
 
-## Run a job
+## Run a pipeline
 
-`Runner` provides a simple CLI to easy run a job.
+`Runner` provides a simple CLI to easy run a pipeline.
 
 ```bash
 docker run cox96de/runner-simplecli --server http://{your_server_ip}:8080 /examples/compile_redis.yaml

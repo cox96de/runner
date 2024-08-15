@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/andeya/goutil/calendar/cron"
+	"github.com/cox96de/runner/app/server/monitor"
+	"golang.org/x/net/context"
 
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/util"
@@ -130,5 +135,17 @@ func RunServer(config *Config) error {
 	engine := gin.New()
 	group := engine.Group("/api/v1")
 	h.RegisterRouter(group)
+	startConJob(context.Background(), monitor.NewService(dbClient))
 	return engine.Run(fmt.Sprintf(":%d", config.Port))
+}
+
+func startConJob(ctx context.Context, service *monitor.Service) {
+	c := cron.New()
+	err := c.AddFunc("@every 1m", func() {
+		if err := service.RecycleHeartbeatTimeoutJobs(ctx, time.Minute); err != nil {
+			log.Errorf("failed to rcycle heartbeat timeout job executions")
+		}
+	})
+	checkError(err)
+	c.Start()
 }

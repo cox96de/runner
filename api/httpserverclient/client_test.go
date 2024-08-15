@@ -77,6 +77,12 @@ func TestNewClient(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Assert(t, updateJobExecutionResponse.JobExecution.Status == api.StatusPreparing)
 		})
+		t.Run("Heartbeat", func(t *testing.T) {
+			_, err := client.Heartbeat(context.Background(), &api.HeartbeatRequest{
+				JobExecutionID: requestedJob.Execution.ID,
+			})
+			assert.NilError(t, err)
+		})
 		t.Run("UploadLogLines", func(t *testing.T) {
 			logLines := []*api.LogLine{{
 				Timestamp: 0,

@@ -2,9 +2,12 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	"github.com/gin-gonic/gin"
 	"gotest.tools/v3/assert"
@@ -28,6 +31,7 @@ func TestBind(t *testing.T) {
 	server := httptest.NewServer(engine)
 	defer server.Close()
 	request, err := http.NewRequest(http.MethodPost, server.URL+"/test/path?query=query_value", bytes.NewReader([]byte("{\"name\":\"test\"}")))
+	assert.NilError(t, err)
 	request.Header.Add("header", "header_value")
 	request.Header.Add("Content-Type", "application/json")
 	assert.NilError(t, err)
@@ -40,4 +44,17 @@ func TestBind(t *testing.T) {
 		Query:  "query_value",
 		Path:   "path",
 	})
+}
+
+func Test_getGinHandler(t *testing.T) {
+	engine := gin.New()
+	engine.Any("/ping", getGinHandler(func(ctx context.Context, request *string) (*string, error) {
+		return nil, &HTTPError{Code: 444, CauseError: errors.New(t.Name())}
+	}))
+	server := httptest.NewServer(engine)
+	request, err := http.NewRequest(http.MethodGet, server.URL+"/ping", nil)
+	assert.NilError(t, err)
+	do, err := server.Client().Do(request)
+	assert.NilError(t, err)
+	assert.Equal(t, do.StatusCode, 444)
 }
