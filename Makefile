@@ -4,6 +4,7 @@ DOCKER_IMG_BASE:=cox96de
 format:
 	gofmt -w .
 	go mod tidy
+	docker run --volume "$$(pwd):/workspace" --workdir /workspace bufbuild/buf format -w
 #gofumpt is more strict than gofmt
 	go run mvdan.cc/gofumpt@latest -l -w .
 

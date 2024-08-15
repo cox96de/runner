@@ -32,6 +32,7 @@ type ServerClient interface {
 	UpdateStepExecution(ctx context.Context, in *UpdateStepExecutionRequest, opts ...grpc.CallOption) (*UpdateStepExecutionResponse, error)
 	UploadLogLines(ctx context.Context, in *UpdateLogLinesRequest, opts ...grpc.CallOption) (*UpdateLogLinesResponse, error)
 	GetLogLines(ctx context.Context, in *GetLogLinesRequest, opts ...grpc.CallOption) (*GetLogLinesResponse, error)
+	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*HeartbeatResponse, error)
 }
 
 type serverClient struct {
@@ -132,6 +133,15 @@ func (c *serverClient) GetLogLines(ctx context.Context, in *GetLogLinesRequest, 
 	return out, nil
 }
 
+func (c *serverClient) Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*HeartbeatResponse, error) {
+	out := new(HeartbeatResponse)
+	err := c.cc.Invoke(ctx, "/Server/Heartbeat", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ServerServer is the server API for Server service.
 // All implementations must embed UnimplementedServerServer
 // for forward compatibility
@@ -146,6 +156,7 @@ type ServerServer interface {
 	UpdateStepExecution(context.Context, *UpdateStepExecutionRequest) (*UpdateStepExecutionResponse, error)
 	UploadLogLines(context.Context, *UpdateLogLinesRequest) (*UpdateLogLinesResponse, error)
 	GetLogLines(context.Context, *GetLogLinesRequest) (*GetLogLinesResponse, error)
+	Heartbeat(context.Context, *HeartbeatRequest) (*HeartbeatResponse, error)
 	mustEmbedUnimplementedServerServer()
 }
 
@@ -182,6 +193,9 @@ func (UnimplementedServerServer) UploadLogLines(context.Context, *UpdateLogLines
 }
 func (UnimplementedServerServer) GetLogLines(context.Context, *GetLogLinesRequest) (*GetLogLinesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLogLines not implemented")
+}
+func (UnimplementedServerServer) Heartbeat(context.Context, *HeartbeatRequest) (*HeartbeatResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Heartbeat not implemented")
 }
 func (UnimplementedServerServer) mustEmbedUnimplementedServerServer() {}
 
@@ -376,6 +390,24 @@ func _Server_GetLogLines_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Server_Heartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HeartbeatRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServerServer).Heartbeat(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Server/Heartbeat",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServerServer).Heartbeat(ctx, req.(*HeartbeatRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Server_ServiceDesc is the grpc.ServiceDesc for Server service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -422,6 +454,10 @@ var Server_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetLogLines",
 			Handler:    _Server_GetLogLines_Handler,
+		},
+		{
+			MethodName: "Heartbeat",
+			Handler:    _Server_Heartbeat_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
