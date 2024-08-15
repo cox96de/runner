@@ -47,6 +47,7 @@ func (c *Client) CreateJobs(ctx context.Context, options []*CreateJobOption) ([]
 	for _, opt := range options {
 		job := &Job{
 			Name:             opt.Name,
+			PipelineID:       opt.PipelineID,
 			WorkingDirectory: opt.WorkingDirectory,
 			Timeout:          opt.Timeout,
 		}

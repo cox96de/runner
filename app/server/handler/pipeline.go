@@ -39,12 +39,30 @@ func packPipeline(p *db.Pipeline, jobs []*db.Job, jobExecutions []*db.JobExecuti
 		UpdatedAt: api.ConvertTime(p.UpdatedAt),
 	}
 	stepsByJobID := make(map[int64][]*api.Step)
-	stepExecutionByJobID := make(map[int64][]*db.StepExecution)
+	// job id -> step id -> step executions.
+	stepExecutionMap := make(map[int64]map[int64][]*db.StepExecution)
+	// JobExecutionID -> JobID
+	jobExecutionID2JobID := make(map[int64]int64)
+	for _, jobExecution := range jobExecutions {
+		jobExecutionID2JobID[jobExecution.ID] = jobExecution.JobID
+	}
 	for _, stepExecution := range stepExecutions {
-		stepExecutionByJobID[stepExecution.JobExecutionID] = append(stepExecutionByJobID[stepExecution.JobExecutionID], stepExecution)
+		jobID, ok := jobExecutionID2JobID[stepExecution.JobExecutionID]
+		if !ok {
+			return nil, errors.Errorf("step execution %d has no job", stepExecution.ID)
+		}
+		if stepExecutionMap[jobID] == nil {
+			stepExecutionMap[jobID] = map[int64][]*db.StepExecution{}
+		}
+		stepExecutionMap[jobID][stepExecution.StepID] = append(stepExecutionMap[jobID][stepExecution.StepID], stepExecution)
 	}
 	for _, step := range steps {
-		s, err := db.PackStep(step, stepExecutionByJobID[step.JobID])
+		var stepExecutions []*db.StepExecution
+		stepExecutionM := stepExecutionMap[step.JobID]
+		if stepExecutionM != nil {
+			stepExecutions = stepExecutionM[step.ID]
+		}
+		s, err := db.PackStep(step, stepExecutions)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "failed to pack step %d", step.ID)
 		}
