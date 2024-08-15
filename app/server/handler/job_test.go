@@ -22,7 +22,6 @@ func TestHandler_UpdateJobExecution(t *testing.T) {
 	assert.NilError(t, err)
 	t.Run("bad_status_transmit", func(t *testing.T) {
 		_, err = handler.UpdateJobExecution(context.Background(), &api.UpdateJobExecutionRequest{
-			JobID:          1,
 			JobExecutionID: executions[0].ID,
 			Status:         lo.ToPtr(api.StatusPreparing),
 		})
@@ -30,7 +29,6 @@ func TestHandler_UpdateJobExecution(t *testing.T) {
 	})
 	t.Run("transmit", func(t *testing.T) {
 		_, err = handler.UpdateJobExecution(context.Background(), &api.UpdateJobExecutionRequest{
-			JobID:          1,
 			JobExecutionID: executions[0].ID,
 			Status:         lo.ToPtr(api.StatusQueued),
 		})
@@ -46,5 +44,12 @@ func TestHandler_UpdateJobExecution(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Assert(t, len(listJobExecutionsResponse.Jobs) == 1)
 		assert.Assert(t, listJobExecutionsResponse.Jobs[0].ID == executions[0].ID)
+	})
+	t.Run("GetJobExecution", func(t *testing.T) {
+		jobExecutionResponse, err := handler.GetJobExecution(context.Background(), &api.GetJobExecutionRequest{
+			JobExecutionID: executions[0].ID,
+		})
+		assert.NilError(t, err)
+		assert.Assert(t, jobExecutionResponse.JobExecution.ID == executions[0].ID)
 	})
 }

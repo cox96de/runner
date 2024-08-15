@@ -36,6 +36,10 @@ func TestNewClient(t *testing.T) {
 	client, err := NewClient(&http.Client{}, server.URL)
 	assert.NilError(t, err)
 	ctx := context.Background()
+	t.Run("Ping", func(t *testing.T) {
+		_, err := client.Ping(context.Background(), &api.ServerPingRequest{})
+		assert.NilError(t, err)
+	})
 	createPipelineResponse, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
 		Pipeline: &api.PipelineDSL{
 			Jobs: []*api.JobDSL{{
@@ -59,7 +63,6 @@ func TestNewClient(t *testing.T) {
 		assert.Assert(t, requestJobResponse.Job == nil)
 		t.Run("UpdateJobExecution", func(t *testing.T) {
 			updateJobExecutionResponse, err := client.UpdateJobExecution(ctx, &api.UpdateJobExecutionRequest{
-				JobID:          requestedJob.ID,
 				JobExecutionID: requestedJob.Execution.ID,
 				Status:         lo.ToPtr(api.StatusPreparing),
 			})
@@ -73,7 +76,6 @@ func TestNewClient(t *testing.T) {
 				Output:    "hello1",
 			}}
 			updateLogLinesResponse, err := client.UploadLogLines(ctx, &api.UpdateLogLinesRequest{
-				JobID:          1,
 				JobExecutionID: 1,
 				Name:           "step1",
 				Lines:          logLines,
@@ -82,7 +84,6 @@ func TestNewClient(t *testing.T) {
 			assert.Assert(t, updateLogLinesResponse != nil)
 			t.Run("GetLogLines", func(t *testing.T) {
 				getLogLinesResponse, err := client.GetLogLines(ctx, &api.GetLogLinesRequest{
-					JobID:          1,
 					JobExecutionID: 1,
 					Name:           "step1",
 					Offset:         0,
@@ -95,8 +96,6 @@ func TestNewClient(t *testing.T) {
 		})
 		t.Run("UpdateStepExecution", func(t *testing.T) {
 			execution, err := client.UpdateStepExecution(ctx, &api.UpdateStepExecutionRequest{
-				JobID:           requestedJob.ID,
-				JobExecutionID:  requestedJob.Execution.ID,
 				StepExecutionID: requestedJob.Execution.Steps[0].ID,
 				Status:          lo.ToPtr(api.StatusRunning),
 			})
@@ -110,6 +109,14 @@ func TestNewClient(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Assert(t, listJobExecutionsResponse != nil)
 			assert.Assert(t, len(listJobExecutionsResponse.Jobs) == 1)
+		})
+		t.Run("GetJobExecution", func(t *testing.T) {
+			getJobExecutionResponse, err := client.GetJobExecution(ctx, &api.GetJobExecutionRequest{
+				JobExecutionID: requestedJob.Execution.ID,
+			})
+			assert.NilError(t, err)
+			assert.Assert(t, getJobExecutionResponse != nil)
+			assert.Assert(t, getJobExecutionResponse.JobExecution.ID == requestedJob.Execution.ID)
 		})
 	})
 }

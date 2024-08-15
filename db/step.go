@@ -140,6 +140,10 @@ func PackStep(step *Step, executions []*StepExecution) (*api.Step, error) {
 	s.Executions = lo.Map(executions, func(e *StepExecution, i int) *api.StepExecution {
 		return PackStepExecution(e)
 	})
+	if len(s.Executions) == 0 {
+		return nil, errors.Errorf("no executions found")
+	}
+	s.Execution = s.Executions[len(s.Executions)-1]
 	return s, nil
 }
 

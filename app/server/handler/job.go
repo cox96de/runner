@@ -17,7 +17,6 @@ import (
 
 func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJobExecutionRequest) (*api.UpdateJobExecutionResponse, error) {
 	logger := log.ExtractLogger(ctx).WithFields(log.Fields{
-		"job_id":           request.JobID,
 		"job_execution_id": request.JobExecutionID,
 	})
 	lock, err := h.locker.Lock(ctx, lib.BuildJobExecutionLockKey(request.JobExecutionID), "update_job_execution", time.Second)
@@ -52,7 +51,7 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 			updateJobExecutionOption.StartedAt = lo.ToPtr(time.Now())
 		case (*request).Status.IsCompleted():
 			updateJobExecutionOption.CompletedAt = lo.ToPtr(time.Now())
-			if err := h.logService.Archive(ctx, jobExecution.JobID, jobExecution.ID); err != nil {
+			if err := h.logService.Archive(ctx, jobExecution.ID); err != nil {
 				logger.WithError(err).Error("failed to archive logs")
 			}
 		}
@@ -84,4 +83,15 @@ func (h *Handler) ListJobExecutions(ctx context.Context, in *api.ListJobExecutio
 			return db.PackJobExecution(item, stepExecutionMap[item.ID])
 		}),
 	}, nil
+}
+
+func (h *Handler) GetJobExecution(ctx context.Context, in *api.GetJobExecutionRequest) (*api.GetJobExecutionResponse, error) {
+	logger := log.ExtractLogger(ctx)
+	logger.Infof("get job executions for job exeuction id: %d", in.JobExecutionID)
+	jobExecutionPO, err := h.db.GetJobExecution(ctx, in.JobExecutionID)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to get job execution '%d'", in.JobExecutionID)
+	}
+	jobExecution := db.PackJobExecution(jobExecutionPO, nil)
+	return &api.GetJobExecutionResponse{JobExecution: jobExecution}, nil
 }

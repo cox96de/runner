@@ -20,8 +20,6 @@ func (e *Execution) updateStepExecution(ctx context.Context, step *api.Step, sta
 	}
 	_, err := e.client.UpdateStepExecution(ctx, &api.UpdateStepExecutionRequest{
 		StepExecutionID: stepExecution.ID,
-		JobExecutionID:  e.jobExecution.ID,
-		JobID:           e.job.ID,
 		Status:          status,
 		ExitCode:        exitCode,
 	})

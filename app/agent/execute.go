@@ -115,7 +115,6 @@ func (e *Execution) Execute(ctx context.Context) error {
 
 func (e *Execution) updateJobStatus(ctx context.Context, status api.Status) error {
 	execution, err := e.client.UpdateJobExecution(ctx, &api.UpdateJobExecutionRequest{
-		JobID:          e.job.ID,
 		JobExecutionID: e.jobExecution.ID,
 		Status:         &status,
 	})

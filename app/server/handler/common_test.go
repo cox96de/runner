@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -52,8 +53,9 @@ func Test_render_Render(t *testing.T) {
 		assert.Assert(t, recorder.Body.String() == "{\"message\":\"some error\"}", recorder.Body.String())
 	})
 	t.Run("Ping", func(t *testing.T) {
-		handler := &Handler{}
-		engine.GET("/ping", handler.PingHandler)
+		engine.GET("/ping", func(g *gin.Context) {
+			g.JSON(http.StatusOK, gin.H{"message": "pong"})
+		})
 		recorder := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/ping", nil)
 		engine.ServeHTTP(recorder, req)

@@ -14,14 +14,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (s *Service) buildKey(jobID int64, jobExecutionID int64, logName string) string {
-	return filepath.Join(s.baseDir, strconv.FormatInt(jobID, 10), strconv.FormatInt(jobExecutionID, 10), logName)
+func (s *Service) buildKey(jobExecutionID int64, logName string) string {
+	return filepath.Join(s.baseDir, strconv.FormatInt(jobExecutionID, 10), logName)
 }
 
-func (s *Service) getLogsFromOSS(ctx context.Context, jobID int64, jobExecutionID int64, logName string,
+func (s *Service) getLogsFromOSS(ctx context.Context, jobExecutionID int64, logName string,
 	start int64, limit int64,
 ) ([]*api.LogLine, error) {
-	key := s.buildKey(jobID, jobExecutionID, logName)
+	key := s.buildKey(jobExecutionID, logName)
 	object, err := s.oss.Open(ctx, key)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get object")
@@ -45,16 +45,16 @@ func (s *Service) getLogsFromOSS(ctx context.Context, jobID int64, jobExecutionI
 // Archive archives logs to S3.
 // It should be invoked when there are no more logs to be appended.
 // Typically, it is invoked after the job is finished.
-func (s *Service) Archive(ctx context.Context, jobID int64, jobExecutionID int64) error {
-	log.ExtractLogger(ctx).WithFields(log.Fields{"job_id": jobID, "job_execution_id": jobExecutionID}).
+func (s *Service) Archive(ctx context.Context, jobExecutionID int64) error {
+	log.ExtractLogger(ctx).WithFields(log.Fields{"job_execution_id": jobExecutionID}).
 		Infof("archive logs")
-	logNameSet, err := s.getLogNameSet(ctx, jobID, jobExecutionID)
+	logNameSet, err := s.getLogNameSet(ctx, jobExecutionID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get log name set")
 	}
 	for _, logName := range logNameSet {
-		key := s.buildKey(jobID, jobExecutionID, logName)
-		lines, err := s.getLogsFromRedis(ctx, jobID, jobExecutionID, logName, 0, -1)
+		key := s.buildKey(jobExecutionID, logName)
+		lines, err := s.getLogsFromRedis(ctx, jobExecutionID, logName, 0, -1)
 		if err != nil {
 			return errors.WithMessage(err, "failed to get logs from redis")
 		}
@@ -67,11 +67,11 @@ func (s *Service) Archive(ctx context.Context, jobID int64, jobExecutionID int64
 		if err != nil {
 			return errors.WithMessage(err, "failed to put object")
 		}
-		_, err = s.redis.Del(ctx, buildLogRedisKey(jobID, jobExecutionID, logName)).Result()
+		_, err = s.redis.Del(ctx, buildLogRedisKey(jobExecutionID, logName)).Result()
 		if err != nil {
 			return errors.WithMessage(err, "failed to remove log from cache")
 		}
-		_, err = s.redis.SRem(ctx, buildLogSetRedisKey(jobID, jobExecutionID), logName).Result()
+		_, err = s.redis.SRem(ctx, buildLogSetRedisKey(jobExecutionID), logName).Result()
 		if err != nil {
 			return errors.WithMessage(err, "failed to remove log name from set")
 		}

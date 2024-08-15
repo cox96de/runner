@@ -30,6 +30,26 @@ type Client struct {
 	u      *url.URL
 }
 
+func (c *Client) Ping(ctx context.Context, in *api.ServerPingRequest, opts ...grpc.CallOption) (*api.ServerPingResponse, error) {
+	u := c.u.JoinPath("/api/v1/ping")
+	resp := &api.ServerPingResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodGet, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (c *Client) GetJobExecution(ctx context.Context, in *api.GetJobExecutionRequest, opts ...grpc.CallOption) (*api.GetJobExecutionResponse, error) {
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/job_executions/%d", in.JobExecutionID))
+	resp := &api.GetJobExecutionResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodGet, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (c *Client) ListJobExecutions(ctx context.Context, in *api.ListJobExecutionsRequest, opts ...grpc.CallOption) (*api.ListJobExecutionsResponse, error) {
 	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/executions/", in.JobID))
 	resp := &api.ListJobExecutionsResponse{}
@@ -40,9 +60,18 @@ func (c *Client) ListJobExecutions(ctx context.Context, in *api.ListJobExecution
 	return resp, nil
 }
 
+func (c *Client) GetStepExecution(ctx context.Context, in *api.GetStepExecutionRequest, opts ...grpc.CallOption) (*api.GetStepExecutionResponse, error) {
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/step_executions/%d", in.StepExecutionID))
+	resp := &api.GetStepExecutionResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodGet, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (c *Client) UpdateStepExecution(ctx context.Context, in *api.UpdateStepExecutionRequest, opts ...grpc.CallOption) (*api.UpdateStepExecutionResponse, error) {
-	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/executions/%d/steps/%d", in.JobID, in.JobExecutionID,
-		in.StepExecutionID))
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/step_executions/%d", in.StepExecutionID))
 	resp := &api.UpdateStepExecutionResponse{}
 	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
 	if err != nil {
@@ -52,7 +81,7 @@ func (c *Client) UpdateStepExecution(ctx context.Context, in *api.UpdateStepExec
 }
 
 func (c *Client) UploadLogLines(ctx context.Context, in *api.UpdateLogLinesRequest, opts ...grpc.CallOption) (*api.UpdateLogLinesResponse, error) {
-	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/executions/%d/logs", in.JobID, in.JobExecutionID))
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/job_executions/%d/logs", in.JobExecutionID))
 	resp := &api.UpdateLogLinesResponse{}
 	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
 	if err != nil {
@@ -62,7 +91,7 @@ func (c *Client) UploadLogLines(ctx context.Context, in *api.UpdateLogLinesReque
 }
 
 func (c *Client) GetLogLines(ctx context.Context, in *api.GetLogLinesRequest, opts ...grpc.CallOption) (*api.GetLogLinesResponse, error) {
-	url := fmt.Sprintf("/api/v1/jobs/%d/executions/%d/logs/%s", in.JobID, in.JobExecutionID, in.Name)
+	url := fmt.Sprintf("/api/v1/job_executions/%d/logs/%s", in.JobExecutionID, in.Name)
 
 	u := c.u.JoinPath(url)
 	query := u.Query()
@@ -82,7 +111,7 @@ func (c *Client) GetLogLines(ctx context.Context, in *api.GetLogLinesRequest, op
 func (c *Client) UpdateJobExecution(ctx context.Context, in *api.UpdateJobExecutionRequest,
 	opts ...grpc.CallOption,
 ) (*api.UpdateJobExecutionResponse, error) {
-	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/executions/%d", in.JobID, in.JobExecutionID))
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/job_executions/%d", in.JobExecutionID))
 	resp := &api.UpdateJobExecutionResponse{}
 	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
 	if err != nil {
@@ -141,7 +170,7 @@ func (c *Client) doRequest(ctx context.Context, path string, method string, in a
 		return nil
 	}
 	if response.StatusCode != http.StatusOK {
-		return errors.Errorf("failed to request job, got status code: %d", response.StatusCode)
+		return errors.Errorf("failed to do request, got status code: %d", response.StatusCode)
 	}
 	content, err := io.ReadAll(response.Body)
 	if err != nil {

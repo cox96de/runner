@@ -17,10 +17,10 @@ import (
 
 func TestService_Append(t *testing.T) {
 	service := NewService(mock.NewMockRedis(t), NewFilesystemOSS(fs.NewDir(t, "test").Path()))
-	err := service.Append(context.Background(), 1, 1, "test", generateTestLog(100))
+	err := service.Append(context.Background(), 1, "test", generateTestLog(100))
 	assert.NilError(t, err)
 	t.Run("get_less", func(t *testing.T) {
-		logs, err := service.GetLogLines(context.Background(), 1, 1, "test", 0, 99)
+		logs, err := service.GetLogLines(context.Background(), 1, "test", 0, 99)
 		assert.NilError(t, err)
 		assert.Equal(t, len(logs), 99)
 		for i := 0; i < 99; i++ {
@@ -29,7 +29,7 @@ func TestService_Append(t *testing.T) {
 		}
 	})
 	t.Run("get_more", func(t *testing.T) {
-		logs, err := service.GetLogLines(context.Background(), 1, 1, "test", 0, 1000)
+		logs, err := service.GetLogLines(context.Background(), 1, "test", 0, 1000)
 		assert.NilError(t, err)
 		assert.Equal(t, len(logs), 100)
 		for i := 0; i < 100; i++ {
@@ -38,14 +38,14 @@ func TestService_Append(t *testing.T) {
 		}
 	})
 	t.Run("no_log", func(t *testing.T) {
-		logs, err := service.GetLogLines(context.Background(), 1, 1, "non_exists", 0, 1000)
+		logs, err := service.GetLogLines(context.Background(), 1, "non_exists", 0, 1000)
 		assert.NilError(t, err)
 		assert.Equal(t, len(logs), 0)
 	})
-	err = service.Append(context.Background(), 1, 1, "test2", generateTestLog(100))
+	err = service.Append(context.Background(), 1, "test2", generateTestLog(100))
 	assert.NilError(t, err)
 	t.Run("log_name_set", func(t *testing.T) {
-		logNameSet, err := service.getLogNameSet(context.Background(), 1, 1)
+		logNameSet, err := service.getLogNameSet(context.Background(), 1)
 		assert.NilError(t, err)
 		assert.DeepEqual(t, logNameSet, []string{"test", "test2"}, cmpopts.SortSlices(func(a, b string) bool {
 			return strings.Compare(a, b) < 0

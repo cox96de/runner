@@ -44,7 +44,7 @@ func packPipeline(p *db.Pipeline, jobs []*db.Job, jobExecutions []*db.JobExecuti
 		stepExecutionByJobID[stepExecution.JobExecutionID] = append(stepExecutionByJobID[stepExecution.JobExecutionID], stepExecution)
 	}
 	for _, step := range steps {
-		s, err := db.PackStep(step, stepExecutionByJobID[step.ID])
+		s, err := db.PackStep(step, stepExecutionByJobID[step.JobID])
 		if err != nil {
 			return nil, errors.WithMessagef(err, "failed to pack step %d", step.ID)
 		}
@@ -56,6 +56,9 @@ func packPipeline(p *db.Pipeline, jobs []*db.Job, jobExecutions []*db.JobExecuti
 	}
 	for _, job := range jobs {
 		executions := jobExecutionsByJobID[job.ID]
+		if len(executions) == 0 {
+			return nil, errors.Errorf("job %d has no execution", job.ID)
+		}
 		latestJobExecution := executions[0]
 		j, err := db.PackJob(job, latestJobExecution, nil, steps, stepExecutions)
 		if err != nil {

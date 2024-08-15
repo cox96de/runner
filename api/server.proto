@@ -4,13 +4,23 @@ import "tools/protopatch/patch/go.proto";
 option go_package = "github.com/cox96de/runner/api";
 
 service Server {
+  rpc Ping(ServerPingRequest)returns(ServerPingResponse){}
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
   rpc RequestJob(RequestJobRequest) returns (RequestJobResponse) {}
+  rpc GetJobExecution(GetJobExecutionRequest)returns(GetJobExecutionResponse){}
   rpc ListJobExecutions(ListJobExecutionsRequest) returns (ListJobExecutionsResponse) {}
   rpc UpdateJobExecution(UpdateJobExecutionRequest) returns (UpdateJobExecutionResponse) {}
+  rpc GetStepExecution(GetStepExecutionRequest) returns (GetStepExecutionResponse) {}
   rpc UpdateStepExecution(UpdateStepExecutionRequest) returns (UpdateStepExecutionResponse) {}
   rpc UploadLogLines(UpdateLogLinesRequest) returns (UpdateLogLinesResponse) {}
   rpc GetLogLines(GetLogLinesRequest) returns (GetLogLinesResponse) {}
+}
+
+message ServerPingRequest{
+
+}
+message ServerPingResponse{
+
 }
 
 message CreatePipelineRequest {
@@ -31,12 +41,19 @@ message RequestJobResponse {
 message UpdateJobExecutionRequest {
   //@gotags: path:"job_execution_id"
   int64 JobExecutionID = 1[(go.field).name = 'JobExecutionID'];
-  //@gotags: path:"job_id"
-  int64 JobID = 2[(go.field).name = "JobID"];
   optional Status status = 3;
 }
 
 message UpdateJobExecutionResponse {
+  JobExecution JobExecution = 1;
+}
+
+message GetJobExecutionRequest {
+  //@gotags: path:"job_execution_id"
+  int64 JobExecutionID = 1[(go.field).name = "JobExecutionID"];
+}
+
+message GetJobExecutionResponse {
   JobExecution JobExecution = 1;
 }
 
@@ -49,18 +66,20 @@ message ListJobExecutionsResponse {
   repeated JobExecution jobs = 1;
 }
 
+message GetStepExecutionRequest{
+  //@gotags: path:"step_execution_id"
+  int64 StepExecutionID = 1;
+}
+
+message GetStepExecutionResponse{
+  StepExecution StepExecution = 1;
+}
 message UpdateStepExecutionRequest{
   // (JobID + JobExecutionID + StepExecutionID) or (JobID + StepID + StepExecutionID) must be set
   //@gotags: path:"step_execution_id"
   int64 StepExecutionID = 1;
-  //@gotags: path:"step_id"
-  int64 StepID = 2;
-  //@gotags: path:"job_execution_id"
-  int64 JobExecutionID = 3;
-  //@gotags: path:"job_id"
-  int64 JobID = 4;
-  optional Status status = 5;
-  optional uint32 exit_code = 6;
+  optional Status status = 2;
+  optional uint32 exit_code = 3;
 }
 
 message UpdateStepExecutionResponse{
@@ -68,28 +87,24 @@ message UpdateStepExecutionResponse{
 }
 
 message UpdateLogLinesRequest {
-  //@gotags: path:"job_id"
-  int64 JobID = 1[(go.field).name = "JobID"];
   //@gotags: path:"job_execution_id"
-  int64 JobExecutionID = 2[(go.field).name = "JobExecutionID"];
-  string Name = 3;
-  repeated LogLine lines = 4;
+  int64 JobExecutionID = 1[(go.field).name = "JobExecutionID"];
+  string Name = 2;
+  repeated LogLine lines = 3;
 }
 
 message UpdateLogLinesResponse {
 }
 
 message GetLogLinesRequest {
-  //@gotags: path:"job_id"
-  int64 JobID = 1[(go.field).name = "JobID"];
   //@gotags: path:"job_execution_id"
-  int64 JobExecutionID = 2[(go.field).name = "JobExecutionID"];
+  int64 JobExecutionID = 1[(go.field).name = "JobExecutionID"];
   //@gotags: path:"name"
-  string Name = 3;
+  string Name = 2;
   //@gotags: query:"offset"
-  int64 Offset = 4;
+  int64 Offset = 3;
   //@gotags: query:"limit"
-  optional int64 Limit = 5;
+  optional int64 Limit = 4;
 }
 
 message GetLogLinesResponse {

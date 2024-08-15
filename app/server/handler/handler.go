@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"net/http"
+	"context"
 
 	"github.com/cox96de/runner/app/server/logstorage"
 
@@ -12,8 +12,6 @@ import (
 	"github.com/cox96de/runner/lib"
 
 	"github.com/cox96de/runner/db"
-
-	"github.com/gin-gonic/gin"
 )
 
 var _ api.ServerServer = (*Handler)(nil)
@@ -41,8 +39,6 @@ func NewHandler(db *db.Client, pipelineService *pipeline.Service, dispatchServic
 	}
 }
 
-func (h *Handler) PingHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"message": "pong",
-	})
+func (h *Handler) Ping(context.Context, *api.ServerPingRequest) (*api.ServerPingResponse, error) {
+	return &api.ServerPingResponse{}, nil
 }

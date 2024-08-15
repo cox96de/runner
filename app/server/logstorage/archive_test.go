@@ -13,12 +13,12 @@ import (
 func TestService_Archive(t *testing.T) {
 	dir := fs.NewDir(t, "baseDir")
 	service := NewService(mock.NewMockRedis(t), NewFilesystemOSS(dir.Path()))
-	err := service.Append(context.Background(), 1, 1, "test", generateTestLog(100))
+	err := service.Append(context.Background(), 1, "test", generateTestLog(100))
 	assert.NilError(t, err)
-	err = service.Archive(context.Background(), 1, 1)
+	err = service.Archive(context.Background(), 1)
 	assert.NilError(t, err)
 	t.Run("get_log", func(t *testing.T) {
-		logs, err := service.GetLogLines(context.Background(), 1, 1, "test", 0, 100)
+		logs, err := service.GetLogLines(context.Background(), 1, "test", 0, 100)
 		assert.NilError(t, err)
 		assert.Equal(t, len(logs), 100)
 		for i := 0; i < 100; i++ {
@@ -27,7 +27,7 @@ func TestService_Archive(t *testing.T) {
 		}
 	})
 	t.Run("get_part", func(t *testing.T) {
-		logs, err := service.GetLogLines(context.Background(), 1, 1, "test", 1, 90)
+		logs, err := service.GetLogLines(context.Background(), 1, "test", 1, 90)
 		assert.NilError(t, err)
 		assert.Equal(t, len(logs), 90)
 		for i := 0; i < 90; i++ {

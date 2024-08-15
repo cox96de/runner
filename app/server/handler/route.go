@@ -5,12 +5,14 @@ import (
 )
 
 func (h *Handler) RegisterRouter(g *gin.RouterGroup) {
-	g.POST("/ping", h.PingHandler)
+	g.Any("/ping", getGinHandler(h.Ping))
 	g.POST("/pipelines", getGinHandler(h.CreatePipeline))
 	g.POST("/jobs/request", h.RequestJobHandler)
 	g.GET("/jobs/:job_id/executions/", getGinHandler(h.ListJobExecutions))
-	g.POST("/jobs/:job_id/executions/:job_execution_id", getGinHandler(h.UpdateJobExecution))
-	g.POST("/jobs/:job_id/executions/:job_execution_id/logs", getGinHandler(h.UploadLogLines))
-	g.GET("/jobs/:job_id/executions/:job_execution_id/logs/:name", getGinHandler(h.GetLogLines))
-	g.POST("/jobs/:job_id/executions/:job_execution_id/steps/:step_execution_id", getGinHandler(h.UpdateStepExecution))
+	g.POST("/job_executions/:job_execution_id", getGinHandler(h.UpdateJobExecution))
+	g.GET("/job_executions/:job_execution_id", getGinHandler(h.GetJobExecution))
+	g.POST("/job_executions/:job_execution_id/logs", getGinHandler(h.UploadLogLines))
+	g.GET("/job_executions/:job_execution_id/logs/:name", getGinHandler(h.GetLogLines))
+	g.GET("/step_executions/:step_execution_id", getGinHandler(h.GetStepExecution))
+	g.POST("/step_executions/:step_execution_id", getGinHandler(h.UpdateStepExecution))
 }
