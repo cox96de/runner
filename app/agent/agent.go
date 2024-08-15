@@ -16,15 +16,18 @@ import (
 type Agent struct {
 	engine engine.Engine
 	client api.ServerClient
+	label  string
 }
 
-func NewAgent(engine engine.Engine, client api.ServerClient) *Agent {
-	return &Agent{engine: engine, client: client}
+func NewAgent(engine engine.Engine, client api.ServerClient, label string) *Agent {
+	return &Agent{engine: engine, client: client, label: label}
 }
 
 func (a *Agent) poll(ctx context.Context, interval time.Duration) (*api.Job, error) {
 	for {
-		requestJobResponse, err := a.client.RequestJob(ctx, &api.RequestJobRequest{})
+		requestJobResponse, err := a.client.RequestJob(ctx, &api.RequestJobRequest{
+			Label: a.label,
+		})
 		if err != nil {
 			log.Errorf("failed to request job: %v", err)
 			if err := util.Wait(ctx, interval); err != nil {

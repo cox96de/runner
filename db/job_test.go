@@ -98,34 +98,3 @@ func TestClient_UpdateJobExecution(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, api.StatusRunning, execution.Status)
 }
-
-func TestClient_GetQueuedJobExecutions(t *testing.T) {
-	db := NewMockDB(t, &JobExecution{})
-	t.Run("empty", func(t *testing.T) {
-		executions, err := db.GetQueuedJobExecutions(context.Background(), 1)
-		assert.NilError(t, err)
-		assert.Assert(t, len(executions) == 0)
-	})
-	_, err := db.CreateJobExecutions(context.Background(), []*CreateJobExecutionOption{
-		{
-			JobID:  1,
-			Status: api.StatusQueued,
-		},
-		{
-			JobID:  2,
-			Status: api.StatusQueued,
-		},
-		{
-			JobID:  2,
-			Status: api.StatusRunning,
-		},
-	})
-	assert.NilError(t, err)
-	executions, err := db.GetQueuedJobExecutions(context.Background(), 1)
-	assert.NilError(t, err)
-	assert.Assert(t, len(executions) == 1)
-	assert.Equal(t, api.StatusQueued, executions[0].Status)
-	jobExecutions, err := db.GetQueuedJobExecutions(context.Background(), 100)
-	assert.NilError(t, err)
-	assert.Assert(t, len(jobExecutions) == 2)
-}

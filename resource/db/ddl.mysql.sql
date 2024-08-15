@@ -68,3 +68,15 @@ CREATE TABLE `step_execution`
     `updated_at`       datetime(3) NULL,
     PRIMARY KEY (`id`)
 );
+
+
+CREATE TABLE `job_queue`
+(
+    `id`               bigint AUTO_INCREMENT,
+    `job_execution_id` bigint,
+    `status `          int,
+    `label`            varchar(255),
+    `created_at`       datetime(3) NULL,
+    `updated_at`       datetime(3) NULL,
+    PRIMARY KEY (`id`)
+);

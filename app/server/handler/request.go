@@ -15,7 +15,12 @@ import (
 )
 
 func (h *Handler) RequestJobHandler(c *gin.Context) {
-	response, err := h.RequestJob(c, nil)
+	request := &api.RequestJobRequest{}
+	if err := Bind(c, request); err != nil {
+		JSON(c, http.StatusBadRequest, &Message{Message: err})
+		return
+	}
+	response, err := h.RequestJob(c, request)
 	if err != nil {
 		log.Errorf("failed to request job: %v", err)
 		c.JSON(http.StatusInternalServerError, &Message{Message: err})
@@ -30,31 +35,16 @@ func (h *Handler) RequestJobHandler(c *gin.Context) {
 
 func (h *Handler) RequestJob(ctx context.Context, request *api.RequestJobRequest) (*api.RequestJobResponse, error) {
 	// TODO: the limit should be configurable.
-	jobExecutions, err := h.db.GetQueuedJobExecutions(ctx, 100)
+	jobQueues, err := h.db.GetQueuedJobExecutionIDs(ctx, request.Label, 100)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get queued job executions")
 	}
-	for _, jobExecution := range jobExecutions {
-		lock, err := h.locker.Lock(ctx, lib.BuildJobRequestLockKey(jobExecution.JobID), "request_job",
-			time.Second*10)
-		if err != nil {
-			log.Warnf("failed to lock job execution: %v", err)
-		}
-		if !lock {
+	for _, jobQueue := range jobQueues {
+		job, ok := h.tryLockJobExecution(ctx, jobQueue.JobExecutionID)
+		if !ok {
 			continue
 		}
-		job, err := h.packJob(ctx, jobExecution)
-		if err != nil {
-			log.Warnf("failed to get job: %v", err)
-			ok, err := h.locker.Unlock(ctx, lib.BuildJobRequestLockKey(jobExecution.JobID))
-			if err != nil {
-				log.Warnf("failed to unlock job execution: %v", err)
-				continue
-			}
-			if !ok {
-				log.Warnf("failed to unlock job execution")
-			}
-		}
+		log.WithContext(ctx).Infof("dispatch job: %v, job execution: %d", job.ID, jobQueue.JobExecutionID)
 		return &api.RequestJobResponse{
 			Job: job,
 		}, nil
@@ -62,6 +52,39 @@ func (h *Handler) RequestJob(ctx context.Context, request *api.RequestJobRequest
 	return &api.RequestJobResponse{
 		Job: nil,
 	}, nil
+}
+
+func (h *Handler) tryLockJobExecution(ctx context.Context, jobExecutionID int64) (job *api.Job, ok bool) {
+	lockKey := lib.BuildJobRequestLockKey(jobExecutionID)
+	lock, err := h.locker.Lock(ctx, lockKey, "request_job",
+		time.Second*10)
+	if err != nil {
+		log.Warnf("failed to lock job execution: %v", err)
+		return nil, false
+	}
+	if !lock {
+		return nil, false
+	}
+	defer func() {
+		// If success to fetch the job, don't need to unlock it.
+		if !ok {
+			_, err := h.locker.Unlock(ctx, lockKey)
+			if err != nil {
+				log.Warnf("failed to unlock job execution: %v", err)
+			}
+		}
+	}()
+	jobExecution, err := h.db.GetJobExecution(ctx, jobExecutionID)
+	if err != nil {
+		log.Errorf("failed to get job execution: %v", err)
+		return nil, false
+	}
+	job, err = h.packJob(ctx, jobExecution)
+	if err != nil {
+		log.Errorf("failed to pack job: %v", err)
+		return nil, false
+	}
+	return job, true
 }
 
 func (h *Handler) packJob(ctx context.Context, jobExecution *db.JobExecution) (*api.Job, error) {

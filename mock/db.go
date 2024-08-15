@@ -25,7 +25,8 @@ func NewMockDB(t *testing.T) *db.Client {
 		},
 	)
 	assert.NilError(t, err)
-	err = migrateModels(conn, &db.Pipeline{}, &db.Job{}, &db.JobExecution{}, &db.Step{}, &db.StepExecution{})
+	err = migrateModels(conn, &db.Pipeline{}, &db.Job{}, &db.JobExecution{}, &db.Step{}, &db.StepExecution{},
+		&db.JobQueue{})
 	assert.NilError(t, err)
 	return db.NewClient(db.SQLite, conn)
 }

@@ -31,9 +31,10 @@ func (s *Service) Dispatch(ctx context.Context, jobs []*db.Job, executions []*db
 		return errors.WithMessage(err, "failed to calculate jobs")
 	}
 	err = s.dbClient.Transaction(func(client *db.Client) error {
+		// TODO: batch update.
 		for _, option := range updateJobExecutionOptions {
-			if err := client.UpdateJobExecution(ctx, option); err != nil {
-				return errors.WithMessage(err, "failed to update job executions")
+			if err := UpdateJobExecution(ctx, client, option); err != nil {
+				return errors.WithMessagef(err, "failed to update job execution '%d'", option.ID)
 			}
 		}
 		return nil
