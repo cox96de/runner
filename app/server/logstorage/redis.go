@@ -9,14 +9,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (s *Service) getLogsFromRedis(ctx context.Context, jobID int64, jobExecutionID int64, logName string,
+func (s *Service) getLogsFromRedis(ctx context.Context, jobExecutionID int64, logName string,
 	start int64, limit int64,
 ) ([]*api.LogLine, error) {
 	end := start + limit - 1
 	if limit < 0 {
 		end = -1
 	}
-	result, err := s.redis.LRange(ctx, buildLogRedisKey(jobID, jobExecutionID, logName), start, end).Result()
+	result, err := s.redis.LRange(ctx, buildLogRedisKey(jobExecutionID, logName), start, end).Result()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get logs from cache")
 	}
@@ -31,10 +31,10 @@ func (s *Service) getLogsFromRedis(ctx context.Context, jobID int64, jobExecutio
 	return logs, nil
 }
 
-func buildLogRedisKey(jobID int64, jobExecutionID int64, logName string) string {
-	return "log:" + strconv.FormatInt(jobID, 10) + ":" + strconv.FormatInt(jobExecutionID, 10) + ":" + logName
+func buildLogRedisKey(jobExecutionID int64, logName string) string {
+	return "log:" + strconv.FormatInt(jobExecutionID, 10) + ":" + logName
 }
 
-func buildLogSetRedisKey(jobID int64, jobExecutionID int64) string {
-	return "log_set:" + strconv.FormatInt(jobID, 10) + ":" + strconv.FormatInt(jobExecutionID, 10)
+func buildLogSetRedisKey(jobExecutionID int64) string {
+	return "log_set:" + strconv.FormatInt(jobExecutionID, 10)
 }

@@ -56,7 +56,7 @@ func (a *Agent) Run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		logger := log.ExtractLogger(ctx).WithFields(log.Fields{"job": job.ID, "job_execution": job.Executions[0].ID})
+		logger := log.ExtractLogger(ctx).WithFields(log.Fields{"job": job.ID, "job_execution": job.Execution.ID})
 		logger.Infof("got job")
 		err = NewExecution(a.engine, job, a.client).
 			Execute(log.WithLogger(ctx, logger))

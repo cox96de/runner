@@ -8,7 +8,7 @@ import (
 
 func (h *Handler) UploadLogLines(ctx context.Context, request *api.UpdateLogLinesRequest) (*api.UpdateLogLinesResponse, error) {
 	// TODO: check if job & executions exists
-	err := h.logService.Append(ctx, request.JobID, request.JobExecutionID, request.Name, request.Lines)
+	err := h.logService.Append(ctx, request.JobExecutionID, request.Name, request.Lines)
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +21,7 @@ func (h *Handler) GetLogLines(ctx context.Context, request *api.GetLogLinesReque
 	if request.Limit != nil {
 		limit = *request.Limit
 	}
-	logLines, err := h.logService.GetLogLines(ctx, request.JobID, request.JobExecutionID, request.Name, request.Offset,
+	logLines, err := h.logService.GetLogLines(ctx, request.JobExecutionID, request.Name, request.Offset,
 		limit)
 	if err != nil {
 		return nil, err

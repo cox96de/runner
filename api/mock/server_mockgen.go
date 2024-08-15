@@ -85,6 +85,50 @@ func (c *MockServerClientCreatePipelineCall) DoAndReturn(f func(context.Context,
 	return c
 }
 
+// GetJobExecution mocks base method.
+func (m *MockServerClient) GetJobExecution(arg0 context.Context, arg1 *api.GetJobExecutionRequest, arg2 ...grpc.CallOption) (*api.GetJobExecutionResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetJobExecution", varargs...)
+	ret0, _ := ret[0].(*api.GetJobExecutionResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetJobExecution indicates an expected call of GetJobExecution.
+func (mr *MockServerClientMockRecorder) GetJobExecution(arg0, arg1 any, arg2 ...any) *MockServerClientGetJobExecutionCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJobExecution", reflect.TypeOf((*MockServerClient)(nil).GetJobExecution), varargs...)
+	return &MockServerClientGetJobExecutionCall{Call: call}
+}
+
+// MockServerClientGetJobExecutionCall wrap *gomock.Call
+type MockServerClientGetJobExecutionCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServerClientGetJobExecutionCall) Return(arg0 *api.GetJobExecutionResponse, arg1 error) *MockServerClientGetJobExecutionCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServerClientGetJobExecutionCall) Do(f func(context.Context, *api.GetJobExecutionRequest, ...grpc.CallOption) (*api.GetJobExecutionResponse, error)) *MockServerClientGetJobExecutionCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServerClientGetJobExecutionCall) DoAndReturn(f func(context.Context, *api.GetJobExecutionRequest, ...grpc.CallOption) (*api.GetJobExecutionResponse, error)) *MockServerClientGetJobExecutionCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // GetLogLines mocks base method.
 func (m *MockServerClient) GetLogLines(arg0 context.Context, arg1 *api.GetLogLinesRequest, arg2 ...grpc.CallOption) (*api.GetLogLinesResponse, error) {
 	m.ctrl.T.Helper()
@@ -129,6 +173,50 @@ func (c *MockServerClientGetLogLinesCall) DoAndReturn(f func(context.Context, *a
 	return c
 }
 
+// GetStepExecution mocks base method.
+func (m *MockServerClient) GetStepExecution(arg0 context.Context, arg1 *api.GetStepExecutionRequest, arg2 ...grpc.CallOption) (*api.GetStepExecutionResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetStepExecution", varargs...)
+	ret0, _ := ret[0].(*api.GetStepExecutionResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStepExecution indicates an expected call of GetStepExecution.
+func (mr *MockServerClientMockRecorder) GetStepExecution(arg0, arg1 any, arg2 ...any) *MockServerClientGetStepExecutionCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStepExecution", reflect.TypeOf((*MockServerClient)(nil).GetStepExecution), varargs...)
+	return &MockServerClientGetStepExecutionCall{Call: call}
+}
+
+// MockServerClientGetStepExecutionCall wrap *gomock.Call
+type MockServerClientGetStepExecutionCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServerClientGetStepExecutionCall) Return(arg0 *api.GetStepExecutionResponse, arg1 error) *MockServerClientGetStepExecutionCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServerClientGetStepExecutionCall) Do(f func(context.Context, *api.GetStepExecutionRequest, ...grpc.CallOption) (*api.GetStepExecutionResponse, error)) *MockServerClientGetStepExecutionCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServerClientGetStepExecutionCall) DoAndReturn(f func(context.Context, *api.GetStepExecutionRequest, ...grpc.CallOption) (*api.GetStepExecutionResponse, error)) *MockServerClientGetStepExecutionCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // ListJobExecutions mocks base method.
 func (m *MockServerClient) ListJobExecutions(arg0 context.Context, arg1 *api.ListJobExecutionsRequest, arg2 ...grpc.CallOption) (*api.ListJobExecutionsResponse, error) {
 	m.ctrl.T.Helper()
@@ -169,6 +257,50 @@ func (c *MockServerClientListJobExecutionsCall) Do(f func(context.Context, *api.
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockServerClientListJobExecutionsCall) DoAndReturn(f func(context.Context, *api.ListJobExecutionsRequest, ...grpc.CallOption) (*api.ListJobExecutionsResponse, error)) *MockServerClientListJobExecutionsCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// Ping mocks base method.
+func (m *MockServerClient) Ping(arg0 context.Context, arg1 *api.ServerPingRequest, arg2 ...grpc.CallOption) (*api.ServerPingResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Ping", varargs...)
+	ret0, _ := ret[0].(*api.ServerPingResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Ping indicates an expected call of Ping.
+func (mr *MockServerClientMockRecorder) Ping(arg0, arg1 any, arg2 ...any) *MockServerClientPingCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockServerClient)(nil).Ping), varargs...)
+	return &MockServerClientPingCall{Call: call}
+}
+
+// MockServerClientPingCall wrap *gomock.Call
+type MockServerClientPingCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServerClientPingCall) Return(arg0 *api.ServerPingResponse, arg1 error) *MockServerClientPingCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServerClientPingCall) Do(f func(context.Context, *api.ServerPingRequest, ...grpc.CallOption) (*api.ServerPingResponse, error)) *MockServerClientPingCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServerClientPingCall) DoAndReturn(f func(context.Context, *api.ServerPingRequest, ...grpc.CallOption) (*api.ServerPingResponse, error)) *MockServerClientPingCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

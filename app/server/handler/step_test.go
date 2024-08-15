@@ -22,10 +22,16 @@ func TestHandler_UpdateStepExecution(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	updateStepExecutionResponse, err := handler.UpdateStepExecution(context.Background(), &api.UpdateStepExecutionRequest{
-		StepID:          1,
 		StepExecutionID: executions[0].ID,
 		Status:          lo.ToPtr(api.StatusRunning),
 	})
 	assert.NilError(t, err)
 	assert.DeepEqual(t, updateStepExecutionResponse.StepExecution.Status, api.StatusRunning)
+	t.Run("GetStepExecution", func(t *testing.T) {
+		getStepExecutionResponse, err := handler.GetStepExecution(context.Background(), &api.GetStepExecutionRequest{
+			StepExecutionID: executions[0].ID,
+		})
+		assert.NilError(t, err)
+		assert.DeepEqual(t, getStepExecutionResponse.StepExecution.Status, api.StatusRunning)
+	})
 }

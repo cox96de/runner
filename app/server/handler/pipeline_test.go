@@ -65,6 +65,9 @@ func TestHandler_createPipeline(t *testing.T) {
 								Status: api.StatusCreated,
 							},
 						},
+						Execution: &api.StepExecution{
+							Status: api.StatusCreated,
+						},
 					},
 				},
 			},

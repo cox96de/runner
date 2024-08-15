@@ -149,7 +149,6 @@ func (l *logCollector) flush() error {
 	}
 	// TODO: use context with timeout.
 	_, err := l.client.UploadLogLines(context.Background(), &api.UpdateLogLinesRequest{
-		JobID:          l.jobExecution.JobID,
 		JobExecutionID: l.jobExecution.ID,
 		Name:           l.logName,
 		Lines:          logs,
