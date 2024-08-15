@@ -46,7 +46,6 @@ func TestHandler_createPipeline(t *testing.T) {
 				WorkingDirectory: "/tmp",
 				EnvVar:           map[string]string{"key": "value"},
 				DependsOn:        []string{"job2"},
-				Executions:       []*api.JobExecution{},
 				Execution: &api.JobExecution{
 					Status: api.StatusCreated,
 					Steps: []*api.StepExecution{

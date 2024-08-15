@@ -110,23 +110,34 @@ func PackJob(j *Job, latestExecution *JobExecution, executions []*JobExecution, 
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to pack steps")
 	}
-	return &api.Job{
+	var jobExecutions []*api.JobExecution
+	for _, e := range executions {
+		je, err := PackJobExecution(e, stepExecutions)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to pack job execution")
+		}
+		jobExecutions = append(jobExecutions, je)
+	}
+	latestExe, err := PackJobExecution(latestExecution, executionsByJobExecutionID[latestExecution.ID])
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to pack latest job execution")
+	}
+	p := &api.Job{
 		ID:               j.ID,
 		PipelineID:       j.PipelineID,
 		Name:             j.Name,
 		RunsOn:           runsOn,
 		WorkingDirectory: j.WorkingDirectory,
 		EnvVar:           envVar,
-		Executions: lo.Map(executions, func(e *JobExecution, _ int) *api.JobExecution {
-			return PackJobExecution(e, stepExecutions)
-		}),
-		Execution: PackJobExecution(latestExecution, executionsByJobExecutionID[latestExecution.ID]),
-		Steps:     packSteps,
-		DependsOn: dependsOn,
-		Timeout:   j.Timeout,
-		CreatedAt: timestamppb.New(j.CreatedAt),
-		UpdatedAt: timestamppb.New(j.UpdatedAt),
-	}, nil
+		Executions:       jobExecutions,
+		Execution:        latestExe,
+		Steps:            packSteps,
+		DependsOn:        dependsOn,
+		Timeout:          j.Timeout,
+		CreatedAt:        timestamppb.New(j.CreatedAt),
+		UpdatedAt:        timestamppb.New(j.UpdatedAt),
+	}
+	return p, nil
 }
 
 func UnmarshalRunsOn(body []byte) (*api.RunsOn, error) {
@@ -140,15 +151,15 @@ func UnmarshalRunsOn(body []byte) (*api.RunsOn, error) {
 
 // PackJobExecution packs a job execution into api.JobExecution.
 // If steps is nil, it will not pack steps.
-func PackJobExecution(j *JobExecution, steps []*StepExecution) *api.JobExecution {
+func PackJobExecution(j *JobExecution, steps []*StepExecution) (*api.JobExecution, error) {
 	if j == nil {
-		return nil
+		return nil, nil
 	}
 	stepExecutions := lo.Map(steps, func(e *StepExecution, _ int) *api.StepExecution {
 		return PackStepExecution(e)
 	})
 	// TODO: sort step.
-	return &api.JobExecution{
+	p := &api.JobExecution{
 		ID:          j.ID,
 		JobID:       j.JobID,
 		Status:      j.Status,
@@ -158,12 +169,19 @@ func PackJobExecution(j *JobExecution, steps []*StepExecution) *api.JobExecution
 		CreatedAt:   api.ConvertTime(j.CreatedAt),
 		UpdatedAt:   api.ConvertTime(j.UpdatedAt),
 	}
+	if len(j.Reason) > 0 {
+		if err := json.Unmarshal(j.Reason, &p.Reason); err != nil {
+			return nil, errors.WithMessage(err, "failed to unmarshal job execution reason")
+		}
+	}
+	return p, nil
 }
 
 type JobExecution struct {
 	ID          int64      `gorm:"column:id;primaryKey;autoIncrement"`
 	JobID       int64      `gorm:"column:job_id"`
 	Status      api.Status `gorm:"column:status"`
+	Reason      []byte     `gorm:"column:reason"`
 	StartedAt   *time.Time `gorm:"column:started_at"`
 	CompletedAt *time.Time `gorm:"column:completed_at"`
 	CreatedAt   time.Time  `gorm:"column:created_at;autoCreateTime"`
@@ -214,6 +232,7 @@ func (c *Client) GetJobExecutionsByJobID(ctx context.Context, jobID int64) ([]*J
 type UpdateJobExecutionOption struct {
 	ID          int64
 	Status      *api.Status
+	Reason      *api.Reason
 	StartedAt   *time.Time
 	CompletedAt *time.Time
 }
@@ -229,6 +248,13 @@ func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecut
 	}
 	if option.CompletedAt != nil {
 		updateField["completed_at"] = *option.CompletedAt
+	}
+	if option.Reason != nil {
+		bys, err := json.Marshal(option.Reason)
+		if err != nil {
+			return errors.WithMessage(err, "failed to marshal reason")
+		}
+		updateField["reason"] = bys
 	}
 	return c.conn.WithContext(ctx).Model(&JobExecution{}).Where("id = ?", option.ID).Updates(updateField).Error
 }

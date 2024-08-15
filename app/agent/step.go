@@ -5,6 +5,9 @@ import (
 	"io"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/log"
@@ -122,37 +125,50 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 			}
 		}
 	}()
-	var processStatus *executorpb.ProcessStatus
+	var (
+		stepStatus = api.StatusSucceeded
+		exitCode   int32
+	)
 	for {
 		commandResponse, err := executor.WaitCommand(e.jobTimeoutCtx, &executorpb.WaitCommandRequest{
 			CommandID: startCommandResponse.CommandID,
 			Timeout:   int64(time.Hour), // TODO: change it, it should refer to step timeout.
 		})
 		if err != nil {
-			// TODO: auto retry.
+			statusError, ok := status.FromError(err)
+			if !ok {
+				// TODO: auto retry.
+				return errors.WithMessage(err, "failed to wait command")
+			}
+			if statusError.Code() == codes.Canceled {
+				// Aborted by context.
+				logger.Infof("context is canceled, stop waiting command")
+				stepStatus = api.StatusFailed
+				break
+			}
 			return errors.WithMessage(err, "failed to wait command")
 		}
-		processStatus = commandResponse.Status
+		processStatus := commandResponse.Status
 		if commandResponse.Status.Exit {
+			if processStatus.ExitCode != 0 {
+				stepStatus = api.StatusFailed
+				exitCode = processStatus.ExitCode
+			}
 			break
 		}
 	}
-	stepStatus := api.StatusSucceeded
-	if processStatus.ExitCode != 0 {
-		stepStatus = api.StatusFailed
-	}
+
 	select {
 	case <-logCh:
 		logger.Infof("log collector is successful closed")
 	case <-time.After(time.Second * 5):
 		logger.Warnf("log collector is not closed in time")
 	}
-
-	if err = e.updateStepExecution(ctx, step, &stepStatus, lo.ToPtr(uint32(processStatus.ExitCode))); err != nil {
+	if err = e.updateStepExecution(ctx, step, &stepStatus, lo.ToPtr(uint32(exitCode))); err != nil {
 		// TODO: retry if failed.
 		return errors.WithMessage(err, "failed to update step jobExecution")
 	}
-	logger.Infof("command is completed, exit code: %+v", processStatus.ExitCode)
+	logger.Infof("command is completed, exit code: %+v", exitCode)
 	return nil
 }
 
@@ -170,10 +186,8 @@ func (e *Execution) continueWhenNoPreFailed(step *api.Step) (bool, error) {
 }
 
 func (e *Execution) preStep(step *api.Step) (bool, error) {
-	select {
-	case <-e.jobTimeoutCtx.Done():
+	if abortedReason(e.abortedReason.Load()) != None {
 		return false, nil
-	default:
 	}
 	return e.continueWhenNoPreFailed(step)
 }

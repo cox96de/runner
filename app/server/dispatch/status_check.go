@@ -27,6 +27,8 @@ func CheckJobStatus(old api.Status, target api.Status) bool {
 	case api.StatusRunning:
 		return target.IsCompleted() ||
 			target == api.StatusCanceling
+	case api.StatusCanceling:
+		return target.IsCompleted()
 	}
 	return false
 }

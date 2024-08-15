@@ -43,6 +43,7 @@ message UpdateJobExecutionRequest {
   //@gotags: path:"job_execution_id"
   int64 JobExecutionID = 1[(go.field).name = 'JobExecutionID'];
   optional Status status = 3;
+  optional Reason reason = 4;
 }
 
 message UpdateJobExecutionResponse {

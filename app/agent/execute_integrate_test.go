@@ -76,7 +76,7 @@ func TestExecution(t *testing.T) {
 					Steps: []*api.StepDSL{
 						{
 							Name:     "step1",
-							Commands: []string{"sleep 10"},
+							Commands: []string{"sleep 3"},
 						},
 						{
 							Name:      "step2",
@@ -98,9 +98,11 @@ func TestExecution(t *testing.T) {
 			JobID: requestJobResponse.Job.ID,
 		})
 		assert.NilError(t, err)
-		assert.Equal(t, executions.Jobs[0].Status, api.StatusFailed)
-		assert.Equal(t, executions.Jobs[0].Steps[0].Status, api.StatusFailed)
-		assert.Equal(t, executions.Jobs[0].Steps[1].Status, api.StatusSkipped)
+		jobExecution := executions.Jobs[0]
+		assert.Equal(t, jobExecution.Status, api.StatusFailed)
+		assert.Equal(t, jobExecution.Steps[0].Status, api.StatusFailed)
+		assert.Equal(t, jobExecution.Steps[1].Status, api.StatusSkipped)
+		assert.Equal(t, jobExecution.Reason.Reason, api.FailedReasonTimeout)
 	})
 	t.Run("step_failed", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
@@ -143,9 +145,11 @@ func TestExecution(t *testing.T) {
 				JobID: requestJobResponse.Job.ID,
 			})
 			assert.NilError(t, err)
-			assert.Equal(t, executions.Jobs[0].Status, api.StatusFailed)
-			assert.Equal(t, executions.Jobs[0].Steps[1].Status, api.StatusFailed)
-			assert.Equal(t, executions.Jobs[0].Steps[2].Status, api.StatusSkipped)
+			jobExecution := executions.Jobs[0]
+			assert.Equal(t, jobExecution.Status, api.StatusFailed)
+			assert.Equal(t, jobExecution.Steps[1].Status, api.StatusFailed)
+			assert.Equal(t, jobExecution.Steps[2].Status, api.StatusSkipped)
+			assert.Equal(t, jobExecution.Reason.Reason, api.FailedReasonStepFailed)
 		})
 		t.Run("seq", func(t *testing.T) {
 			_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
