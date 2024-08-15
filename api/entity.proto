@@ -74,8 +74,23 @@ message JobExecution {
   repeated StepExecution steps = 4;
   google.protobuf.Timestamp started_at = 5;
   google.protobuf.Timestamp completed_at = 6;
+  Reason reason = 7;
   google.protobuf.Timestamp created_at = 101;
   google.protobuf.Timestamp updated_at = 102;
+}
+
+enum ReasonType{
+  option (go.enum).name = "FailedReason";
+  FAILED_REASON_INTERNAL_ERROR = 0[(go.value).name = "FailedReasonInternalError"];
+  FAILED_REASON_TIMEOUT = 1[(go.value).name = "FailedReasonTimeout"];
+  FAILED_REASON_CANCELLED = 2[(go.value).name = "FailedReasonCancelled"];
+  FAILED_REASON_STEP_FAILED = 3[(go.value).name = "FailedReasonStepFailed"];
+}
+
+
+message Reason {
+  ReasonType reason = 1;
+  string message = 2;
 }
 
 message RunsOn {

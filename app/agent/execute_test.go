@@ -91,7 +91,7 @@ func TestExecution_calculateJobStatus(t *testing.T) {
 				},
 			},
 		}}, nil)
-		status := e.calculateJobStatus()
+		status := e.calculateJobStatusFromStepStatus()
 		assert.Equal(t, status, api.StatusSucceeded)
 	})
 	t.Run("failed", func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestExecution_calculateJobStatus(t *testing.T) {
 				},
 			},
 		}}, nil)
-		status := e.calculateJobStatus()
+		status := e.calculateJobStatusFromStepStatus()
 		assert.Equal(t, status, api.StatusFailed)
 	})
 }

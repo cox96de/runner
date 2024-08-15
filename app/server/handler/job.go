@@ -43,6 +43,7 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 		updateJobExecutionOption := &db.UpdateJobExecutionOption{
 			ID:     jobExecution.JobID,
 			Status: request.Status,
+			Reason: request.Reason,
 		}
 		switch {
 		case *request.Status == api.StatusPreparing:
@@ -61,9 +62,10 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 			return nil, errors.WithMessagef(err, "failed to update job execution '%d'", request.JobExecutionID)
 		}
 	}
+	packJobExecution, err := db.PackJobExecution(jobExecution, nil)
 	return &api.UpdateJobExecutionResponse{
-		JobExecution: db.PackJobExecution(jobExecution, nil),
-	}, nil
+		JobExecution: packJobExecution,
+	}, err
 }
 
 func (h *Handler) ListJobExecutions(ctx context.Context, in *api.ListJobExecutionsRequest) (*api.ListJobExecutionsResponse, error) {
@@ -79,11 +81,16 @@ func (h *Handler) ListJobExecutions(ctx context.Context, in *api.ListJobExecutio
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to list step executions for job '%d'", in.JobID)
 	}
-	return &api.ListJobExecutionsResponse{
-		Jobs: lo.Map(jobExecutions, func(item *db.JobExecution, _ int) *api.JobExecution {
-			return db.PackJobExecution(item, stepExecutionMap[item.ID])
-		}),
-	}, nil
+
+	resp := &api.ListJobExecutionsResponse{}
+	for _, execution := range jobExecutions {
+		e, err := db.PackJobExecution(execution, stepExecutionMap[execution.ID])
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to pack job execution")
+		}
+		resp.Jobs = append(resp.Jobs, e)
+	}
+	return resp, nil
 }
 
 func (h *Handler) GetJobExecution(ctx context.Context, in *api.GetJobExecutionRequest) (*api.GetJobExecutionResponse, error) {
@@ -93,6 +100,6 @@ func (h *Handler) GetJobExecution(ctx context.Context, in *api.GetJobExecutionRe
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to get job execution '%d'", in.JobExecutionID)
 	}
-	jobExecution := db.PackJobExecution(jobExecutionPO, nil)
-	return &api.GetJobExecutionResponse{JobExecution: jobExecution}, nil
+	jobExecution, err := db.PackJobExecution(jobExecutionPO, nil)
+	return &api.GetJobExecutionResponse{JobExecution: jobExecution}, err
 }
