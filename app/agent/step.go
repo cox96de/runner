@@ -32,6 +32,9 @@ func (e *Execution) updateStepExecution(ctx context.Context, step *api.Step, sta
 	if status != nil {
 		stepExecution.Status = *status
 	}
+	if exitCode != nil {
+		stepExecution.ExitCode = *exitCode
+	}
 	return nil
 }
 

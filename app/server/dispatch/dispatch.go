@@ -3,6 +3,7 @@ package dispatch
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/cox96de/runner/api"
 	"github.com/samber/lo"
@@ -78,7 +79,17 @@ func (d *dispatcher) Dispatch(jobs []*db.Job, executions []*db.JobExecution) ([]
 		}
 		updateJobExecutionOption, err := d.isAllPreCompleted(job)
 		if err != nil {
-			// TODO: update the job to failed
+			updateJobExecutionOption = &db.UpdateJobExecutionOption{
+				ID:     job.execution.ID,
+				Status: lo.ToPtr(api.StatusFailed),
+				Reason: &api.Reason{
+					Reason:  api.FailedReasonInternalError,
+					Message: fmt.Sprintf("failed to dispatch job execution: %v", err),
+				},
+				StartedAt:   nil,
+				CompletedAt: nil,
+			}
+			result = append(result, updateJobExecutionOption)
 			continue
 		}
 		if updateJobExecutionOption == nil {
@@ -99,7 +110,7 @@ func (d *dispatcher) isAllPreCompleted(job *dispatchJob) (*db.UpdateJobExecution
 	var dependsOn []string
 	err := json.Unmarshal(job.job.DependsOn, &dependsOn)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessage(err, "failed to unmarshal depends on")
 	}
 	for _, depend := range dependsOn {
 		depJob, ok := d.jobs[depend]

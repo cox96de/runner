@@ -1,38 +1,46 @@
 package main
 
 import (
-	"github.com/jinzhu/configor"
-	"github.com/pkg/errors"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 type Config struct {
-	ServerURL string `json:"server_url" yaml:"server_url"`
-	Label     string `json:"label" yaml:"label"`
-	Engine    Engine `json:"engine" yaml:"engine"`
+	ServerURL string `mapstructure:"server_url" yaml:"server_url"`
+	Label     string `mapstructure:"label" yaml:"label"`
+	Engine    Engine `mapstructure:"engine" yaml:"engine"`
 }
 
 type Engine struct {
-	Name string `json:"name" yaml:"name"`
-	Kube Kube   `json:"kube" yaml:"kube"`
+	Name string `mapstructure:"name" yaml:"name"`
+	Kube Kube   `mapstructure:"kube" yaml:"kube"`
 }
 
 type Kube struct {
-	Config         string `json:"config" yaml:"config"`
-	ExecutorImage  string `json:"executor_image" yaml:"executor_image"`
-	ExecutorPath   string `json:"executor_path" yaml:"executor_path"`
-	Namespace      string `json:"namespace" yaml:"namespace"`
-	UsePortForward bool   `json:"use_port_forward" yaml:"use_port_forward"`
+	Config         string `mapstructure:"config" yaml:"config"`
+	ExecutorImage  string `mapstructure:"executor_image" yaml:"executor_image"`
+	ExecutorPath   string `mapstructure:"executor_path" yaml:"executor_path"`
+	Namespace      string `mapstructure:"namespace" yaml:"namespace"`
+	UsePortForward bool   `mapstructure:"use_port_forward" yaml:"use_port_forward"`
 }
 
-func LoadConfig(path string) (*Config, error) {
-	configLoader := configor.New(&configor.Config{
-		Verbose:   true,
-		ENVPrefix: "AGENT_CONFIG",
-	})
-	var config Config
-	err := configLoader.Load(&config, path)
+type arg struct {
+	ArgKey    string
+	FlagName  string
+	FlagValue string
+	FlagUsage string
+	Env       string
+}
+
+func bindArg(flags *pflag.FlagSet, viper *viper.Viper, a *arg) error {
+	_ = flags.String(a.FlagName, a.FlagValue, a.FlagUsage)
+	err := viper.BindPFlag(a.ArgKey, flags.Lookup(a.FlagName))
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to load config")
+		return err
 	}
-	return &config, nil
+	err = viper.BindEnv(a.ArgKey, a.Env)
+	if err != nil {
+		return err
+	}
+	return nil
 }
