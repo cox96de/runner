@@ -133,7 +133,7 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 		exitCode   int32
 	)
 	for {
-		commandResponse, err := executor.WaitCommand(e.jobTimeoutCtx, &executorpb.WaitCommandRequest{
+		commandResponse, err := executor.WaitCommand(e.jobCtx, &executorpb.WaitCommandRequest{
 			CommandID: startCommandResponse.CommandID,
 			Timeout:   int64(time.Hour), // TODO: change it, it should refer to step timeout.
 		})

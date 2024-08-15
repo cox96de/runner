@@ -89,6 +89,7 @@ enum ReasonType{
   FAILED_REASON_TIMEOUT = 1[(go.value).name = "FailedReasonTimeout"];
   FAILED_REASON_CANCELLED = 2[(go.value).name = "FailedReasonCancelled"];
   FAILED_REASON_STEP_FAILED = 3[(go.value).name = "FailedReasonStepFailed"];
+  FAILED_REASON_HEARTBEAT_TIMEOUT = 4[(go.value).name = "FailedReasonHeartbeatTimeout"];
 }
 
 

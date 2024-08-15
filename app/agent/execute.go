@@ -25,7 +25,8 @@ type abortedReason uint32
 
 const (
 	None abortedReason = iota
-	Timeout
+	TimeoutAbortReason
+	HeartbeatAbortReason
 )
 
 type Execution struct {
@@ -40,10 +41,11 @@ type Execution struct {
 	dag       *lib.DAG[*dagNode]
 	logWriter *logCollector
 
-	// jobTimeoutCtx is the context for the job timeout.
+	// jobCtx is the context for the job execution ctx.
 	// If the job has a timeout, it will be canceled when the job is done.
 	// If subprocess should be responded to the job timeout, it should use this context.
-	jobTimeoutCtx context.Context
+	jobCtx        context.Context
+	jobCanceller  context.CancelFunc
 	abortedReason atomic.Uint32
 }
 
@@ -70,6 +72,7 @@ func (e *Execution) Execute(ctx context.Context) error {
 	e.logWriter = newLogCollector(e.client, e.jobExecution, "_", log.ExtractLogger(ctx), e.logFlushInternal)
 	logger := log.ExtractLogger(ctx).WithOutput(io.MultiWriter(os.Stdout, e.logWriter))
 	ctx = log.WithLogger(ctx, logger)
+	e.startMonitor(ctx)
 	if err = e.updateJobStatus(ctx, api.StatusPreparing, nil); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
@@ -95,14 +98,14 @@ func (e *Execution) Execute(ctx context.Context) error {
 	if err = e.updateJobStatus(ctx, api.StatusRunning, nil); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
-	e.jobTimeoutCtx = ctx
+	e.jobCtx = ctx
 	if e.job.Timeout > 0 {
 		var timeoutCancel context.CancelFunc
-		e.jobTimeoutCtx, timeoutCancel = context.WithCancel(ctx)
+		e.jobCtx, timeoutCancel = context.WithCancel(ctx)
 		go func() {
 			select {
 			case <-time.After(time.Duration(e.job.Timeout) * time.Second):
-				e.abortedReason.Store(uint32(Timeout))
+				e.abortedReason.Store(uint32(TimeoutAbortReason))
 				timeoutCancel()
 			case <-ctx.Done():
 			}
@@ -142,7 +145,7 @@ func (e *Execution) updateJobFinalStatus(ctx context.Context) error {
 		Reason: api.FailedReasonStepFailed,
 	}
 	if jobStatus != api.StatusSucceeded {
-		if abortedReason(e.abortedReason.Load()) == Timeout {
+		if abortedReason(e.abortedReason.Load()) == TimeoutAbortReason {
 			reason.Reason = api.FailedReasonTimeout
 		}
 	}

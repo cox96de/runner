@@ -217,6 +217,50 @@ func (c *MockServerClientGetStepExecutionCall) DoAndReturn(f func(context.Contex
 	return c
 }
 
+// Heartbeat mocks base method.
+func (m *MockServerClient) Heartbeat(arg0 context.Context, arg1 *api.HeartbeatRequest, arg2 ...grpc.CallOption) (*api.HeartbeatResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Heartbeat", varargs...)
+	ret0, _ := ret[0].(*api.HeartbeatResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Heartbeat indicates an expected call of Heartbeat.
+func (mr *MockServerClientMockRecorder) Heartbeat(arg0, arg1 any, arg2 ...any) *MockServerClientHeartbeatCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Heartbeat", reflect.TypeOf((*MockServerClient)(nil).Heartbeat), varargs...)
+	return &MockServerClientHeartbeatCall{Call: call}
+}
+
+// MockServerClientHeartbeatCall wrap *gomock.Call
+type MockServerClientHeartbeatCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServerClientHeartbeatCall) Return(arg0 *api.HeartbeatResponse, arg1 error) *MockServerClientHeartbeatCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServerClientHeartbeatCall) Do(f func(context.Context, *api.HeartbeatRequest, ...grpc.CallOption) (*api.HeartbeatResponse, error)) *MockServerClientHeartbeatCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServerClientHeartbeatCall) DoAndReturn(f func(context.Context, *api.HeartbeatRequest, ...grpc.CallOption) (*api.HeartbeatResponse, error)) *MockServerClientHeartbeatCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // ListJobExecutions mocks base method.
 func (m *MockServerClient) ListJobExecutions(arg0 context.Context, arg1 *api.ListJobExecutionsRequest, arg2 ...grpc.CallOption) (*api.ListJobExecutionsResponse, error) {
 	m.ctrl.T.Helper()

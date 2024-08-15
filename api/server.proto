@@ -14,6 +14,7 @@ service Server {
   rpc UpdateStepExecution(UpdateStepExecutionRequest) returns (UpdateStepExecutionResponse) {}
   rpc UploadLogLines(UpdateLogLinesRequest) returns (UpdateLogLinesResponse) {}
   rpc GetLogLines(GetLogLinesRequest) returns (GetLogLinesResponse) {}
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {}
 }
 
 message ServerPingRequest{
@@ -110,4 +111,11 @@ message GetLogLinesRequest {
 
 message GetLogLinesResponse {
   repeated LogLine lines = 1;
+}
+
+message HeartbeatRequest{
+  int64 JobExecutionID = 1[(go.field).name = "JobExecutionID"];
+}
+
+message HeartbeatResponse{
 }

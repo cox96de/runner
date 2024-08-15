@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/cox96de/runner/api"
 	"gotest.tools/v3/assert"
@@ -53,4 +54,24 @@ func TestClient_GetQueuedJobExecutionIDs(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Assert(t, len(executions) == 1)
 	})
+}
+
+func TestClient_ListHeartbeatJobExecutions(t *testing.T) {
+	db := NewMockDB(t, &JobQueue{})
+	jobQueues, err := db.CreateJobQueues(context.Background(), []*CreateJobQueueOption{{
+		JobExecutionID: 1,
+		Label:          "",
+		Status:         0,
+	}})
+	assert.NilError(t, err)
+	err = db.TouchHeartbeat(context.Background(), jobQueues[0].JobExecutionID)
+	assert.NilError(t, err)
+	executions, err := db.ListHeartbeatJobExecutions(context.Background(), time.Second)
+	assert.NilError(t, err)
+	assert.Assert(t, len(executions) == 0)
+	time.Sleep(time.Microsecond * 10)
+	executions, err = db.ListHeartbeatJobExecutions(context.Background(), 0)
+	assert.NilError(t, err)
+	assert.Assert(t, len(executions) == 1)
+	assert.Assert(t, executions[0].JobExecutionID == jobQueues[0].JobExecutionID)
 }

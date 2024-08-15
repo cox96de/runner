@@ -42,7 +42,7 @@ func TestExecution_executeStep(t *testing.T) {
 		if runtime.GOOS == "windows" {
 			t.Skip("windows")
 		}
-		e.jobTimeoutCtx = context.Background()
+		e.jobCtx = context.Background()
 		e.stepExecutions[1] = &api.StepExecution{}
 		err = e.executeStep(context.Background(), &api.Step{
 			Name:     "test",
@@ -56,7 +56,7 @@ func TestExecution_executeStep(t *testing.T) {
 		if runtime.GOOS != "windows" {
 			t.Skip("not windows")
 		}
-		e.jobTimeoutCtx = context.Background()
+		e.jobCtx = context.Background()
 		e.stepExecutions[1] = &api.StepExecution{}
 		err = e.executeStep(context.Background(), &api.Step{
 			Name:     "test",
