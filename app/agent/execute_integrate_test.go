@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"runtime"
 	"testing"
+	"time"
 
 	"gotest.tools/v3/fs"
 
@@ -107,42 +108,83 @@ func TestExecution(t *testing.T) {
 		}
 		client := newMockServerHandler(t)
 		ctx := context.Background()
-		_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
-			Pipeline: &api.PipelineDSL{
-				Jobs: []*api.JobDSL{{
-					Name:    "job1",
-					Timeout: 1,
-					Steps: []*api.StepDSL{
-						{
-							Name:     "step1",
-							Commands: []string{"echo hello"},
+		t.Run("dag", func(t *testing.T) {
+			_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
+				Pipeline: &api.PipelineDSL{
+					Jobs: []*api.JobDSL{{
+						Name:    "job1",
+						Timeout: int32(time.Hour / time.Second),
+						Steps: []*api.StepDSL{
+							{
+								Name:     "step1",
+								Commands: []string{"echo hello"},
+							},
+							{
+								Name:     "step2",
+								Commands: []string{"exit 1"},
+							},
+							{
+								Name:      "step3",
+								Commands:  []string{"panic"},
+								DependsOn: []string{"step2"},
+							},
 						},
-						{
-							Name:     "step2",
-							Commands: []string{"exit 1"},
-						},
-						{
-							Name:      "step3",
-							Commands:  []string{"exit 2"},
-							DependsOn: []string{"step2"},
-						},
-					},
-				}},
-			},
+					}},
+				},
+			})
+			assert.NilError(t, err)
+			requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
+			assert.NilError(t, err)
+			execution := NewExecution(shell.NewEngine(), requestJobResponse.Job, client)
+			assert.Assert(t, execution != nil)
+			err = execution.Execute(ctx)
+			assert.NilError(t, err)
+			executions, err := client.ListJobExecutions(ctx, &api.ListJobExecutionsRequest{
+				JobID: requestJobResponse.Job.ID,
+			})
+			assert.NilError(t, err)
+			assert.Equal(t, executions.Jobs[0].Status, api.StatusFailed)
+			assert.Equal(t, executions.Jobs[0].Steps[1].Status, api.StatusFailed)
+			assert.Equal(t, executions.Jobs[0].Steps[2].Status, api.StatusSkipped)
 		})
-		assert.NilError(t, err)
-		requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
-		assert.NilError(t, err)
-		execution := NewExecution(shell.NewEngine(), requestJobResponse.Job, client)
-		assert.Assert(t, execution != nil)
-		err = execution.Execute(ctx)
-		assert.NilError(t, err)
-		executions, err := client.ListJobExecutions(ctx, &api.ListJobExecutionsRequest{
-			JobID: requestJobResponse.Job.ID,
+		t.Run("seq", func(t *testing.T) {
+			_, err := client.CreatePipeline(ctx, &api.CreatePipelineRequest{
+				Pipeline: &api.PipelineDSL{
+					Jobs: []*api.JobDSL{{
+						Name:    "job1",
+						Timeout: int32(time.Hour / time.Second),
+						Steps: []*api.StepDSL{
+							{
+								Name:     "step1",
+								Commands: []string{"echo hello"},
+							},
+							{
+								Name:     "step2",
+								Commands: []string{"exit 1"},
+							},
+							{
+								Name:     "step3",
+								Commands: []string{"panic"},
+							},
+						},
+					}},
+				},
+			})
+			assert.NilError(t, err)
+			requestJobResponse, err := client.RequestJob(ctx, &api.RequestJobRequest{})
+			assert.NilError(t, err)
+			execution := NewExecution(shell.NewEngine(), requestJobResponse.Job, client)
+			assert.Assert(t, execution != nil)
+			err = execution.Execute(ctx)
+			assert.NilError(t, err)
+			executions, err := client.ListJobExecutions(ctx, &api.ListJobExecutionsRequest{
+				JobID: requestJobResponse.Job.ID,
+			})
+			assert.NilError(t, err)
+			assert.Equal(t, executions.Jobs[0].Status, api.StatusFailed)
+			assert.Equal(t, executions.Jobs[0].Steps[1].Status, api.StatusFailed)
+			assert.Equal(t, executions.Jobs[0].Steps[2].Status, api.StatusSkipped)
 		})
-		assert.NilError(t, err)
-		assert.Equal(t, executions.Jobs[0].Status, api.StatusFailed)
-		assert.Equal(t, executions.Jobs[0].Steps[2].Status, api.StatusSkipped)
 	})
 	t.Run("bad_dag", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
