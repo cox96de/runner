@@ -68,20 +68,15 @@ func (e *Execution) Execute(ctx context.Context) error {
 	if err = e.updateJobStatus(ctx, api.StatusPreparing); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
-	dag, err := lib.NewDAG[*dagNode](lo.Map(e.job.Steps, func(step *api.Step, index int) *dagNode {
-		return &dagNode{
-			Step: step,
-		}
-	})...)
+	err = e.normalizeDAG()
 	if err != nil {
-		logger.Errorf("failed to calculate DAG: %v", err)
+		logger.Errorf("failed to normalize DAG: %v", err)
 		// TODO: update job status to failed with reason.
 		if err = e.updateJobStatus(ctx, api.StatusFailed); err != nil {
 			return errors.WithMessage(err, "failed to update status")
 		}
 		return nil
 	}
-	e.dag = dag
 	e.runner, err = e.engine.CreateRunner(ctx, e, e.job)
 	if err != nil {
 		return err
