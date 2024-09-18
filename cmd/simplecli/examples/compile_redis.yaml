@@ -1,0 +1,18 @@
+jobs:
+  - name: compile_redis
+    runson:
+      label: shell
+    steps:
+      - name: prepare
+        commands:
+          - sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
+          - apt-get update
+          - apt-get install -y build-essential tcl git
+      - name: build
+        commands:
+          - git clone https://github.com/redis/redis.git
+          - cd redis/src
+          - make -j4
+      - name: clean
+        commands:
+          - rm -rf redis

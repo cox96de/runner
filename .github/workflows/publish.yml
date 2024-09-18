@@ -20,8 +20,15 @@ jobs:
             image: cox96de/runner-executor
           - dockerfile: build/agent.Dockerfile
             image: cox96de/runner-agent
+          - dockerfile: build/agent.debian.Dockerfile
+            image: cox96de/runner-agent-debian
           - dockerfile: engine/vm/runtime/Dockerfile
             image: cox96de/runner-vm-runtime
+          - dockerfile: build/server.Dockerfile
+            image: cox96de/runner-server
+          - dockerfile: build/simplecli.Dockerfile
+            image: cox96de/runner-simplecli
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4

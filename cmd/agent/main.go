@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/cox96de/runner/util"
 	"github.com/spf13/viper"
 
 	"github.com/cox96de/runner/api/httpserverclient"
@@ -16,9 +17,7 @@ import (
 
 func main() {
 	command := GetAgentCommand()
-	root := &cobra.Command{}
-	root.AddCommand(command)
-	err := root.Execute()
+	err := command.Execute()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -38,8 +37,6 @@ func GetAgentCommand() *cobra.Command {
 			if err != nil {
 				log.Fatalf("failed to load config: %v", err)
 			}
-			log.Infof("%+v", vv.AllKeys())
-			log.Infof("%+v", vv.AllSettings())
 			log.SetLevel(log.DebugLevel)
 			err = RunAgent(&config)
 			if err != nil {
@@ -49,38 +46,37 @@ func GetAgentCommand() *cobra.Command {
 	}
 	flags := c.Flags()
 	flags.StringVarP(&configFilePath, "config", "c", "", "config file path")
-
-	checkError(bindArg(flags, vv, &arg{
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
 		ArgKey:    "server_url",
 		FlagName:  "server_url",
-		FlagUsage: "server url",
+		FlagUsage: "the server url, such as http://127.0.0.1:8080",
 		Env:       "RUNNER_SERVER_URL",
 	}))
-	checkError(bindArg(flags, vv, &arg{
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
 		ArgKey:    "label",
 		FlagName:  "label",
-		FlagUsage: "label",
+		FlagUsage: "the label of agent",
 		Env:       "RUNNER_LABEL",
 	}))
-	checkError(bindArg(flags, vv, &arg{
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
 		ArgKey:    "engine.name",
 		FlagName:  "engine",
 		FlagUsage: "engine's type, support: shell, kube, vm",
 		Env:       "RUNNER_ENGINE_ENGINE",
 	}))
-	checkError(bindArg(flags, vv, &arg{
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
 		ArgKey:    "engine.kube.executor_image",
 		FlagName:  "engine.kube.executor_image",
 		FlagUsage: "the image of executor (kube engine)",
 		Env:       "RUNNER_ENGINE_KUBE_EXECUTOR_IMAGE",
 	}))
-	checkError(bindArg(flags, vv, &arg{
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
 		ArgKey:    "engine.kube.executor_path",
 		FlagName:  "engine.kube.executor_path",
 		FlagUsage: "the executor binary path in executor image (kube engine)",
 		Env:       "RUNNER_ENGINE_KUBE_EXECUTOR_PATH",
 	}))
-	checkError(bindArg(flags, vv, &arg{
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
 		ArgKey:    "engine.kube.namespace",
 		FlagName:  "engine.kube.namespace",
 		FlagUsage: "the namespace of executor pod created (kube engine)",

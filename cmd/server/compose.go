@@ -5,6 +5,7 @@ import (
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/external/redis"
 	"github.com/cox96de/runner/lib"
+	"github.com/cox96de/runner/log"
 	goredis "github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 	"gorm.io/driver/mysql"
@@ -40,20 +41,30 @@ func ComposeDB(c *DB) (*db.Client, error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to open database connection")
 	}
-	return db.NewClient(db.Dialect(dialect), conn), nil
+	client := db.NewClient(db.Dialect(dialect), conn)
+	if db.Dialect(dialect) == db.SQLite {
+		log.Warningf("sqlite database is not recommended for production use")
+		if err := DetectSQLiteAndMigrate(client); err != nil {
+			return nil, err
+		}
+	}
+	return client, nil
 }
 
 func ComposeLocker(l *Locker) (lib.Locker, error) {
 	switch l.Backend {
 	case "redis":
-		return ComposeRedis(l.Redis), nil
+		return ComposeRedis(l.Redis)
 	default:
 		return nil, errors.Errorf("%s locker is not supported", l.Backend)
 	}
 }
 
 func ComposeLogStorage(l *LogStorage) (*logstorage.Service, error) {
-	composeRedis := ComposeRedis(l.Redis)
+	composeRedis, err := ComposeRedis(l.Redis)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to compose redis")
+	}
 	var oss logstorage.OSS
 	switch l.LogArchive.Backend {
 	case "fs":
@@ -64,7 +75,10 @@ func ComposeLogStorage(l *LogStorage) (*logstorage.Service, error) {
 	return logstorage.NewService(composeRedis, oss), nil
 }
 
-func ComposeRedis(r *Redis) *redis.Client {
+func ComposeRedis(r *Redis) (*redis.Client, error) {
+	if r.Addr == "internal" {
+		return ComposeInternalRedis()
+	}
 	conn := goredis.NewClient(&goredis.Options{
 		Network:            "",
 		Addr:               r.Addr,
@@ -85,5 +99,5 @@ func ComposeRedis(r *Redis) *redis.Client {
 		IdleTimeout:        r.IdleTimeout,
 		IdleCheckFrequency: r.IdleCheckFrequency,
 	})
-	return redis.NewClient(conn)
+	return redis.NewClient(conn), nil
 }
