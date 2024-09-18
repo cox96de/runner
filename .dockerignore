@@ -1,4 +1,5 @@
 *.qcow2
 */**/*.qcow2
+*/**/*.qcow2.back
 *.iso
 */**/*.iso
