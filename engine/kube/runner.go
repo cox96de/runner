@@ -134,7 +134,7 @@ func (r *Runner) GetContainerExecutor(ctx context.Context, containerName string)
 	}
 	addr := net.JoinHostPort(r.pod.Status.PodIP,
 		fmt.Sprintf("%d", port))
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to connect to executor")
 	}
@@ -149,7 +149,7 @@ func (r *Runner) getExecutorFromPortForward(name string) (executorpb.ExecutorCli
 	}
 	addr := net.JoinHostPort("127.0.0.1",
 		fmt.Sprintf("%d", port))
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to connect to executor")
 	}

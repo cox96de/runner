@@ -24,6 +24,7 @@ CREATE TABLE `job`
     `working_directory` text,
     `env_var`           blob,
     `depends_on`        blob,
+    `timeout`           integer,
     `created_at`        datetime,
     `updated_at`        datetime,
     PRIMARY KEY (`id`)
@@ -33,6 +34,7 @@ CREATE TABLE `job_execution`
     `id`           integer,
     `job_id`       integer,
     `status`       integer,
+    `reason`       blob,
     `started_at`   datetime,
     `completed_at` datetime,
     `created_at`   datetime,
@@ -68,3 +70,14 @@ CREATE TABLE `step_execution`
     `updated_at`       datetime,
     PRIMARY KEY (`id`)
 );
+CREATE TABLE `job_queue`
+(
+    `id`               integer,
+    `status`           integer,
+    `job_execution_id` integer,
+    `label`            text,
+    `heartbeat`        datetime,
+    `created_at`       datetime,
+    `updated_at`       datetime,
+    PRIMARY KEY (`id`)
+)

@@ -13,7 +13,7 @@ import (
 
 func TestHandler_GetRuntimeInfo(t *testing.T) {
 	_, addr := setupHandler(t)
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NilError(t, err)
 	client := executorpb.NewExecutorClient(conn)
 	getRuntimeInfoResp, err := client.GetRuntimeInfo(context.Background(), &executorpb.GetRuntimeInfoRequest{})
@@ -24,7 +24,7 @@ func TestHandler_GetRuntimeInfo(t *testing.T) {
 
 func TestHandler_Environment(t *testing.T) {
 	_, addr := setupHandler(t)
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NilError(t, err)
 	client := executorpb.NewExecutorClient(conn)
 	envResp, err := client.Environment(context.Background(), &executorpb.EnvironmentRequest{})

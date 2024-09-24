@@ -44,7 +44,7 @@ func (r *Runner) Start(_ context.Context) error {
 }
 
 func (r *Runner) GetExecutor(_ context.Context) (executorpb.ExecutorClient, error) {
-	conn, err := grpc.Dial(r.addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(r.addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to connect to executor")
 	}

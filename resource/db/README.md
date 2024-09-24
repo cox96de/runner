@@ -2,4 +2,4 @@ The DDL sql scripts in only a demonstration of how to create the database schema
 used in a production environment. The scripts are not optimized for performance and are not tested for all possible
 scenarios.
 
-The scripts are generated `tools/dbmigrate`.
+The scripts are generated `go test ./resource/db`.

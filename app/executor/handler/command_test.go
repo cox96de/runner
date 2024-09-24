@@ -26,7 +26,7 @@ import (
 
 func TestHandler_StartCommand(t *testing.T) {
 	handler, addr := setupHandler(t)
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NilError(t, err)
 	client := executorpb.NewExecutorClient(conn)
 
@@ -114,7 +114,7 @@ func TestHandler_StartCommand(t *testing.T) {
 
 func TestHandler_GetCommandLog(t *testing.T) {
 	_, addr := setupHandler(t)
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NilError(t, err)
 	client := executorpb.NewExecutorClient(conn)
 	t.Run("fast", func(t *testing.T) {
@@ -179,7 +179,7 @@ ok  	github.com/cox96de/runner/internal/executor	0.028s	coverage: 22.4% of state
 
 func TestHandler_WaitCommand(t *testing.T) {
 	_, addr := setupHandler(t)
-	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	assert.NilError(t, err)
 	client := executorpb.NewExecutorClient(conn)
 	t.Run("wait", func(t *testing.T) {
