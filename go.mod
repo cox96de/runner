@@ -13,12 +13,12 @@ require (
 	github.com/fatih/color v1.17.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-playground/validator/v10 v10.22.0
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/json-iterator/go v1.1.12
 	github.com/modern-go/reflect2 v1.0.2
 	github.com/natessilva/dag v0.0.0-20180124060714-7194b8dcc5c4
+	github.com/redis/go-redis/v9 v9.6.1
 	github.com/rs/xid v1.5.0
 	github.com/samber/lo v1.39.0
 	github.com/sirupsen/logrus v1.9.3

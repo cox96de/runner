@@ -6,7 +6,7 @@ import (
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/external/redis"
 	"github.com/cox96de/runner/log"
-	goredis "github.com/go-redis/redis/v8"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 // ComposeInternalRedis returns a redis client with internal redis.
