@@ -5,7 +5,7 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/cox96de/runner/external/redis"
-	goredis "github.com/go-redis/redis/v8"
+	goredis "github.com/redis/go-redis/v9"
 	"gotest.tools/v3/assert"
 )
 

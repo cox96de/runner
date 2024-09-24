@@ -7,7 +7,7 @@ import (
 	"github.com/cox96de/runner/external/redis"
 	"github.com/cox96de/runner/lib"
 	"github.com/cox96de/runner/log"
-	goredis "github.com/go-redis/redis/v8"
+	goredis "github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -80,24 +80,25 @@ func ComposeRedis(r *Redis) (*redis.Client, error) {
 		return ComposeInternalRedis()
 	}
 	conn := goredis.NewClient(&goredis.Options{
-		Network:            "",
-		Addr:               r.Addr,
-		Username:           r.Username,
-		Password:           r.Password,
-		DB:                 r.DB,
-		MaxRetries:         r.MaxRetries,
-		MinRetryBackoff:    r.MinRetryBackoff,
-		MaxRetryBackoff:    r.MaxRetryBackoff,
-		DialTimeout:        r.DialTimeout,
-		ReadTimeout:        r.ReadTimeout,
-		WriteTimeout:       r.WriteTimeout,
-		PoolFIFO:           r.PoolFIFO,
-		PoolSize:           r.PoolSize,
-		MinIdleConns:       r.MinIdleConns,
-		MaxConnAge:         r.MaxConnAge,
-		PoolTimeout:        r.PoolTimeout,
-		IdleTimeout:        r.IdleTimeout,
-		IdleCheckFrequency: r.IdleCheckFrequency,
+		Addr:                  r.Addr,
+		Username:              r.Username,
+		Password:              r.Password,
+		DB:                    r.DB,
+		MaxRetries:            r.MaxRetries,
+		MinRetryBackoff:       r.MinRetryBackoff,
+		MaxRetryBackoff:       r.MaxRetryBackoff,
+		DialTimeout:           r.DialTimeout,
+		ReadTimeout:           r.ReadTimeout,
+		WriteTimeout:          r.WriteTimeout,
+		ContextTimeoutEnabled: true,
+		PoolFIFO:              r.PoolFIFO,
+		PoolSize:              r.PoolSize,
+		PoolTimeout:           r.PoolTimeout,
+		MinIdleConns:          r.MinIdleConns,
+		MaxIdleConns:          r.MaxIdleConns,
+		MaxActiveConns:        r.MaxActiveConns,
+		ConnMaxIdleTime:       r.ConnMaxIdleTime,
+		ConnMaxLifetime:       r.ConnMaxLifetime,
 	})
 	return redis.NewClient(conn), nil
 }

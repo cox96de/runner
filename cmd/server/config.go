@@ -28,23 +28,24 @@ type Locker struct {
 }
 
 type Redis struct {
-	Addr               string        `mapstructure:"addr" yaml:"addr"`
-	Username           string        `mapstructure:"username" yaml:"username"`
-	Password           string        `mapstructure:"password" yaml:"password"`
-	DB                 int           `mapstructure:"db" yaml:"db"`
-	MaxRetries         int           `mapstructure:"max_retries" yaml:"max_retries"`
-	MinRetryBackoff    time.Duration `mapstructure:"min_retry_backoff" yaml:"min_retry_backoff"`
-	MaxRetryBackoff    time.Duration `mapstructure:"max_retry_backoff" yaml:"max_retry_backoff"`
-	DialTimeout        time.Duration `mapstructure:"dial_timeout" yaml:"dial_timeout"`
-	ReadTimeout        time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
-	WriteTimeout       time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
-	PoolFIFO           bool          `mapstructure:"pool_fifo" yaml:"pool_fifo"`
-	PoolSize           int           `mapstructure:"pool_size" yaml:"pool_size"`
-	MinIdleConns       int           `mapstructure:"min_idle_conns" yaml:"min_idle_conns"`
-	MaxConnAge         time.Duration `mapstructure:"max_conn_age" yaml:"max_conn_age"`
-	PoolTimeout        time.Duration `mapstructure:"pool_timeout" yaml:"pool_timeout"`
-	IdleTimeout        time.Duration `mapstructure:"idle_timeout" yaml:"idle_timeout"`
-	IdleCheckFrequency time.Duration `mapstructure:"idle_check_frequency" yaml:"idle_check_frequency"`
+	Addr            string        `mapstructure:"addr" yaml:"addr"`
+	Username        string        `mapstructure:"username" yaml:"username"`
+	Password        string        `mapstructure:"password" yaml:"password"`
+	DB              int           `mapstructure:"db" yaml:"db"`
+	MaxRetries      int           `mapstructure:"max_retries" yaml:"max_retries"`
+	MinRetryBackoff time.Duration `mapstructure:"min_retry_backoff" yaml:"min_retry_backoff"`
+	MaxRetryBackoff time.Duration `mapstructure:"max_retry_backoff" yaml:"max_retry_backoff"`
+	DialTimeout     time.Duration `mapstructure:"dial_timeout" yaml:"dial_timeout"`
+	ReadTimeout     time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
+	WriteTimeout    time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
+	PoolFIFO        bool          `mapstructure:"pool_fifo" yaml:"pool_fifo"`
+	PoolSize        int           `mapstructure:"pool_size" yaml:"pool_size"`
+	PoolTimeout     time.Duration `mapstructure:"pool_timeout" yaml:"pool_timeout"`
+	MinIdleConns    int           `mapstructure:"min_idle_conns" yaml:"min_idle_conns"`
+	MaxIdleConns    int           `mapstructure:"max_idle_conns" yaml:"max_idle_conns"`
+	MaxActiveConns  int           `mapstructure:"max_active_conns" yaml:"max_active_conns"`
+	ConnMaxIdleTime time.Duration `mapstructure:"conn_max_idle_time" yaml:"conn_max_idle_time"`
+	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime" yaml:"conn_max_lifetime"`
 }
 
 type LogStorage struct {
