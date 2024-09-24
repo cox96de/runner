@@ -8,7 +8,7 @@ import (
 
 	"github.com/cox96de/runner/util"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 )
 
 const ErrNotFound = util.StringError("not found")

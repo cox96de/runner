@@ -9,7 +9,7 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 )
 
 type Step struct {

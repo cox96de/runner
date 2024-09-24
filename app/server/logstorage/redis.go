@@ -4,8 +4,8 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/api"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 )
 

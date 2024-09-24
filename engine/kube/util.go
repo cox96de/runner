@@ -1,7 +1,7 @@
 package kube
 
 import (
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"

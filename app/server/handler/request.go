@@ -7,10 +7,10 @@ import (
 
 	"github.com/cox96de/runner/api"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/lib"
 	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 

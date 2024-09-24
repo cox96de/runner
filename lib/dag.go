@@ -1,6 +1,6 @@
 package lib
 
-import "github.com/pkg/errors"
+import "github.com/cockroachdb/errors"
 
 type Node interface {
 	ID() string

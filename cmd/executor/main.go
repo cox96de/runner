@@ -7,7 +7,7 @@ import (
 
 	"github.com/cox96de/runner/log"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 
 	"github.com/cox96de/runner/app/executor"
 	"github.com/spf13/pflag"

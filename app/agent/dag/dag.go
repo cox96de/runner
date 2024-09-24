@@ -1,8 +1,8 @@
 package dag
 
 import (
+	"github.com/cockroachdb/errors"
 	"github.com/natessilva/dag"
-	"github.com/pkg/errors"
 )
 
 // Runner executes functions as DAG.

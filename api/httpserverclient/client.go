@@ -13,7 +13,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"google.golang.org/grpc"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 )
 
 var (

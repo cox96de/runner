@@ -8,8 +8,8 @@ import (
 	"github.com/cox96de/runner/api"
 	"github.com/samber/lo"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/db"
-	"github.com/pkg/errors"
 )
 
 type Service struct {

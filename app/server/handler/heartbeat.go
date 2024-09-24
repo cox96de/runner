@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/db"
-	"github.com/pkg/errors"
 )
 
 func (h *Handler) Heartbeat(ctx context.Context, request *api.HeartbeatRequest) (*api.HeartbeatResponse, error) {

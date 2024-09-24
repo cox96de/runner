@@ -1,13 +1,13 @@
 package main
 
 import (
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/app/server/logstorage"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/external/redis"
 	"github.com/cox96de/runner/lib"
 	"github.com/cox96de/runner/log"
 	goredis "github.com/go-redis/redis/v8"
-	"github.com/pkg/errors"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"

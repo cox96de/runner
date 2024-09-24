@@ -7,8 +7,8 @@ import (
 
 	"github.com/cox96de/runner/log"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/db"
-	"github.com/pkg/errors"
 )
 
 func (h *Handler) CreatePipeline(ctx context.Context, request *api.CreatePipelineRequest) (*api.CreatePipelineResponse, error) {

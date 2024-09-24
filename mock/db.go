@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/util"
-	"github.com/pkg/errors"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gotest.tools/v3/assert"

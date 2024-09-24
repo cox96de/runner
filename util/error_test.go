@@ -3,7 +3,7 @@ package util
 import (
 	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 	"github.com/stretchr/testify/assert"
 )
 

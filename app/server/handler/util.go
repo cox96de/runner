@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 
 	"github.com/bytedance/go-tagexpr/v2/binding"
 	"github.com/cox96de/runner/log"

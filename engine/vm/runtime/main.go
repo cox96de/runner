@@ -14,9 +14,9 @@ import (
 	"github.com/cox96de/containervm/network"
 	"github.com/cox96de/runner/util"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/containervm/cloudinit"
 	vmutil "github.com/cox96de/containervm/util"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 )

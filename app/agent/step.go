@@ -8,11 +8,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/log"
 	"github.com/cox96de/runner/util"
-	"github.com/pkg/errors"
 	"github.com/samber/lo"
 )
 

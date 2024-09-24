@@ -15,9 +15,9 @@ import (
 	"github.com/cox96de/runner/app/server/dispatch"
 	"github.com/cox96de/runner/app/server/pipeline"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/app/server/handler"
 	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
