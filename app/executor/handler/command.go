@@ -10,9 +10,9 @@ import (
 
 	"github.com/cox96de/runner/log"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/lib"
-	"github.com/pkg/errors"
 )
 
 const (

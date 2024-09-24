@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/log"
-	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"

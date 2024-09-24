@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/engine"
 	"github.com/cox96de/runner/engine/kube"
 	"github.com/cox96de/runner/engine/shell"
-	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )

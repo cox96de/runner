@@ -4,9 +4,9 @@ import (
 	"context"
 	"net"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/app/executor/handler"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

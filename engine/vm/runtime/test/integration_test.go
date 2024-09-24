@@ -22,8 +22,8 @@ import (
 
 	"gotest.tools/v3/fs"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/testtool"
-	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
 )

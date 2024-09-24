@@ -1,9 +1,9 @@
 package agent
 
 import (
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/lib"
-	"github.com/pkg/errors"
 	"github.com/samber/lo"
 )
 

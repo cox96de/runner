@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 	"github.com/smallnest/ringbuffer"
 )
 

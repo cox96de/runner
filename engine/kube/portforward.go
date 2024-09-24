@@ -4,7 +4,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

@@ -3,9 +3,9 @@ package pipeline
 import (
 	"context"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/db"
-	"github.com/pkg/errors"
 	"github.com/samber/lo"
 )
 

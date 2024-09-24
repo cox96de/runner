@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/api"
 	mockapi "github.com/cox96de/runner/api/mock"
-	"github.com/pkg/errors"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
 	"gotest.tools/v3/assert"

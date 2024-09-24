@@ -15,9 +15,9 @@ import (
 
 	"github.com/cox96de/runner/log"
 
+	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/engine"
-	"github.com/pkg/errors"
 )
 
 // const timeoutError = util.StringError("job timeout")

@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 
-	"github.com/pkg/errors"
+	"github.com/cockroachdb/errors"
 )
 
 func (s *Status) UnmarshalJSON(bytes []byte) error {
