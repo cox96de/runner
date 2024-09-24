@@ -24,6 +24,7 @@ CREATE TABLE `job`
     `working_directory` longtext,
     `env_var`           longblob,
     `depends_on`        longblob,
+    `timeout`           int,
     `created_at`        datetime(3) NULL,
     `updated_at`        datetime(3) NULL,
     PRIMARY KEY (`id`)
@@ -33,6 +34,7 @@ CREATE TABLE `job_execution`
     `id`           bigint AUTO_INCREMENT,
     `job_id`       bigint,
     `status`       int,
+    `reason`       longblob,
     `started_at`   datetime(3) NULL,
     `completed_at` datetime(3) NULL,
     `created_at`   datetime(3) NULL,
@@ -68,15 +70,14 @@ CREATE TABLE `step_execution`
     `updated_at`       datetime(3) NULL,
     PRIMARY KEY (`id`)
 );
-
-
 CREATE TABLE `job_queue`
 (
     `id`               bigint AUTO_INCREMENT,
+    `status`           int,
     `job_execution_id` bigint,
-    `status `          int,
-    `label`            varchar(255),
+    `label`            longtext,
+    `heartbeat`        datetime(3) NULL,
     `created_at`       datetime(3) NULL,
     `updated_at`       datetime(3) NULL,
     PRIMARY KEY (`id`)
-);
+)

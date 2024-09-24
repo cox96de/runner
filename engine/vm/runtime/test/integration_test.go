@@ -357,7 +357,7 @@ mounts:
 	ip = strings.TrimRight(strings.TrimLeft(strings.TrimSpace(ip), "'"), "'")
 	t.Logf("ip: %s", ip)
 	testVM := func() (string, error) {
-		conn, err := grpc.Dial(ip+":8080", grpc.WithTransportCredentials(insecure.NewCredentials()),
+		conn, err := grpc.NewClient(ip+":8080", grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithNoProxy())
 		if err != nil {
 			return "", errors.WithMessage(err, "failed to connect to executor")

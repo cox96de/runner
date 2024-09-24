@@ -76,7 +76,8 @@ CREATE TABLE "job_queue"
     "status"           integer,
     "job_execution_id" bigint,
     "label"            text,
+    "heartbeat"        timestamptz,
     "created_at"       timestamptz,
     "updated_at"       timestamptz,
     PRIMARY KEY ("id")
-);
+)
