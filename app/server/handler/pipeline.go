@@ -3,6 +3,8 @@ package handler
 import (
 	"context"
 
+	"github.com/cox96de/runner/telemetry/trace"
+
 	"github.com/cox96de/runner/api"
 
 	"github.com/cox96de/runner/log"
@@ -13,6 +15,8 @@ import (
 
 func (h *Handler) CreatePipeline(ctx context.Context, request *api.CreatePipelineRequest) (*api.CreatePipelineResponse, error) {
 	logger := log.ExtractLogger(ctx)
+	ctx, span := trace.Start(ctx, "handler.create_pipeline")
+	defer span.End()
 	if err := api.ValidateDSL(request.Pipeline); err != nil {
 		return nil, errors.WithMessage(err, "failed to validate pipeline DSL")
 	}

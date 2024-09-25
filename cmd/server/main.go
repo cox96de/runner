@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"github.com/cox96de/runner/log"
+	"github.com/cox96de/runner/telemetry/trace"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
 	"github.com/andeya/goutil/calendar/cron"
 	"github.com/cox96de/runner/app/server/monitor"
-	"golang.org/x/net/context"
-
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/util"
 	"github.com/spf13/viper"
@@ -18,7 +21,6 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/app/server/handler"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -45,6 +47,11 @@ func GetServerCommand() *cobra.Command {
 				log.Fatalf("failed to load config: %v", err)
 			}
 			log.SetLevel(log.DebugLevel)
+			shutdown, err := setupOTEL(cmd.Context())
+			checkError(err)
+			defer func() {
+				_ = shutdown(cmd.Context())
+			}()
 			err = RunServer(&config)
 			if err != nil {
 				log.Fatal(err)
@@ -133,15 +140,20 @@ func RunServer(config *Config) error {
 	}
 	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), locker, logStorage)
 	engine := gin.New()
+	// It's important to set the context with fallback to true, so that the context will be propagated to the next middleware.
+	engine.ContextWithFallback = true
+	engine.Use(otelgin.Middleware("runner-server"))
 	group := engine.Group("/api/v1")
 	h.RegisterRouter(group)
-	startConJob(context.Background(), monitor.NewService(dbClient))
+	startConJob(monitor.NewService(dbClient, logStorage))
 	return engine.Run(fmt.Sprintf(":%d", config.Port))
 }
 
-func startConJob(ctx context.Context, service *monitor.Service) {
+func startConJob(service *monitor.Service) {
 	c := cron.New()
 	err := c.AddFunc("@every 1m", func() {
+		ctx, span := trace.Start(context.Background(), "cronjob.recycle_heartbeat_timeout_jobs")
+		defer span.End()
 		if err := service.RecycleHeartbeatTimeoutJobs(ctx, time.Minute); err != nil {
 			log.Errorf("failed to rcycle heartbeat timeout job executions")
 		}

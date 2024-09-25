@@ -6,6 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cox96de/runner/app/server/logstorage"
+	"gotest.tools/v3/fs"
+
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/app/server/dispatch"
 	"github.com/cox96de/runner/app/server/pipeline"
@@ -52,7 +55,7 @@ func TestService_RecycleHeartbeatTimeoutJobs(t *testing.T) {
 	assert.NilError(t, err)
 	err = dbCli.TouchHeartbeat(context.Background(), jobExecution.ID)
 	assert.NilError(t, err)
-	s := NewService(dbCli)
+	s := NewService(dbCli, logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())))
 	t.Run("not_timeout", func(t *testing.T) {
 		err = s.RecycleHeartbeatTimeoutJobs(context.Background(), time.Second)
 		assert.NilError(t, err)

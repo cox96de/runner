@@ -8,6 +8,7 @@ import (
 	"github.com/cox96de/runner/lib"
 	"github.com/cox96de/runner/log"
 	goredis "github.com/redis/go-redis/v9"
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -40,6 +41,9 @@ func ComposeDB(c *DB) (*db.Client, error) {
 	}
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to open database connection")
+	}
+	if err = conn.Use(otelgorm.NewPlugin()); err != nil {
+		return nil, errors.WithMessage(err, "failed to use otelgorm plugin")
 	}
 	client := db.NewClient(db.Dialect(dialect), conn)
 	if db.Dialect(dialect) == db.SQLite {
@@ -100,5 +104,5 @@ func ComposeRedis(r *Redis) (*redis.Client, error) {
 		ConnMaxIdleTime:       r.ConnMaxIdleTime,
 		ConnMaxLifetime:       r.ConnMaxLifetime,
 	})
-	return redis.NewClient(conn), nil
+	return redis.NewClient(conn)
 }

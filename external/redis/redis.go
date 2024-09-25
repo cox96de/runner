@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/cockroachdb/errors"
+	"github.com/redis/go-redis/extra/redisotel/v9"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -24,6 +27,12 @@ func (c *Client) Unlock(ctx context.Context, key string) (bool, error) {
 	return result == 1, err
 }
 
-func NewClient(conn *redis.Client) *Client {
-	return &Client{Client: conn}
+func NewClient(conn *redis.Client) (*Client, error) {
+	if err := redisotel.InstrumentTracing(conn); err != nil {
+		return nil, errors.WithMessage(err, "failed to instrument tracing")
+	}
+	if err := redisotel.InstrumentMetrics(conn); err != nil {
+		return nil, errors.WithMessage(err, "failed to instrument metrics")
+	}
+	return &Client{Client: conn}, nil
 }

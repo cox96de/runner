@@ -21,5 +21,7 @@ func NewMockRedis(t *testing.T) *redis.Client {
 	conn := goredis.NewClient(&goredis.Options{
 		Addr: minir.Addr(),
 	})
-	return redis.NewClient(conn)
+	client, err := redis.NewClient(conn)
+	assert.NilError(t, err)
+	return client
 }
