@@ -20,7 +20,7 @@ func ComposeInternalRedis() (*redis.Client, error) {
 		Network: "",
 		Addr:    miniRedis.Addr(),
 	})
-	return redis.NewClient(conn), nil
+	return redis.NewClient(conn)
 }
 
 func DetectSQLiteAndMigrate(dbCli *db.Client) error {

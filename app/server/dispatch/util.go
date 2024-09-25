@@ -3,6 +3,9 @@ package dispatch
 import (
 	"context"
 
+	"github.com/cox96de/runner/telemetry/trace"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/db"
@@ -11,14 +14,21 @@ import (
 // UpdateJobExecution updates job execution status and job queue status.
 // It insert a new job queue if the job execution status is queued.
 func UpdateJobExecution(ctx context.Context, client *db.Client, option *db.UpdateJobExecutionOption) error {
+	// TODO: Add more attribute.
+	ctx, span := trace.Start(ctx, "dispatch.update_job_execution", trace.WithAttributes(
+		attribute.Int64("job_execution_id", option.ID),
+	))
+	defer span.End()
 	return client.Transaction(func(client *db.Client) error {
 		if option.Status != nil {
 			switch {
 			case option.Status.IsCompleted():
+				span.AddEvent("Status is completed")
 				if err := client.DeleteJobQueueByJobExecutionID(ctx, option.ID); err != nil {
 					return err
 				}
 			case *option.Status == api.StatusQueued:
+				span.AddEvent("Status is queued")
 				jobExecution, err := client.GetJobExecution(ctx, option.ID)
 				if err != nil {
 					return errors.WithMessage(err, "failed to get job execution")

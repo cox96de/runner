@@ -40,7 +40,7 @@ func TestNew(t *testing.T) {
 	t.Run("WithLogger", func(t *testing.T) {
 		origin := context.Background()
 		ctx := WithLogger(origin, logger)
-		assert.Assert(t, ExtractLogger(ctx) == logger)
+		assert.Assert(t, ExtractLogger(ctx).Logger == logger.Logger)
 	})
 }
 

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/cox96de/runner/telemetry/trace"
+
 	"github.com/cox96de/runner/api"
 	"github.com/samber/lo"
 
@@ -24,6 +26,8 @@ func NewService(dbClient *db.Client) *Service {
 // It pushes the jobs to the queue if all the dependencies are completed and success.
 // TODO: proceed dispatch if one job is failed, all the dependent jobs should be skipped.
 func (s *Service) Dispatch(ctx context.Context, jobs []*db.Job, executions []*db.JobExecution) error {
+	ctx, span := trace.Start(ctx, "dispatch.dispatch")
+	defer span.End()
 	d := &dispatcher{
 		jobs: make(map[string]*dispatchJob),
 	}

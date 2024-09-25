@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/cox96de/runner/telemetry/trace"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/cox96de/runner/log"
 	"github.com/samber/lo"
 
@@ -19,6 +22,9 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 	logger := log.ExtractLogger(ctx).WithFields(log.Fields{
 		"job_execution_id": request.JobExecutionID,
 	})
+	ctx, span := trace.Start(ctx, "handler.update_job_execution",
+		trace.WithAttributes(attribute.Int64("job_execution_id", request.JobExecutionID)))
+	defer span.End()
 	lock, err := h.locker.Lock(ctx, lib.BuildJobExecutionLockKey(request.JobExecutionID), "update_job_execution", time.Second)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to lock job execution '%d'", request.JobExecutionID)

@@ -7,6 +7,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	DebugLevel = Level(logrus.DebugLevel)
+)
+
 var (
 	loggerKey     = &struct{}{}
 	defaultLogger = logrus.StandardLogger()
@@ -42,16 +46,25 @@ func New(c *Config) *Logger {
 	return &Logger{Entry: logrus.NewEntry(logger)}
 }
 
+// ExtractLogger returns the logger from the context. If no logger is found, a new logger is created.
+// The context is updated with the new logger.
 func ExtractLogger(ctx context.Context) *Logger {
 	l, ok := ctx.Value(loggerKey).(*Logger)
 	if !ok {
-		return &Logger{Entry: logrus.NewEntry(defaultLogger)}
+		l = &Logger{Entry: logrus.NewEntry(defaultLogger)}
 	}
-	return l
+	return l.WithContext(ctx)
 }
 
+// WithLogger sets the logger in the context.
+// The logger can be extracted with ExtractLogger.
+// Reuse the logger to inherit the fields and hooks.
 func WithLogger(ctx context.Context, logger *Logger) context.Context {
 	return context.WithValue(ctx, loggerKey, logger)
+}
+
+func AddHook(hook logrus.Hook) {
+	defaultLogger.AddHook(hook)
 }
 
 func (l *Logger) WithOutput(out io.Writer) *Logger {
@@ -78,6 +91,15 @@ func (l *Logger) WithField(key string, value interface{}) *Logger {
 	return &Logger{Entry: e}
 }
 
+func (l *Logger) WithContext(ctx context.Context) *Logger {
+	entry := l.Entry.WithContext(ctx)
+	return &Logger{Entry: entry}
+}
+
+func SetLevel(level Level) {
+	defaultLogger.SetLevel(logrus.Level(level))
+}
+
 func Errorf(s string, args ...interface{}) {
 	defaultLogger.Errorf(s, args...)
 }
@@ -96,4 +118,8 @@ func Warningf(s string, args ...interface{}) {
 
 func Fatal(args ...interface{}) {
 	defaultLogger.Fatal(args...)
+}
+
+func Fatalf(format string, args ...interface{}) {
+	defaultLogger.Fatalf(format, args...)
 }

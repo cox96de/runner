@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cox96de/runner/telemetry/trace"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/cox96de/runner/api"
 
 	"github.com/cockroachdb/errors"
@@ -35,6 +38,9 @@ func (h *Handler) RequestJobHandler(c *gin.Context) {
 
 func (h *Handler) RequestJob(ctx context.Context, request *api.RequestJobRequest) (*api.RequestJobResponse, error) {
 	// TODO: the limit should be configurable.
+	ctx, span := trace.Start(ctx, "handler.request_job",
+		trace.WithAttributes(attribute.String("label", request.Label)))
+	defer span.End()
 	jobQueues, err := h.db.GetQueuedJobExecutionIDs(ctx, request.Label, 100)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to get queued job executions")
@@ -45,10 +51,12 @@ func (h *Handler) RequestJob(ctx context.Context, request *api.RequestJobRequest
 			continue
 		}
 		log.WithContext(ctx).Infof("dispatch job: %v, job execution: %d", job.ID, jobQueue.JobExecutionID)
+		span.AddEvent("Dispatch job", trace.WithAttributes(attribute.Int64("job_execution_id", jobQueue.JobExecutionID)))
 		return &api.RequestJobResponse{
 			Job: job,
 		}, nil
 	}
+	span.AddEvent("No job to dispatch")
 	return &api.RequestJobResponse{
 		Job: nil,
 	}, nil

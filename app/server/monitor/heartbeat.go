@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/cox96de/runner/telemetry/trace"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/app/server/dispatch"
@@ -31,8 +34,13 @@ func (s *Service) RecycleHeartbeatTimeoutJobs(ctx context.Context, timeout time.
 }
 
 func (s *Service) recycleHeartbeatTimeoutJob(ctx context.Context, jobExecutionID int64) error {
-	log.Infof("recycle job execution: %d", jobExecutionID)
-	return s.db.Transaction(func(client *db.Client) error {
+	logger := log.ExtractLogger(ctx)
+	logger.Infof("recycle job execution: %d", jobExecutionID)
+	ctx, span := trace.Start(ctx, "cronjob.recycle_heartbeat_timeout_job",
+		trace.WithAttributes(attribute.Int64("job_execution_id", jobExecutionID)))
+	defer span.End()
+	span.AddEvent("Recycle heartbeat timeout job")
+	err := s.db.Transaction(func(client *db.Client) error {
 		if err := completedUnfinishedSteps(ctx, client, jobExecutionID); err != nil {
 			return errors.WithMessagef(err, "failed to complete unfinished steps of job execution %d", jobExecutionID)
 		}
@@ -46,6 +54,10 @@ func (s *Service) recycleHeartbeatTimeoutJob(ctx context.Context, jobExecutionID
 			CompletedAt: lo.ToPtr(time.Now()),
 		})
 	})
+	if err != nil {
+		return errors.WithMessage(err, "failed to recycle heartbeat timeout job")
+	}
+	return s.logstorageService.Archive(ctx, jobExecutionID)
 }
 
 func completedUnfinishedSteps(ctx context.Context, dbCli *db.Client, jobExecutionID int64) error {

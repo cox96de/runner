@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/cox96de/runner/telemetry/trace"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/cox96de/runner/log"
 
 	"github.com/cockroachdb/errors"
@@ -46,6 +49,9 @@ func (s *Service) getLogsFromOSS(ctx context.Context, jobExecutionID int64, logN
 // It should be invoked when there are no more logs to be appended.
 // Typically, it is invoked after the job is finished.
 func (s *Service) Archive(ctx context.Context, jobExecutionID int64) error {
+	ctx, span := trace.Start(ctx, "logstorage.archive", trace.WithAttributes(attribute.Int64("job_execution_id",
+		jobExecutionID)))
+	defer span.End()
 	log.ExtractLogger(ctx).WithFields(log.Fields{"job_execution_id": jobExecutionID}).
 		Infof("archive logs")
 	logNameSet, err := s.getLogNameSet(ctx, jobExecutionID)
