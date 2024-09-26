@@ -10,6 +10,7 @@ service Server {
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
   rpc RequestJob(RequestJobRequest) returns (RequestJobResponse) {}
   rpc GetJobExecution(GetJobExecutionRequest) returns (GetJobExecutionResponse) {}
+  rpc CancelJobExecution(CancelJobExecutionRequest) returns (CancelJobExecutionResponse) {}
   rpc ListJobExecutions(ListJobExecutionsRequest) returns (ListJobExecutionsResponse) {}
   rpc UpdateJobExecution(UpdateJobExecutionRequest) returns (UpdateJobExecutionResponse) {}
   rpc GetStepExecution(GetStepExecutionRequest) returns (GetStepExecutionResponse) {}
@@ -55,6 +56,15 @@ message GetJobExecutionRequest {
 }
 
 message GetJobExecutionResponse {
+  JobExecution JobExecution = 1;
+}
+
+message CancelJobExecutionRequest {
+  //@gotags: path:"job_execution_id"
+  int64 JobExecutionID = 1 [(go.field).name = "JobExecutionID"];
+}
+
+message CancelJobExecutionResponse {
   JobExecution JobExecution = 1;
 }
 
@@ -114,4 +124,6 @@ message HeartbeatRequest {
   int64 JobExecutionID = 1 [(go.field).name = "JobExecutionID"];
 }
 
-message HeartbeatResponse {}
+message HeartbeatResponse {
+  Status status = 1;
+}

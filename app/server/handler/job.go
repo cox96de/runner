@@ -40,23 +40,31 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to get job execution '%d'", request.JobExecutionID)
 	}
-	if request.Status != nil {
-		logger.Infof("update job execution status from %s to '%s'", jobExecution.Status, *request.Status)
-		if !dispatch.CheckJobStatus(jobExecution.Status, *request.Status) {
-			return nil, errors.Errorf("invalid status transition from '%s' to '%s'", jobExecution.Status, *request.Status)
+	targetStatus := request.Status
+	if targetStatus != nil {
+		// If not dispatch, cancel would lead to failed.
+		if *targetStatus == api.StatusCanceling && jobExecution.Status.IsPreDispatch() {
+			logger.Infof("job is not dispatched, cancel directly")
+			targetStatus = lo.ToPtr(api.StatusFailed)
+			request.Reason = &api.Reason{Reason: api.FailedReasonCancelled}
 		}
-		jobExecution.Status = *request.Status
+		logger.Infof("update job execution status from %s to '%s'", jobExecution.Status, *targetStatus)
+		if !dispatch.CheckJobStatus(jobExecution.Status, *targetStatus) {
+			return nil, errors.Errorf("invalid status transition from '%s' to '%s'", jobExecution.Status, *targetStatus)
+		}
+
+		jobExecution.Status = *targetStatus
 		updateJobExecutionOption := &db.UpdateJobExecutionOption{
-			ID:     jobExecution.JobID,
-			Status: request.Status,
+			ID:     jobExecution.ID,
+			Status: targetStatus,
 			Reason: request.Reason,
 		}
 		switch {
-		case *request.Status == api.StatusPreparing:
+		case *targetStatus == api.StatusPreparing:
 			// TODO: add preparing at.
-		case *request.Status == api.StatusRunning:
+		case *targetStatus == api.StatusRunning:
 			updateJobExecutionOption.StartedAt = lo.ToPtr(time.Now())
-		case (*request).Status.IsCompleted():
+		case targetStatus.IsCompleted():
 			// TODO: assign completed at in dispatch.UpdateJobExecution
 			updateJobExecutionOption.CompletedAt = lo.ToPtr(time.Now())
 			if err := h.logService.Archive(ctx, jobExecution.ID); err != nil {

@@ -10,6 +10,7 @@ func (h *Handler) RegisterRouter(g *gin.RouterGroup) {
 	g.POST("/jobs/request", h.RequestJobHandler)
 	g.GET("/jobs/:job_id/executions/", getGinHandler(h.ListJobExecutions))
 	g.POST("/job_executions/:job_execution_id", getGinHandler(h.UpdateJobExecution))
+	g.POST("/job_executions/:job_execution_id/cancel", getGinHandler(h.CancelJobExecution))
 	g.POST("/job_executions/:job_execution_id/heartbeat", getGinHandler(h.Heartbeat))
 	g.GET("/job_executions/:job_execution_id", getGinHandler(h.GetJobExecution))
 	g.POST("/job_executions/:job_execution_id/logs", getGinHandler(h.UploadLogLines))

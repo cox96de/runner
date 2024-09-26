@@ -23,5 +23,7 @@ func (h *Handler) Heartbeat(ctx context.Context, request *api.HeartbeatRequest) 
 	if err = h.db.TouchHeartbeat(ctx, jobExecution.ID); err != nil {
 		return nil, errors.WithMessagef(err, "failed to touch heartbeat for job execution %d", jobExecution.ID)
 	}
-	return &api.HeartbeatResponse{}, nil
+	return &api.HeartbeatResponse{
+		Status: jobExecution.Status,
+	}, nil
 }

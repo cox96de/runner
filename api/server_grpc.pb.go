@@ -26,6 +26,7 @@ type ServerClient interface {
 	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
 	RequestJob(ctx context.Context, in *RequestJobRequest, opts ...grpc.CallOption) (*RequestJobResponse, error)
 	GetJobExecution(ctx context.Context, in *GetJobExecutionRequest, opts ...grpc.CallOption) (*GetJobExecutionResponse, error)
+	CancelJobExecution(ctx context.Context, in *CancelJobExecutionRequest, opts ...grpc.CallOption) (*CancelJobExecutionResponse, error)
 	ListJobExecutions(ctx context.Context, in *ListJobExecutionsRequest, opts ...grpc.CallOption) (*ListJobExecutionsResponse, error)
 	UpdateJobExecution(ctx context.Context, in *UpdateJobExecutionRequest, opts ...grpc.CallOption) (*UpdateJobExecutionResponse, error)
 	GetStepExecution(ctx context.Context, in *GetStepExecutionRequest, opts ...grpc.CallOption) (*GetStepExecutionResponse, error)
@@ -73,6 +74,15 @@ func (c *serverClient) RequestJob(ctx context.Context, in *RequestJobRequest, op
 func (c *serverClient) GetJobExecution(ctx context.Context, in *GetJobExecutionRequest, opts ...grpc.CallOption) (*GetJobExecutionResponse, error) {
 	out := new(GetJobExecutionResponse)
 	err := c.cc.Invoke(ctx, "/Server/GetJobExecution", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serverClient) CancelJobExecution(ctx context.Context, in *CancelJobExecutionRequest, opts ...grpc.CallOption) (*CancelJobExecutionResponse, error) {
+	out := new(CancelJobExecutionResponse)
+	err := c.cc.Invoke(ctx, "/Server/CancelJobExecution", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -150,6 +160,7 @@ type ServerServer interface {
 	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
 	RequestJob(context.Context, *RequestJobRequest) (*RequestJobResponse, error)
 	GetJobExecution(context.Context, *GetJobExecutionRequest) (*GetJobExecutionResponse, error)
+	CancelJobExecution(context.Context, *CancelJobExecutionRequest) (*CancelJobExecutionResponse, error)
 	ListJobExecutions(context.Context, *ListJobExecutionsRequest) (*ListJobExecutionsResponse, error)
 	UpdateJobExecution(context.Context, *UpdateJobExecutionRequest) (*UpdateJobExecutionResponse, error)
 	GetStepExecution(context.Context, *GetStepExecutionRequest) (*GetStepExecutionResponse, error)
@@ -175,6 +186,9 @@ func (UnimplementedServerServer) RequestJob(context.Context, *RequestJobRequest)
 }
 func (UnimplementedServerServer) GetJobExecution(context.Context, *GetJobExecutionRequest) (*GetJobExecutionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetJobExecution not implemented")
+}
+func (UnimplementedServerServer) CancelJobExecution(context.Context, *CancelJobExecutionRequest) (*CancelJobExecutionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelJobExecution not implemented")
 }
 func (UnimplementedServerServer) ListJobExecutions(context.Context, *ListJobExecutionsRequest) (*ListJobExecutionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListJobExecutions not implemented")
@@ -278,6 +292,24 @@ func _Server_GetJobExecution_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ServerServer).GetJobExecution(ctx, req.(*GetJobExecutionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Server_CancelJobExecution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelJobExecutionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServerServer).CancelJobExecution(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Server/CancelJobExecution",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServerServer).CancelJobExecution(ctx, req.(*CancelJobExecutionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -430,6 +462,10 @@ var Server_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetJobExecution",
 			Handler:    _Server_GetJobExecution_Handler,
+		},
+		{
+			MethodName: "CancelJobExecution",
+			Handler:    _Server_CancelJobExecution_Handler,
 		},
 		{
 			MethodName: "ListJobExecutions",

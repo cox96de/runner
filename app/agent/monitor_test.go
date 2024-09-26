@@ -47,7 +47,7 @@ func TestExecution_monitorHeartbeat(t *testing.T) {
 		time.Sleep(time.Millisecond * 20)
 		assert.Assert(t, e.jobCtx.Err() == nil)
 	})
-	t.Run("timeout", func(t *testing.T) {
+	t.Run("heartbeat_timeout", func(t *testing.T) {
 		client := mockapi.NewMockServerClient(gomock.NewController(t))
 		jobExecutionID := int64(1)
 		client.EXPECT().Heartbeat(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context,
@@ -57,18 +57,30 @@ func TestExecution_monitorHeartbeat(t *testing.T) {
 			return nil, errors.New("wrong")
 		}).AnyTimes()
 		e := &Execution{
-			engine:           nil,
-			job:              &api.Job{},
-			jobExecution:     &api.JobExecution{ID: jobExecutionID},
-			stepExecutions:   nil,
-			client:           client,
-			logFlushInternal: 0,
-			runner:           nil,
-			dag:              nil,
-			logWriter:        nil,
-			jobCtx:           nil,
-			jobCanceller:     nil,
-			abortedReason:    atomic.Uint32{},
+			job:           &api.Job{},
+			jobExecution:  &api.JobExecution{ID: jobExecutionID},
+			client:        client,
+			abortedReason: atomic.Uint32{},
+		}
+		e.jobCtx, e.jobCanceller = context.WithCancel(context.Background())
+		go e.monitorHeartbeat(context.Background(), time.Millisecond, time.Millisecond*4)
+		time.Sleep(time.Millisecond * 10)
+		assert.Assert(t, e.jobCtx.Err() != nil)
+	})
+	t.Run("cancel", func(t *testing.T) {
+		client := mockapi.NewMockServerClient(gomock.NewController(t))
+		jobExecutionID := int64(1)
+		client.EXPECT().Heartbeat(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context,
+			request *api.HeartbeatRequest, option ...grpc.CallOption,
+		) (*api.HeartbeatResponse, error) {
+			assert.Equal(t, jobExecutionID, request.JobExecutionID)
+			return &api.HeartbeatResponse{Status: api.StatusCanceling}, nil
+		}).AnyTimes()
+		e := &Execution{
+			job:           &api.Job{},
+			jobExecution:  &api.JobExecution{ID: jobExecutionID},
+			client:        client,
+			abortedReason: atomic.Uint32{},
 		}
 		e.jobCtx, e.jobCanceller = context.WithCancel(context.Background())
 		go e.monitorHeartbeat(context.Background(), time.Millisecond, time.Millisecond*4)

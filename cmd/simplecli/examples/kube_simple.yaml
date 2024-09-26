@@ -1,8 +1,14 @@
-## Compile redis with shell engine.
+# Compile redis in a container with kube engine
 jobs:
-  - name: compile_redis
+  - name: job1
+    label: kube
     runson:
-      label: shell
+      label: kube
+      docker:
+        containers:
+          - name: debian
+            image: registry.houzhiqiang.cn/debian:latest
+        defaultcontainer: debian
     steps:
       - name: prepare
         commands:

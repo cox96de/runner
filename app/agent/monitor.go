@@ -36,7 +36,7 @@ func (e *Execution) monitorHeartbeat(ctx context.Context, internal time.Duration
 	for {
 		select {
 		case <-ticker.C:
-			_, err := e.client.Heartbeat(ctx, &api.HeartbeatRequest{JobExecutionID: e.jobExecution.ID})
+			heartbeatResponse, err := e.client.Heartbeat(ctx, &api.HeartbeatRequest{JobExecutionID: e.jobExecution.ID})
 			if err != nil {
 				logger.Error("failed to send heartbeat", err)
 				if time.Since(lastHeartbeat) > timeout {
@@ -47,6 +47,10 @@ func (e *Execution) monitorHeartbeat(ctx context.Context, internal time.Duration
 				continue
 			}
 			lastHeartbeat = time.Now()
+			if heartbeatResponse.Status == api.StatusCanceling {
+				logger.Info("execution aborted by server")
+				e.jobCanceller()
+			}
 		case <-ctx.Done():
 			return
 		}

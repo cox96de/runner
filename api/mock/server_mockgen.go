@@ -41,6 +41,50 @@ func (m *MockServerClient) EXPECT() *MockServerClientMockRecorder {
 	return m.recorder
 }
 
+// CancelJobExecution mocks base method.
+func (m *MockServerClient) CancelJobExecution(arg0 context.Context, arg1 *api.CancelJobExecutionRequest, arg2 ...grpc.CallOption) (*api.CancelJobExecutionResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CancelJobExecution", varargs...)
+	ret0, _ := ret[0].(*api.CancelJobExecutionResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CancelJobExecution indicates an expected call of CancelJobExecution.
+func (mr *MockServerClientMockRecorder) CancelJobExecution(arg0, arg1 any, arg2 ...any) *MockServerClientCancelJobExecutionCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelJobExecution", reflect.TypeOf((*MockServerClient)(nil).CancelJobExecution), varargs...)
+	return &MockServerClientCancelJobExecutionCall{Call: call}
+}
+
+// MockServerClientCancelJobExecutionCall wrap *gomock.Call
+type MockServerClientCancelJobExecutionCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServerClientCancelJobExecutionCall) Return(arg0 *api.CancelJobExecutionResponse, arg1 error) *MockServerClientCancelJobExecutionCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServerClientCancelJobExecutionCall) Do(f func(context.Context, *api.CancelJobExecutionRequest, ...grpc.CallOption) (*api.CancelJobExecutionResponse, error)) *MockServerClientCancelJobExecutionCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServerClientCancelJobExecutionCall) DoAndReturn(f func(context.Context, *api.CancelJobExecutionRequest, ...grpc.CallOption) (*api.CancelJobExecutionResponse, error)) *MockServerClientCancelJobExecutionCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // CreatePipeline mocks base method.
 func (m *MockServerClient) CreatePipeline(arg0 context.Context, arg1 *api.CreatePipelineRequest, arg2 ...grpc.CallOption) (*api.CreatePipelineResponse, error) {
 	m.ctrl.T.Helper()

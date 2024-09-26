@@ -79,7 +79,8 @@ func TestEngine_CreateRunner(t *testing.T) {
 	})
 	t.Run("success", func(t *testing.T) {
 		r, err := e.CreateRunner(context.Background(), mock.NewNopLogProvider(), &api.Job{
-			ID: 1,
+			ID:        1,
+			Execution: &api.JobExecution{ID: 1},
 			RunsOn: &api.RunsOn{
 				Docker: &api.Docker{
 					Containers: []*api.Container{

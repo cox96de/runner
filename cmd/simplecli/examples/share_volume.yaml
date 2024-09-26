@@ -1,0 +1,41 @@
+## Compile redis with multiple container and share workspace.
+jobs:
+  - name: job1
+    label: kube
+    runson:
+      label: kube
+      docker:
+        containers:
+          - name: clone
+            image: registry.houzhiqiang.cn/debian:latest
+            volumemounts:
+              - name: workdir
+                mountpath: /root
+          - name: compile
+            image: registry.houzhiqiang.cn/debian:latest
+            volumemounts:
+              - name: workdir
+                mountpath: /root
+        volumes:
+          - name: workdir
+            emptydir: { }
+        defaultcontainer: compile
+    steps:
+      - name: clone
+        workingdirectory: /root
+        container: compile
+        commands:
+          - sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
+          - apt-get update
+          - apt-get install -y build-essential tcl git
+          - export https_proxy=192.168.31.229:20171
+          - git clone https://github.com/redis/redis.git
+      - name: test
+        workingdirectory: /root
+        container: copmile
+        commands:
+          - sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
+          - apt-get update
+          - apt-get install -y build-essential tcl git
+          - cd redis/src
+          - make -j$(nproc)
