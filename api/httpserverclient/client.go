@@ -120,6 +120,16 @@ func (c *Client) UpdateJobExecution(ctx context.Context, in *api.UpdateJobExecut
 	return resp, nil
 }
 
+func (c *Client) CancelJobExecution(ctx context.Context, in *api.CancelJobExecutionRequest, opts ...grpc.CallOption) (*api.CancelJobExecutionResponse, error) {
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/job_executions/%d/cancel", in.JobExecutionID))
+	resp := &api.CancelJobExecutionResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (c *Client) CreatePipeline(ctx context.Context, in *api.CreatePipelineRequest, opts ...grpc.CallOption) (*api.CreatePipelineResponse, error) {
 	u := c.u.JoinPath("/api/v1/pipelines")
 	resp := &api.CreatePipelineResponse{}

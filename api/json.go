@@ -21,7 +21,7 @@ func (s *Status) UnmarshalJSON(bytes []byte) error {
 }
 
 func (s Status) MarshalJSON() ([]byte, error) {
-	toString := s.toString()
+	toString := s.ToString()
 	return []byte("\"" + toString + "\""), nil
 }
 
@@ -44,7 +44,7 @@ func init() {
 	}
 }
 
-func (s Status) toString() string {
+func (s Status) ToString() string {
 	str, ok := status2str[s]
 	if ok {
 		return str
@@ -60,4 +60,9 @@ func (s Status) IsCompleted() bool {
 // IsRunning returns true if the status is dispatched to agent.
 func (s Status) IsRunning() bool {
 	return s >= StatusPreparing && s < StatusFailed
+}
+
+// IsPreDispatch returns true if the status is before dispatching.
+func (s Status) IsPreDispatch() bool {
+	return s <= StatusQueued
 }

@@ -133,4 +133,7 @@ func TestNewClient(t *testing.T) {
 			assert.Assert(t, getJobExecutionResponse.JobExecution.ID == requestedJob.Execution.ID)
 		})
 	})
+	t.Run("Cancel", func(t *testing.T) {
+		// TODO: add test for cancel job execution.
+	})
 }

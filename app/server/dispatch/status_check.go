@@ -18,7 +18,6 @@ func CheckJobStatus(old api.Status, target api.Status) bool {
 			target == api.StatusSkipped
 	case api.StatusQueued:
 		return target == api.StatusPreparing ||
-			target == api.StatusCanceling ||
 			target == api.StatusFailed
 	case api.StatusPreparing:
 		return target.IsCompleted() ||

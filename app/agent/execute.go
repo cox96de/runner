@@ -98,7 +98,6 @@ func (e *Execution) Execute(ctx context.Context) error {
 	if err = e.updateJobStatus(ctx, api.StatusRunning, nil); err != nil {
 		return errors.WithMessage(err, "failed to update status")
 	}
-	e.jobCtx = ctx
 	if e.job.Timeout > 0 {
 		var timeoutCancel context.CancelFunc
 		e.jobCtx, timeoutCancel = context.WithCancel(ctx)
