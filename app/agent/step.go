@@ -38,8 +38,21 @@ func (e *Execution) updateStepExecution(ctx context.Context, step *api.Step, sta
 	return nil
 }
 
-func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
+func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error) {
 	logger := log.ExtractLogger(ctx).WithField("step", step.Name)
+	collector := newLogCollector(e.client, e.jobExecution, step.Name, logger, e.logFlushInternal)
+	defer func() {
+		if err == nil {
+			return
+		}
+		if _, writeErr := collector.Write([]byte("$$ Internal Error: " + err.Error())); writeErr != nil {
+			logger.Errorf("failed to write error log: %v", writeErr)
+		}
+		if closeErr := collector.Close(); closeErr != nil {
+			logger.Errorf("failed to close log collector: %v", closeErr)
+		}
+		// TODO: update to failed.
+	}()
 	continueExecute, err := e.preStep(step)
 	if err != nil {
 		// TODO: update to failed.
@@ -97,7 +110,6 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to get command log")
 	}
-	collector := newLogCollector(e.client, e.jobExecution, step.Name, logger, e.logFlushInternal)
 	logCh := make(chan struct{})
 	go func() {
 		defer func() {
