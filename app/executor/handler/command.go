@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"io"
+	"os"
 	"os/exec"
 	"time"
 
@@ -81,6 +82,15 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 	}
 	log.Infof("starting command on dir: %s", request.Dir)
 	cmd := exec.Command(request.Commands[0], request.Commands[1:]...)
+	if len(request.Dir) > 0 {
+		if _, err := os.Stat(request.Dir); err != nil && os.IsNotExist(err) {
+			log.Infof("dir is not exist, creating dir: %s", request.Dir)
+			// FIXME: the created dir should be owned by the `User` in the request.
+			if err := os.MkdirAll(request.Dir, os.ModePerm); err != nil {
+				return nil, errors.WithMessagef(err, "failed to create dir: %s", request.Dir)
+			}
+		}
+	}
 	cmd.Dir = request.Dir
 	if len(request.Env) > 0 {
 		cmd.Env = request.Env

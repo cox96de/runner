@@ -206,6 +206,7 @@ func (e *Execution) executeSteps(ctx context.Context) error {
 		err := e.executeStep(ctx, step)
 		if err != nil {
 			if !isErrorContextCancel(err) {
+				// TODO: update job status to failed with reason.
 				return errors.WithMessagef(err, "failed to execute step '%s'", step.Name)
 			}
 			if err = e.updateStepExecution(ctx, step, lo.ToPtr(api.StatusFailed), nil); err != nil {
