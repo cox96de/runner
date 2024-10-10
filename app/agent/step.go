@@ -99,6 +99,7 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error)
 		Commands: commands,
 		Dir:      step.WorkingDirectory,
 		Env:      append(environment.Environment, "RUNNER_SCRIPT="+script),
+		Username: step.User,
 	})
 	if err != nil {
 		return errors.WithMessage(err, "failed to start command")

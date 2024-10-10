@@ -5,6 +5,9 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/user"
+	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/cox96de/runner/util"
@@ -75,6 +78,31 @@ func (h *Handler) setCommand(c *command) (string, error) {
 	return "", errors.New("can not get a valid commandID")
 }
 
+func setRunAs(cmd *exec.Cmd, username string) error {
+	user, err := user.Lookup(username)
+	if err != nil {
+		return errors.WithMessagef(err, "failed to find user '%s'", username)
+	}
+	cmd.SysProcAttr = &syscall.SysProcAttr{}
+	return setUserForSysProcAttr(cmd.SysProcAttr, user)
+}
+
+func setUserForSysProcAttr(attr *syscall.SysProcAttr, u *user.User) error {
+	uid, err := strconv.ParseInt(u.Uid, 10, 64)
+	if err != nil {
+		return errors.WithMessage(err, "failed to parse uid")
+	}
+	gid, err := strconv.ParseInt(u.Gid, 10, 64)
+	if err != nil {
+		return errors.WithMessage(err, "failed to parse gid")
+	}
+	attr.Credential = &syscall.Credential{
+		Uid: uint32(uid),
+		Gid: uint32(gid),
+	}
+	return nil
+}
+
 func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCommandRequest) (*executorpb.StartCommandResponse, error) {
 	rb := lib.NewRingBuffer(defaultRingBufferSize)
 	if len(request.Commands) == 0 {
@@ -86,7 +114,7 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 		if _, err := os.Stat(request.Dir); err != nil && os.IsNotExist(err) {
 			log.Infof("dir is not exist, creating dir: %s", request.Dir)
 			// FIXME: the created dir should be owned by the `User` in the request.
-			if err := os.MkdirAll(request.Dir, os.ModePerm); err != nil {
+			if err := mkdirAll(request.Dir, os.ModePerm, request.Username); err != nil {
 				return nil, errors.WithMessagef(err, "failed to create dir: %s", request.Dir)
 			}
 		}
@@ -94,6 +122,11 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 	cmd.Dir = request.Dir
 	if len(request.Env) > 0 {
 		cmd.Env = request.Env
+	}
+	if len(request.Username) > 0 {
+		if err := setRunAs(cmd, request.Username); err != nil {
+			return nil, err
+		}
 	}
 	cmd.Stdout = rb
 	cmd.Stderr = rb
