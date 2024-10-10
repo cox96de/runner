@@ -1,0 +1,13 @@
+# Change user to execute commands.
+jobs:
+  - name: use_step_user
+    runson:
+      label: shell
+    steps:
+      - name: create
+        commands:
+          - id "runner" &>/dev/null || { sudo useradd -m runner && echo "User 'runner' has been created."; }
+      - name: build
+        user: runner
+        commands:
+          - whoami
