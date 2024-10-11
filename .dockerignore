@@ -3,3 +3,5 @@
 */**/*.qcow2.back
 *.iso
 */**/*.iso
+web/dist/**
+web/node_modules/**

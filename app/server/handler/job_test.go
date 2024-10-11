@@ -4,6 +4,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/app/server/dispatch"
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/mock"
@@ -12,7 +15,9 @@ import (
 )
 
 func TestHandler_UpdateJobExecution(t *testing.T) {
-	handler := NewHandler(mock.NewMockDB(t), nil, nil, mock.NewMockLocker(), nil)
+	dbCli := mock.NewMockDB(t)
+	handler := NewHandler(dbCli, nil, dispatch.NewService(dbCli), mock.NewMockLocker(),
+		nil, eventhook.NewService())
 	jobs, err := handler.db.CreateJobs(context.Background(), []*db.CreateJobOption{
 		{
 			PipelineID: 1,

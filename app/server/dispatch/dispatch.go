@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"github.com/cox96de/runner/telemetry/trace"
 
 	"github.com/cox96de/runner/api"
@@ -15,7 +17,8 @@ import (
 )
 
 type Service struct {
-	dbClient *db.Client
+	dbClient  *db.Client
+	eventhook *eventhook.Service
 }
 
 func NewService(dbClient *db.Client) *Service {
@@ -38,7 +41,7 @@ func (s *Service) Dispatch(ctx context.Context, jobs []*db.Job, executions []*db
 	err = s.dbClient.Transaction(func(client *db.Client) error {
 		// TODO: batch update.
 		for _, option := range updateJobExecutionOptions {
-			if err := UpdateJobExecution(ctx, client, option); err != nil {
+			if err := s.UpdateJobExecution(ctx, client, option); err != nil {
 				return errors.WithMessagef(err, "failed to update job execution '%d'", option.ID)
 			}
 		}

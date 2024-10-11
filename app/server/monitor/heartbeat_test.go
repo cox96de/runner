@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"github.com/cox96de/runner/app/server/logstorage"
 	"gotest.tools/v3/fs"
 
@@ -20,6 +22,7 @@ import (
 
 func TestService_RecycleHeartbeatTimeoutJobs(t *testing.T) {
 	dbCli := mock.NewMockDB(t)
+	service := dispatch.NewService(dbCli)
 	pipelineService := pipeline.NewService(dbCli)
 	createPipelineResponse, err := pipelineService.CreatePipeline(context.Background(), &api.PipelineDSL{Jobs: []*api.JobDSL{
 		{
@@ -31,7 +34,7 @@ func TestService_RecycleHeartbeatTimeoutJobs(t *testing.T) {
 	}})
 	assert.NilError(t, err)
 	jobExecution := createPipelineResponse.CreatedJobExecutions[0]
-	err = dispatch.UpdateJobExecution(context.Background(), dbCli, &db.UpdateJobExecutionOption{
+	err = service.UpdateJobExecution(context.Background(), dbCli, &db.UpdateJobExecutionOption{
 		ID:          jobExecution.ID,
 		Status:      lo.ToPtr(api.StatusQueued),
 		Reason:      nil,
@@ -39,7 +42,7 @@ func TestService_RecycleHeartbeatTimeoutJobs(t *testing.T) {
 		CompletedAt: nil,
 	})
 	assert.NilError(t, err)
-	err = dispatch.UpdateJobExecution(context.Background(), dbCli, &db.UpdateJobExecutionOption{
+	err = service.UpdateJobExecution(context.Background(), dbCli, &db.UpdateJobExecutionOption{
 		ID:          jobExecution.ID,
 		Status:      lo.ToPtr(api.StatusPreparing),
 		Reason:      nil,
@@ -47,7 +50,7 @@ func TestService_RecycleHeartbeatTimeoutJobs(t *testing.T) {
 		CompletedAt: nil,
 	})
 	assert.NilError(t, err)
-	err = dbCli.UpdateStepExecution(context.Background(),
+	_, err = dbCli.UpdateStepExecution(context.Background(),
 		&db.UpdateStepExecutionOption{
 			ID:     createPipelineResponse.CreatedStepExecutions[0].ID,
 			Status: lo.ToPtr(api.StatusSucceeded),
@@ -55,7 +58,8 @@ func TestService_RecycleHeartbeatTimeoutJobs(t *testing.T) {
 	assert.NilError(t, err)
 	err = dbCli.TouchHeartbeat(context.Background(), jobExecution.ID)
 	assert.NilError(t, err)
-	s := NewService(dbCli, logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())))
+	s := NewService(dbCli, logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())),
+		eventhook.NewService(), dispatch.NewService(dbCli))
 	t.Run("not_timeout", func(t *testing.T) {
 		err = s.RecycleHeartbeatTimeoutJobs(context.Background(), time.Second)
 		assert.NilError(t, err)

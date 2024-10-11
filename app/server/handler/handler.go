@@ -3,6 +3,8 @@ package handler
 import (
 	"context"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"github.com/cox96de/runner/app/server/logstorage"
 
 	"github.com/cox96de/runner/api"
@@ -24,6 +26,7 @@ type Handler struct {
 	dispatchService *dispatch.Service
 	logService      *logstorage.Service
 	locker          lib.Locker
+	eventhook       *eventhook.Service
 }
 
 // nolint: unused
@@ -31,14 +34,14 @@ func (h *Handler) mustEmbedUnimplementedServerServer() {
 }
 
 func NewHandler(db *db.Client, pipelineService *pipeline.Service, dispatchService *dispatch.Service,
-	locker lib.Locker, logService *logstorage.Service,
+	locker lib.Locker, logService *logstorage.Service, eventhook *eventhook.Service,
 ) *Handler {
 	return &Handler{
 		db: db, pipelineService: pipelineService, dispatchService: dispatchService, locker: locker,
-		logService: logService,
+		logService: logService, eventhook: eventhook,
 	}
 }
 
-func (h *Handler) Ping(context.Context, *api.ServerPingRequest) (*api.ServerPingResponse, error) {
+func (h *Handler) Ping(ctx context.Context, _ *api.ServerPingRequest) (*api.ServerPingResponse, error) {
 	return &api.ServerPingResponse{}, nil
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"github.com/cox96de/runner/api"
 
 	"github.com/cox96de/runner/app/server/dispatch"
@@ -14,7 +16,8 @@ import (
 
 func TestHandler_requestJobHandler(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
-	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), mock.NewMockLocker(), nil)
+	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), mock.NewMockLocker(),
+		nil, eventhook.NewService())
 	createPipelineResponse, err := handler.CreatePipeline(context.Background(), &api.CreatePipelineRequest{
 		Pipeline: &api.PipelineDSL{
 			Jobs: []*api.JobDSL{

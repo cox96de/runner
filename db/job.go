@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"gorm.io/gorm/clause"
+
 	"github.com/cox96de/runner/api"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -238,7 +240,7 @@ type UpdateJobExecutionOption struct {
 }
 
 // UpdateJobExecution updates a job execution. Don't use this method directly, A helper function in dispatch.
-func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecutionOption) error {
+func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecutionOption) (*JobExecution, error) {
 	updateField := map[string]interface{}{}
 	if option.Status != nil {
 		updateField["status"] = *option.Status
@@ -252,9 +254,10 @@ func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecut
 	if option.Reason != nil {
 		bys, err := json.Marshal(option.Reason)
 		if err != nil {
-			return errors.WithMessage(err, "failed to marshal reason")
+			return nil, errors.WithMessage(err, "failed to marshal reason")
 		}
 		updateField["reason"] = bys
 	}
-	return c.conn.WithContext(ctx).Model(&JobExecution{}).Where("id = ?", option.ID).Updates(updateField).Error
+	updatedJob := &JobExecution{}
+	return updatedJob, c.conn.WithContext(ctx).Model(updatedJob).Clauses(clause.Returning{}).Where("id = ?", option.ID).Updates(updateField).Error
 }

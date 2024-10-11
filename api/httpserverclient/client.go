@@ -42,6 +42,12 @@ func (c *Client) Ping(ctx context.Context, in *api.ServerPingRequest, opts ...gr
 
 func (c *Client) GetJobExecution(ctx context.Context, in *api.GetJobExecutionRequest, opts ...grpc.CallOption) (*api.GetJobExecutionResponse, error) {
 	u := c.u.JoinPath(fmt.Sprintf("/api/v1/job_executions/%d", in.JobExecutionID))
+	query := u.Query()
+	// TODO: use reflection to generate query string
+	if in.WithStepExecution != nil {
+		query.Add("with_step_execution", fmt.Sprintf("%t", *in.WithStepExecution))
+	}
+	u.RawQuery = query.Encode()
 	resp := &api.GetJobExecutionResponse{}
 	err := c.doRequest(ctx, u.String(), http.MethodGet, in, resp)
 	if err != nil {

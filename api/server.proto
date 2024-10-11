@@ -53,6 +53,8 @@ message UpdateJobExecutionResponse {
 message GetJobExecutionRequest {
   //@gotags: path:"job_execution_id"
   int64 JobExecutionID = 1 [(go.field).name = "JobExecutionID"];
+  //@gotags: query:"with_step_execution"
+  optional bool WithStepExecution = 100;
 }
 
 message GetJobExecutionResponse {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/app/server/dispatch"
 	"github.com/cox96de/runner/app/server/logstorage"
@@ -17,7 +19,7 @@ func TestHandler_CancelJobExecution(t *testing.T) {
 	ctx := context.Background()
 	db := mock.NewMockDB(t)
 	handler := NewHandler(db, pipeline.NewService(db), dispatch.NewService(db), mock.NewMockLocker(),
-		logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "test").Path())))
+		logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "test").Path())), eventhook.NewService())
 	t.Run("from_running", func(t *testing.T) {
 		job := handler.CreateAndPushToStatus(t, &api.PipelineDSL{
 			Jobs: []*api.JobDSL{{

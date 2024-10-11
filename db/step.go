@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"gorm.io/gorm/clause"
+
 	"github.com/cox96de/runner/api"
 
 	"github.com/samber/lo"
@@ -240,7 +242,7 @@ type UpdateStepExecutionOption struct {
 }
 
 // UpdateStepExecution updates a step execution.
-func (c *Client) UpdateStepExecution(ctx context.Context, option *UpdateStepExecutionOption) error {
+func (c *Client) UpdateStepExecution(ctx context.Context, option *UpdateStepExecutionOption) (*StepExecution, error) {
 	updateField := map[string]interface{}{}
 	if option.Status != nil {
 		updateField["status"] = *option.Status
@@ -254,5 +256,6 @@ func (c *Client) UpdateStepExecution(ctx context.Context, option *UpdateStepExec
 	if option.CompletedAt != nil {
 		updateField["completed_at"] = *option.CompletedAt
 	}
-	return c.conn.WithContext(ctx).Model(&StepExecution{}).Where("id = ?", option.ID).Updates(updateField).Error
+	updated := &StepExecution{}
+	return updated, c.conn.WithContext(ctx).Model(&updated).Clauses(clause.Returning{}).Where("id = ?", option.ID).Updates(updateField).Error
 }

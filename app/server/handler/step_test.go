@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/mock"
@@ -12,7 +14,7 @@ import (
 )
 
 func TestHandler_UpdateStepExecution(t *testing.T) {
-	handler := NewHandler(mock.NewMockDB(t), nil, nil, nil, nil)
+	handler := NewHandler(mock.NewMockDB(t), nil, nil, nil, nil, eventhook.NewService())
 	executions, err := handler.db.CreateStepExecutions(context.Background(), []*db.CreateStepExecutionOption{
 		{
 			JobExecutionID: 1,
