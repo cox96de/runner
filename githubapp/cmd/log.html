@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Logs</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #log-container {
+            flex: 1;
+            width: 100%;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/@xterm/xterm@5.5.0/css/xterm.css"/>
+    <script src="https://unpkg.com/@xterm/xterm@5.5.0/lib/xterm.js"></script>
+</head>
+<body>
+<h1>Build Logs</h1>
+<div id="log-container"></div>
+
+<script>
+    const logContainer = document.getElementById('log-container');
+    var term = new Terminal({
+        wordWrap: true // Enable word wrapping
+    });
+    term.open(logContainer);
+
+    function resizeTerminal() {
+        const cols = Math.floor(logContainer.clientWidth / 9);
+        const rows = Math.floor(logContainer.clientHeight / 18);
+        term.resize(cols, rows);
+    }
+
+    resizeTerminal();
+
+    window.addEventListener('resize', resizeTerminal);
+
+    let offset = 0;
+
+    async function fetchLogs() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const logId = urlParams.get('log_id');
+            const logName = urlParams.get('log_name');
+            let o = urlParams.get('offset');
+            console.log('logId', logId);
+            console.log('logName', logName);
+            const response = await fetch(`job_executions/${logId}/logs/${logName}?offset=${offset}`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            const respBody = await response.json();
+            const logs = respBody.logs
+            if (logs && logs.length > 0) {
+                displayLogs(logs);
+                offset += logs.length; // Update the offset
+                setTimeout(fetchLogs, 1)
+            } else {
+                setTimeout(fetchLogs, 1000)
+            }
+        } catch (error) {
+            console.error('There has been a problem with your fetch operation:', error);
+        }
+    }
+
+    function displayLogs(logs) {
+        term.open(logContainer);
+        logs.forEach(log => {
+            if (!log.Output) {
+                log.Output = ""
+            }
+            term.write(log.Output + "\r\n");
+        });
+    }
+
+    window.onload = fetchLogs;
+</script>
+</body>
+</html>
