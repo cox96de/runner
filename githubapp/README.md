@@ -1,0 +1,1 @@
+This directory contains the code to build a github CI app base on the `Runner`

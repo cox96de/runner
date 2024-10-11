@@ -1,0 +1,8 @@
+## {{.JobName}} {{.StatusEmoji}}
+
+### Steps
+{{ range .Steps }}
+#### **{{.Name}}**: {{.StatusEmoji}}
+
+[ViewLogs]({{.LogURL}})
+{{ end }}

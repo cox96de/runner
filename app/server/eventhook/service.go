@@ -44,12 +44,12 @@ func NewService(client Sender) *Service {
 func (s *Service) SendStepExecutionEvent(ctx context.Context, step *db.StepExecution) error {
 	ev := cloudevents.NewEvent()
 	ev.SetType("step_execution")
-	ev.SetSource(source)
 	if err := ev.SetData(cloudevents.ApplicationJSON, api.Event{
 		StepExecution: db.PackStepExecution(step),
 	}); err != nil {
 		return errors.WithMessage(err, "failed to set data")
 	}
+	ctx = log.WithLogger(ctx, log.ExtractLogger(ctx).WithField("step_id", step.ID))
 	go s.doSend(ctx, ev)
 	return nil
 }
@@ -58,7 +58,6 @@ func (s *Service) SendStepExecutionEvent(ctx context.Context, step *db.StepExecu
 func (s *Service) SendJobExecutionEvent(ctx context.Context, job *db.JobExecution) error {
 	ev := cloudevents.NewEvent()
 	ev.SetType("step_execution")
-	ev.SetSource(source)
 	jobExecution, err := db.PackJobExecution(job, nil)
 	if err != nil {
 		return errors.WithMessagef(err, "failed to pack job execution")
@@ -68,12 +67,17 @@ func (s *Service) SendJobExecutionEvent(ctx context.Context, job *db.JobExecutio
 	}); err != nil {
 		return errors.WithMessage(err, "failed to set data")
 	}
+	ctx = log.WithLogger(ctx, log.ExtractLogger(ctx).WithField("step_id", jobExecution.ID))
 	go s.doSend(ctx, ev)
 	return nil
 }
 
 func (s *Service) doSend(ctx context.Context, ev event.Event) {
-	logger := log.ExtractLogger(ctx)
+	logger := log.ExtractLogger(ctx).WithFields(log.Fields{
+		"event_id": ev.ID(),
+		"type":     ev.Type(),
+	})
+	ev.SetSource(source)
 	result := s.client.Send(log.WithLogger(context.Background(), logger), ev)
 	var httpResult *cloudeventshttp.Result
 	switch {
