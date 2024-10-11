@@ -93,7 +93,7 @@ func TestClient_UpdateStepExecution(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	execution := stepExecutions[0]
-	err = db.UpdateStepExecution(context.Background(), &UpdateStepExecutionOption{
+	_, err = db.UpdateStepExecution(context.Background(), &UpdateStepExecutionOption{
 		ID:     execution.ID,
 		Status: lo.ToPtr(api.StatusRunning),
 	})
@@ -101,11 +101,12 @@ func TestClient_UpdateStepExecution(t *testing.T) {
 	execution, err = db.GetStepExecutionsID(context.Background(), execution.ID)
 	assert.NilError(t, err)
 	assert.Equal(t, api.StatusRunning, execution.Status)
-	err = db.UpdateStepExecution(context.Background(), &UpdateStepExecutionOption{
+	updatedStep, err := db.UpdateStepExecution(context.Background(), &UpdateStepExecutionOption{
 		ID:       execution.ID,
 		ExitCode: lo.ToPtr(uint32(1)),
 	})
 	assert.NilError(t, err)
+	assert.Equal(t, updatedStep.ExitCode, uint32(1))
 	execution, err = db.GetStepExecutionsID(context.Background(), execution.ID)
 	assert.NilError(t, err)
 	assert.Equal(t, uint32(1), execution.ExitCode)

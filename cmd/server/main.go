@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"github.com/cox96de/runner/log"
 	"github.com/cox96de/runner/telemetry/trace"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -138,14 +140,17 @@ func RunServer(config *Config) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to compose log storage")
 	}
-	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), locker, logStorage)
+	dispatchService := dispatch.NewService(dbClient)
+	eventhookService := eventhook.NewService()
+	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatchService, locker, logStorage,
+		eventhookService)
 	engine := gin.New()
 	// It's important to set the context with fallback to true, so that the context will be propagated to the next middleware.
 	engine.ContextWithFallback = true
 	engine.Use(otelgin.Middleware("runner-server"))
 	group := engine.Group("/api/v1")
 	h.RegisterRouter(group)
-	startConJob(monitor.NewService(dbClient, logStorage))
+	startConJob(monitor.NewService(dbClient, logStorage, eventhookService, dispatchService))
 	return engine.Run(fmt.Sprintf(":%d", config.Port))
 }
 

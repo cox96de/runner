@@ -9,13 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cox96de/runner/util"
-
-	"github.com/cox96de/runner/log"
-
 	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/lib"
+	"github.com/cox96de/runner/log"
+	"github.com/cox96de/runner/util"
 )
 
 const (
@@ -77,7 +75,7 @@ func (h *Handler) setCommand(c *command) (string, error) {
 	return "", errors.New("can not get a valid commandID")
 }
 
-func setRunAs(cmd *exec.Cmd, username string) error {
+func setUser(cmd *exec.Cmd, username string) error {
 	user, err := user.Lookup(username)
 	if err != nil {
 		return errors.WithMessagef(err, "failed to find user '%s'", username)
@@ -94,12 +92,17 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 	log.Infof("starting command on dir: %s", request.Dir)
 	cmd := exec.Command(request.Commands[0], request.Commands[1:]...)
 	if len(request.Dir) > 0 {
-		if _, err := os.Stat(request.Dir); err != nil && os.IsNotExist(err) {
+		stat, err := os.Stat(request.Dir)
+		switch {
+		case err == nil && !stat.IsDir():
+			return nil, errors.Errorf("dir is not a directory: %s", request.Dir)
+		case err != nil && os.IsNotExist(err):
 			log.Infof("dir is not exist, creating dir: %s", request.Dir)
-			// FIXME: the created dir should be owned by the `User` in the request.
 			if err := mkdirAll(request.Dir, os.ModePerm, request.Username); err != nil {
 				return nil, errors.WithMessagef(err, "failed to create dir: %s", request.Dir)
 			}
+		case err != nil:
+			return nil, errors.WithMessagef(err, "failed to stat dir: %s", request.Dir)
 		}
 	}
 	cmd.Dir = request.Dir
@@ -107,7 +110,7 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 		cmd.Env = request.Env
 	}
 	if len(request.Username) > 0 {
-		if err := setRunAs(cmd, request.Username); err != nil {
+		if err := setUser(cmd, request.Username); err != nil {
 			return nil, err
 		}
 	}

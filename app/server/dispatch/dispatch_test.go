@@ -74,7 +74,7 @@ func TestService_Dispatch(t *testing.T) {
 		t.Run("dep_is_success", func(t *testing.T) {
 			for _, execution := range createdPipeline.CreatedJobExecutions {
 				if jobIDNameMap[execution.JobID] == "job1" {
-					err := dbClient.UpdateJobExecution(context.Background(), &db.UpdateJobExecutionOption{
+					_, err := dbClient.UpdateJobExecution(context.Background(), &db.UpdateJobExecutionOption{
 						ID:     execution.ID,
 						Status: lo.ToPtr(api.StatusSucceeded),
 					})
@@ -98,7 +98,7 @@ func TestService_Dispatch(t *testing.T) {
 		t.Run("dep_is_not_success", func(t *testing.T) {
 			for _, execution := range createdPipeline.CreatedJobExecutions {
 				if jobIDNameMap[execution.JobID] == "job1" {
-					err := dbClient.UpdateJobExecution(context.Background(), &db.UpdateJobExecutionOption{
+					_, err := dbClient.UpdateJobExecution(context.Background(), &db.UpdateJobExecutionOption{
 						ID:     execution.ID,
 						Status: lo.ToPtr(api.StatusFailed),
 					})

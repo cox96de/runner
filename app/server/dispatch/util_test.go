@@ -13,6 +13,7 @@ import (
 
 func TestUpdateJobExecution(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
+	service := NewService(dbClient)
 	jobs, err := dbClient.CreateJobs(context.Background(), []*db.CreateJobOption{
 		{
 			PipelineID: 1,
@@ -30,7 +31,7 @@ func TestUpdateJobExecution(t *testing.T) {
 	assert.NilError(t, err)
 	execution := executions[0]
 	t.Run("to_queuing", func(t *testing.T) {
-		err = UpdateJobExecution(context.Background(), dbClient, &db.UpdateJobExecutionOption{
+		err = service.UpdateJobExecution(context.Background(), dbClient, &db.UpdateJobExecutionOption{
 			ID:     execution.ID,
 			Status: lo.ToPtr(api.StatusQueued),
 		})
@@ -39,7 +40,7 @@ func TestUpdateJobExecution(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, jobQueue.Status, api.StatusQueued)
 		t.Run("to_running", func(t *testing.T) {
-			err = UpdateJobExecution(context.Background(), dbClient, &db.UpdateJobExecutionOption{
+			err = service.UpdateJobExecution(context.Background(), dbClient, &db.UpdateJobExecutionOption{
 				ID:     execution.ID,
 				Status: lo.ToPtr(api.StatusRunning),
 			})
@@ -49,7 +50,7 @@ func TestUpdateJobExecution(t *testing.T) {
 			assert.Equal(t, jobQueue.Status, api.StatusRunning)
 		})
 		t.Run("to_completed", func(t *testing.T) {
-			err = UpdateJobExecution(context.Background(), dbClient, &db.UpdateJobExecutionOption{
+			err = service.UpdateJobExecution(context.Background(), dbClient, &db.UpdateJobExecutionOption{
 				ID:     execution.ID,
 				Status: lo.ToPtr(api.StatusFailed),
 			})

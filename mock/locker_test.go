@@ -17,7 +17,7 @@ func TestLocker_Lock(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, lock, false)
 	time.Sleep(time.Millisecond)
-	lock, err = locker.Lock(context.Background(), "key", "value", time.Millisecond)
+	lock, err = locker.Lock(context.Background(), "key", "value", time.Second)
 	assert.NilError(t, err)
 	assert.Equal(t, lock, true)
 	unlock, err := locker.Unlock(context.Background(), "key")

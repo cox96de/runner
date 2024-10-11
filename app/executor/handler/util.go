@@ -3,6 +3,7 @@ package handler
 import (
 	"os"
 	"os/user"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"syscall"
@@ -88,8 +89,23 @@ func mkdirAll2(path string, perm os.FileMode, username *User) error {
 		// Handle arguments like "foo/." by
 		// double-checking that directory doesn't exist.
 		dir, err1 := os.Lstat(path)
-		if err1 == nil && dir.IsDir() {
-			return nil
+		if err1 == nil {
+			if dir.IsDir() {
+				return nil
+			}
+			if dir.Mode()|os.ModeSymlink != 0 {
+				target, err := filepath.EvalSymlinks(path)
+				if err != nil {
+					return err
+				}
+				dir, err := os.Lstat(target)
+				if err != nil {
+					return err
+				}
+				if dir.IsDir() {
+					return nil
+				}
+			}
 		}
 		return err
 	}

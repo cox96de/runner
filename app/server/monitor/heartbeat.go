@@ -9,7 +9,6 @@ import (
 
 	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/api"
-	"github.com/cox96de/runner/app/server/dispatch"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/log"
 	"github.com/samber/lo"
@@ -41,10 +40,10 @@ func (s *Service) recycleHeartbeatTimeoutJob(ctx context.Context, jobExecutionID
 	defer span.End()
 	span.AddEvent("Recycle heartbeat timeout job")
 	err := s.db.Transaction(func(client *db.Client) error {
-		if err := completedUnfinishedSteps(ctx, client, jobExecutionID); err != nil {
+		if err := s.completedUnfinishedSteps(ctx, client, jobExecutionID); err != nil {
 			return errors.WithMessagef(err, "failed to complete unfinished steps of job execution %d", jobExecutionID)
 		}
-		return dispatch.UpdateJobExecution(ctx, client, &db.UpdateJobExecutionOption{
+		return s.dispatchService.UpdateJobExecution(ctx, client, &db.UpdateJobExecutionOption{
 			ID:     jobExecutionID,
 			Status: lo.ToPtr(api.StatusFailed),
 			Reason: &api.Reason{
@@ -60,7 +59,7 @@ func (s *Service) recycleHeartbeatTimeoutJob(ctx context.Context, jobExecutionID
 	return s.logstorageService.Archive(ctx, jobExecutionID)
 }
 
-func completedUnfinishedSteps(ctx context.Context, dbCli *db.Client, jobExecutionID int64) error {
+func (s *Service) completedUnfinishedSteps(ctx context.Context, dbCli *db.Client, jobExecutionID int64) error {
 	steps, err := dbCli.GetStepExecutionsByJobExecutionID(ctx, jobExecutionID)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get step executions")
@@ -69,12 +68,15 @@ func completedUnfinishedSteps(ctx context.Context, dbCli *db.Client, jobExecutio
 		if step.Status.IsCompleted() {
 			continue
 		}
-		err := dbCli.UpdateStepExecution(ctx, &db.UpdateStepExecutionOption{
+		updatedStepExecution, err := dbCli.UpdateStepExecution(ctx, &db.UpdateStepExecutionOption{
 			ID:     step.ID,
 			Status: lo.ToPtr(api.StatusSkipped),
 		})
 		if err != nil {
 			return errors.WithMessagef(err, "failed to update step execution %d", step.ID)
+		}
+		if err = s.eventhook.SendStepExecutionEvent(ctx, updatedStepExecution); err != nil {
+			return errors.WithMessagef(err, "failed to send step execution event %d", step.ID)
 		}
 	}
 	return nil

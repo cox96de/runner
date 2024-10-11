@@ -13,7 +13,7 @@ import (
 
 // UpdateJobExecution updates job execution status and job queue status.
 // It insert a new job queue if the job execution status is queued.
-func UpdateJobExecution(ctx context.Context, client *db.Client, option *db.UpdateJobExecutionOption) error {
+func (s *Service) UpdateJobExecution(ctx context.Context, client *db.Client, option *db.UpdateJobExecutionOption) error {
 	// TODO: Add more attribute.
 	ctx, span := trace.Start(ctx, "dispatch.update_job_execution", trace.WithAttributes(
 		attribute.Int64("job_execution_id", option.ID),
@@ -57,10 +57,14 @@ func UpdateJobExecution(ctx context.Context, client *db.Client, option *db.Updat
 				}
 			}
 		}
-		err := client.UpdateJobExecution(ctx, option)
+		updatedJob, err := client.UpdateJobExecution(ctx, option)
 		if err != nil {
 			return errors.WithMessage(err, "failed to update job execution")
 		}
-		return err
+		err = s.eventhook.SendJobExecutionEvent(ctx, updatedJob)
+		if err != nil {
+			return errors.WithMessage(err, "failed to send job execution event")
+		}
+		return nil
 	})
 }

@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"gotest.tools/v3/fs"
 
 	"github.com/cox96de/runner/api/httpserverclient"
@@ -27,7 +29,7 @@ import (
 func newMockServerHandler(t *testing.T) *httpserverclient.Client {
 	dbClient := mock.NewMockDB(t)
 	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), mock.NewMockLocker(),
-		logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())))
+		logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())), eventhook.NewService())
 	engine := gin.New()
 	h.RegisterRouter(engine.Group("/api/v1"))
 	server := httptest.NewServer(engine)

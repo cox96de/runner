@@ -39,9 +39,12 @@ func (h *Handler) UpdateStepExecution(ctx context.Context, request *api.UpdateSt
 		case (*request).Status.IsCompleted():
 			updateStepExecutionOption.CompletedAt = lo.ToPtr(time.Now())
 		}
-		err := h.db.UpdateStepExecution(ctx, updateStepExecutionOption)
+		updatedStep, err := h.db.UpdateStepExecution(ctx, updateStepExecutionOption)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "failed to update step execution '%d'", request.StepExecutionID)
+		}
+		if err = h.eventhook.SendStepExecutionEvent(ctx, updatedStep); err != nil {
+			return nil, errors.WithMessagef(err, "failed to send step execution event '%d'", request.StepExecutionID)
 		}
 	}
 	return &api.UpdateStepExecutionResponse{

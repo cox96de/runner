@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"gotest.tools/v3/fs"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -29,7 +31,7 @@ func TestNewClient(t *testing.T) {
 	locker := mock.NewMockLocker()
 	redis := mock.NewMockRedis(t)
 	h := handler.NewHandler(dbClient, pipelineService, dispatchService, locker, logstorage.NewService(redis,
-		logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())))
+		logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())), eventhook.NewService())
 	engine := gin.New()
 	h.RegisterRouter(engine.Group("/api/v1"))
 	server := httptest.NewServer(engine)
@@ -125,12 +127,24 @@ func TestNewClient(t *testing.T) {
 			assert.Assert(t, len(listJobExecutionsResponse.Jobs) == 1)
 		})
 		t.Run("GetJobExecution", func(t *testing.T) {
-			getJobExecutionResponse, err := client.GetJobExecution(ctx, &api.GetJobExecutionRequest{
-				JobExecutionID: requestedJob.Execution.ID,
+			t.Run("normal", func(t *testing.T) {
+				getJobExecutionResponse, err := client.GetJobExecution(ctx, &api.GetJobExecutionRequest{
+					JobExecutionID: requestedJob.Execution.ID,
+				})
+				assert.NilError(t, err)
+				assert.Assert(t, getJobExecutionResponse != nil)
+				assert.Assert(t, getJobExecutionResponse.JobExecution.ID == requestedJob.Execution.ID)
 			})
-			assert.NilError(t, err)
-			assert.Assert(t, getJobExecutionResponse != nil)
-			assert.Assert(t, getJobExecutionResponse.JobExecution.ID == requestedJob.Execution.ID)
+			t.Run("with_step_execution", func(t *testing.T) {
+				getJobExecutionResponse, err := client.GetJobExecution(ctx, &api.GetJobExecutionRequest{
+					JobExecutionID:    requestedJob.Execution.ID,
+					WithStepExecution: lo.ToPtr(true),
+				})
+				assert.NilError(t, err)
+				assert.Assert(t, getJobExecutionResponse != nil)
+				assert.Assert(t, getJobExecutionResponse.JobExecution.ID == requestedJob.Execution.ID)
+				assert.Assert(t, len(getJobExecutionResponse.JobExecution.Steps) > 0)
+			})
 		})
 	})
 	t.Run("Cancel", func(t *testing.T) {

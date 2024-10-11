@@ -71,7 +71,7 @@ func (h *Handler) UpdateJobExecution(ctx context.Context, request *api.UpdateJob
 				logger.WithError(err).Error("failed to archive logs")
 			}
 		}
-		err := dispatch.UpdateJobExecution(ctx, h.db, updateJobExecutionOption)
+		err := h.dispatchService.UpdateJobExecution(ctx, h.db, updateJobExecutionOption)
 		if err != nil {
 			return nil, errors.WithMessagef(err, "failed to update job execution '%d'", request.JobExecutionID)
 		}
@@ -114,6 +114,13 @@ func (h *Handler) GetJobExecution(ctx context.Context, in *api.GetJobExecutionRe
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to get job execution '%d'", in.JobExecutionID)
 	}
-	jobExecution, err := db.PackJobExecution(jobExecutionPO, nil)
+	var steps []*db.StepExecution
+	if in.WithStepExecution != nil && *in.WithStepExecution {
+		steps, err = h.db.GetStepExecutionsByJobExecutionID(ctx, in.JobExecutionID)
+		if err != nil {
+			return nil, errors.WithMessagef(err, "failed to get step executions")
+		}
+	}
+	jobExecution, err := db.PackJobExecution(jobExecutionPO, steps)
 	return &api.GetJobExecutionResponse{JobExecution: jobExecution}, err
 }

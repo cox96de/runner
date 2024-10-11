@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/cox96de/runner/lib"
-
-	"github.com/cox96de/runner/util"
+	"github.com/cockroachdb/errors"
 
 	"github.com/cox96de/runner/app/executor/executorpb"
+	"github.com/cox96de/runner/lib"
+	"github.com/cox96de/runner/util"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -48,8 +50,10 @@ func TestHandler_StartCommand(t *testing.T) {
 				Dir:      dir,
 			})
 		assert.NilError(t, err)
-		// TODO: wait for the command to finish
-		time.Sleep(time.Second)
+		_, err = client.WaitCommand(context.Background(), &executorpb.WaitCommandRequest{
+			CommandID: resp.CommandID,
+		})
+		assert.NilError(t, err)
 		commandID := resp.CommandID
 		assert.Assert(t, resp.Status.Pid > 0)
 		t.Run("get_log", func(t *testing.T) {
@@ -102,13 +106,84 @@ func TestHandler_StartCommand(t *testing.T) {
 			})
 		assert.ErrorContains(t, err, "not found")
 	})
-	t.Run("emtpy_command", func(t *testing.T) {
+	t.Run("empty_command", func(t *testing.T) {
 		_, err := client.StartCommand(context.Background(),
 			&executorpb.StartCommandRequest{
 				Commands: []string{},
 				Dir:      "/tmp",
 			})
 		assert.ErrorContains(t, err, "no command provided")
+	})
+	t.Run("workdir", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("skip on windows")
+		}
+		t.Run("with_dir", func(t *testing.T) {
+			dir := fs.NewDir(t, "test")
+			target := filepath.Join(dir.Path(), "to", "be", "created")
+			_, err := client.StartCommand(context.Background(),
+				&executorpb.StartCommandRequest{
+					Commands: []string{"ls", "-alh"},
+					Dir:      target,
+				})
+			assert.NilError(t, err)
+			stat, err := os.Stat(target)
+			assert.NilError(t, err)
+			assert.Assert(t, stat.IsDir())
+		})
+		t.Run("workdir_is_file", func(t *testing.T) {
+			dir := fs.NewDir(t, "test", fs.WithFile("file", "content"))
+			target := filepath.Join(dir.Path(), "file")
+			_, err := client.StartCommand(context.Background(),
+				&executorpb.StartCommandRequest{
+					Commands: []string{"ls", "-alh"},
+					Dir:      target,
+				})
+			assert.ErrorContains(t, err, "is not a directory")
+		})
+	})
+	t.Run("username", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("skip on windows")
+		}
+		t.Run("non_exists", func(t *testing.T) {
+			_, err := client.StartCommand(context.Background(),
+				&executorpb.StartCommandRequest{
+					Commands: []string{"ls", "-alh"},
+					Username: "nonexists",
+				})
+			assert.ErrorContains(t, err, "failed to find user")
+		})
+		t.Run("with_username", func(t *testing.T) {
+			t.Skip("don't support in github action")
+			if runtime.GOOS == "windows" {
+				t.Skip("skip on windows")
+			}
+			username := "ci_test"
+			_, err := user.Lookup(username)
+
+			var userError user.UnknownUserError
+			if err != nil && errors.As(err, &userError) {
+				output, err := Run("useradd", username)
+				assert.NilError(t, err, output)
+				t.Cleanup(func() {
+					_, _ = Run("userdel", username)
+				})
+			}
+			startCommandResp, err := client.StartCommand(context.Background(),
+				&executorpb.StartCommandRequest{
+					Commands: []string{"whoami"},
+					Username: username,
+				})
+			assert.NilError(t, err)
+			commandLogResp, err := client.GetCommandLog(context.Background(), &executorpb.GetCommandLogRequest{
+				CommandID: startCommandResp.CommandID,
+			})
+			assert.NilError(t, err)
+			log, err := executorpb.ReadAllFromCommandLog(commandLogResp)
+			assert.NilError(t, err)
+			assert.Equal(t, log, username+"\n")
+		})
 	})
 }
 
@@ -304,4 +379,18 @@ func Test_newCommand(t *testing.T) {
 	err := c.Start()
 	assert.NilError(t, err)
 	c.Wait()
+}
+
+// Run starts a command and waits.
+// The output includes its stdout & stderr. err is not nil when an error occurred or the exit code is not 0.
+func Run(command string, args ...string) (output string, err error) {
+	cmd := exec.Command(command, args...)
+	ouptut, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(ouptut), errors.WithMessage(err, "failed to run command")
+	}
+	if exitCode := cmd.ProcessState.ExitCode(); exitCode != 0 {
+		return string(ouptut), errors.Errorf("command exited with code %d", exitCode)
+	}
+	return string(ouptut), nil
 }

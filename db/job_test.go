@@ -89,11 +89,12 @@ func TestClient_UpdateJobExecution(t *testing.T) {
 		},
 	})
 	assert.NilError(t, err)
-	err = db.UpdateJobExecution(context.Background(), &UpdateJobExecutionOption{
+	updatedJob, err := db.UpdateJobExecution(context.Background(), &UpdateJobExecutionOption{
 		ID:     executions[0].ID,
 		Status: lo.ToPtr(api.StatusRunning),
 	})
 	assert.NilError(t, err)
+	assert.Equal(t, api.StatusRunning, updatedJob.Status)
 	execution, err := db.GetJobExecution(context.Background(), executions[0].ID)
 	assert.NilError(t, err)
 	assert.Equal(t, api.StatusRunning, execution.Status)
