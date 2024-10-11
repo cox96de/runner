@@ -42,6 +42,13 @@ spec:
             - "--engine.kube.executor_image={{.Values.kube.executorImage}}"
             - "--engine.kube.executor_path={{.Values.kube.executorPath}}"
             {{- end}}
+            {{- if eq "vm" .Values.engine}}
+            - "--engine.vm.runtime_image={{.Values.vm.runtimeImage}}"
+            - "--engine.vm.executor_path={{.Values.vm.executorPath}}"
+            - "--engine.vm.namespace={{.Values.vm.executorNamespace}}"
+            - "--engine.vm.volumes={{.Values.vm.volumes}}"
+            - "--engine.vm.image_root={{.Values.vm.imageRoot}}"
+            {{- end}}
             - "--label={{.Values.label}}"
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

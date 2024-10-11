@@ -15,10 +15,15 @@ label: ""
 engine: "kube"
 ## The config for kube engine. Only need to set when engine is kube.
 kube:
-  executorNamespace: runner-agent-executor
+  executorNamespace: "runner-agent-executor"
   executorImage: "cox96de/runner-executor:latest"
   executorPath: "/executor"
-
+vm:
+  runtimeImage: "cox96de/runner-vm-runtime:latest"
+  executorPath: "/executor"
+  executorNamespace: "runner-agent-executor"
+  volumes: ""
+  imageRoot: "/images"
 
 ### Common configuration section for kubernetes.
 ## This is for the secretes for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/

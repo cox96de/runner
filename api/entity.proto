@@ -103,6 +103,7 @@ message RunsOn {
   //@gotags: validate:"required"
   string label = 1;
   Docker docker = 2;
+  VM vm = 3 [(go.field).name = "VM"];
 }
 
 message Docker {
@@ -135,6 +136,10 @@ message VolumeMount {
   string name = 1;
   bool read_only = 2;
   string mount_path = 3;
+}
+
+message VM {
+  string image = 1;
 }
 
 // StepDSL represents a step definition.

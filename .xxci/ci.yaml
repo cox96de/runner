@@ -2,7 +2,7 @@ jobs:
   compile_test:
     name: "Compile"
     runs-on:
-      container-image: "registry.houzhiqiang.cn/golang:1.22"
+      container-image: "registry.houzhiqiang.cn/golang:1.23"
     steps:
       - name: "build"
         run:

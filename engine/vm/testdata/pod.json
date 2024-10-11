@@ -1,0 +1,73 @@
+{
+  "metadata": {
+    "name": "vm-1",
+    "creationTimestamp": null
+  },
+  "spec": {
+    "volumes": [
+      {
+        "name": "mnt",
+        "hostPath": {
+          "path": "/root/mnt"
+        }
+      }
+    ],
+    "containers": [
+      {
+        "name": "vm-runtime",
+        "image": "registry.houzhiqiang.cn/runner-vm-runtime:latest",
+        "args": [
+          "--",
+          "qemu-system-x86_64",
+          "-nodefaults",
+          "--nographic",
+          "-display",
+          "none",
+          "-machine",
+          "type=q35,usb=off",
+          "--enable-kvm",
+          "-cpu",
+          "host",
+          "-smp",
+          "2,sockets=1,cores=2,threads=1",
+          "-m",
+          "1024M",
+          "-device",
+          "virtio-balloon-pci,id=balloon0",
+          "-drive",
+          "file=/mnt/debian-11.qcow2,format=qcow2,if=virtio,aio=threads,media=disk,cache=unsafe,snapshot=on",
+          "-fsdev",
+          "local,security_model=passthrough,id=fsdev0,path=/runner",
+          "-device",
+          "virtio-9p-pci,fsdev=fsdev0,mount_tag=_executor",
+          "-serial",
+          "chardev:serial0",
+          "-chardev",
+          "socket,id=serial0,server=on,wait=off,path=/tmp/console.sock"
+        ],
+        "env": [
+          {
+            "name": "CLOUD_INIT_USER_DATA",
+            "value": "#cloud-config\nruncmd:\n    - - sh\n      - -c\n      - while true; do if [ -f /executor/executor ]; then nohup /executor/executor --port 1234 \u003e /var/executor.log 2\u003e\u00261 \u0026 break; else echo \"Executor binary file not found. Retrying in 1 second...\"; sleep 1; fi; done\nmounts:\n    - - _executor\n      - /executor\n      - 9p\n      - trans=virtio,version=9p2000.L,msize=104857600\n      - \"0\"\n      - \"0\"\n"
+          },
+          {
+            "name": "CLOUD_INIT_META_DATA",
+            "value": "instance-id: vm-runner\nlocal-hostname: vm-runner\n"
+          }
+        ],
+        "resources": {},
+        "volumeMounts": [
+          {
+            "name": "mnt",
+            "mountPath": "/mnt"
+          }
+        ],
+        "imagePullPolicy": "Always",
+        "securityContext": {
+          "privileged": true
+        }
+      }
+    ]
+  },
+  "status": {}
+}

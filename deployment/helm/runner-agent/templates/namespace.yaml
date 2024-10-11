@@ -6,13 +6,13 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: {{.Values.kube.executorNamespace}}
+  name: {{include "executor.namespace" .}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{.Values.serviceAccount.name}}
-  namespace: {{.Values.kube.executorNamespace}}
+  namespace: {{include "executor.namespace" .}}
 rules:
   - apiGroups:
       - ""
@@ -43,7 +43,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{.Values.serviceAccount.name}}
-  namespace: {{.Values.kube.executorNamespace}}
+  namespace: {{include "executor.namespace" .}}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role

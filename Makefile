@@ -10,7 +10,7 @@ format:
 
 .PHONY: lint
 lint:
-	golangci-lint run --new-from-rev=origin/master --timeout=10m --go=1.21
+	golangci-lint run --new-from-rev=origin/master --timeout=10m --go=1.23
 build: build_executor build_server build_agent
 build_executor:
 	mkdir -p output

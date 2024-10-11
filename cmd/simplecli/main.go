@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/fatih/color"
@@ -22,11 +24,21 @@ var greenColor = color.New(color.FgGreen).SprintFunc()
 func main() {
 	serverAddr := ""
 	flagSet := pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
-	flagSet.StringVarP(&serverAddr, "server", "s", "http://127.0.0.1:8080", "server address")
+	flagSet.StringVarP(&serverAddr, "server", "s", "", "server address")
 	err := flagSet.Parse(os.Args[1:])
 	checkErr(err, "failed to parse flags")
 	pipelineFiles := flagSet.Args()
 	client := composeClient(serverAddr)
+	sig := make(chan os.Signal, 1)
+	stop := make(chan struct{}, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sig
+		close(stop)
+		log.Info("signal received")
+		log.Info("try again to force exit")
+		<-sig
+	}()
 	ctx := context.Background()
 	for _, file := range pipelineFiles {
 		fileContent, err := os.ReadFile(file)
@@ -40,7 +52,7 @@ func main() {
 		checkErr(err, "failed to create pipeline")
 		color.Green("########### pipeline '%d' created ###########\n", pipeline.Pipeline.ID)
 		for _, job := range pipeline.Pipeline.Jobs {
-			if err := watchJob(ctx, client, job); err != nil {
+			if err := watchJob(ctx, client, job, stop); err != nil {
 				log.Errorf("%+v", err)
 			}
 		}
@@ -53,9 +65,22 @@ func composeClient(serverAddr string) api.ServerClient {
 	return client
 }
 
-func watchJob(ctx context.Context, client api.ServerClient, job *api.Job) error {
+func watchJob(ctx context.Context, client api.ServerClient, job *api.Job, stop chan struct{}) error {
 	var jobExecution *api.JobExecution
 	status := api.StatusCreated
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go func() {
+		select {
+		case <-stop:
+			_, err := client.CancelJobExecution(ctx, &api.CancelJobExecutionRequest{JobExecutionID: jobExecution.ID})
+			if err != nil {
+				log.Errorf("failed to cancel job execution: %v", err)
+			}
+		case <-ctx.Done():
+			return
+		}
+	}()
 wait:
 	for {
 		select {
@@ -83,7 +108,7 @@ wait:
 	}
 	// Fetch logs.
 	for _, step := range job.Steps {
-		err := watchStep(ctx, client, jobExecution, step)
+		err := watchStep(ctx, client, jobExecution, step, stop)
 		if err != nil {
 			return err
 		}
@@ -91,10 +116,18 @@ wait:
 	return nil
 }
 
-func watchStep(ctx context.Context, client api.ServerClient, jobExecution *api.JobExecution, step *api.Step) error {
+func watchStep(ctx context.Context, client api.ServerClient, jobExecution *api.JobExecution, step *api.Step, stop chan struct{}) error {
 	offset := int64(0)
 	for {
 		select {
+		case <-stop:
+			log.Infof("cancel job execution")
+			_, err := client.CancelJobExecution(context.Background(),
+				&api.CancelJobExecutionRequest{JobExecutionID: jobExecution.ID})
+			if err != nil {
+				log.Errorf("failed to cancel job execution: %v", err)
+			}
+			return nil
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(time.Second):
@@ -119,7 +152,7 @@ func watchStep(ctx context.Context, client api.ServerClient, jobExecution *api.J
 				}
 				stepExecution := getStepExecutionResponse.StepExecution
 				if stepExecution.Status.IsCompleted() {
-					color.Green("########### step execution  '%d' exit with status: %s, exit code: %d ###########\n", stepExecution.ID,
+					color.Green("########### step '%s' execution '%d' exit with status: %s, exit code: %d ###########\n", step.Name, stepExecution.ID,
 						stepExecution.Status, stepExecution.ExitCode)
 					return nil
 				}

@@ -82,6 +82,37 @@ func GetAgentCommand() *cobra.Command {
 		FlagUsage: "the namespace of executor pod created (kube engine)",
 		Env:       "RUNNER_ENGINE_KUBE_NAMESPACE",
 	}))
+
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
+		ArgKey:    "engine.vm.runtime_image",
+		FlagName:  "engine.vm.runtime_image",
+		FlagUsage: "the image of executor for vm engine",
+		Env:       "RUNNER_ENGINE_VM_EXECUTOR_IMAGE",
+	}))
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
+		ArgKey:    "engine.vm.executor_path",
+		FlagName:  "engine.vm.executor_path",
+		FlagUsage: "the executor binary path in runtime image (vm engine)",
+		Env:       "RUNNER_ENGINE_VM_EXECUTOR_PATH",
+	}))
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
+		ArgKey:    "engine.vm.namespace",
+		FlagName:  "engine.vm.namespace",
+		FlagUsage: "the namespace of executor pod created for (vm engine)",
+		Env:       "RUNNER_ENGINE_VM_NAMESPACE",
+	}))
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
+		ArgKey:    "engine.vm.volumes",
+		FlagName:  "engine.vm.volumes",
+		FlagUsage: "the volume and mounts for each executor pod (vm engine)",
+		Env:       "RUNNER_ENGINE_VM_VOLUMES",
+	}))
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
+		ArgKey:    "engine.vm.image_root",
+		FlagName:  "engine.vm.image_root",
+		FlagUsage: "the image root path in executor pod (vm engine)",
+		Env:       "RUNNER_ENGINE_VM_IMAGE_ROOT",
+	}))
 	return c
 }
 
