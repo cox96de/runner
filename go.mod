@@ -1,8 +1,6 @@
 module github.com/cox96de/runner
 
-go 1.22
-
-toolchain go1.22.3
+go 1.23
 
 require (
 	github.com/alicebob/miniredis/v2 v2.31.1
@@ -11,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.51.11
 	github.com/bytedance/go-tagexpr/v2 v2.9.8
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/cloudevents/sdk-go/v2 v2.15.2
+	github.com/cloudevents/sdk-go/v2 v2.12.0
 	github.com/cockroachdb/errors v1.11.3
 	github.com/cox96de/containervm v0.0.3-0.20240626160223-a1a6cfc63204
 	github.com/fatih/color v1.17.0
@@ -22,6 +20,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/modern-go/reflect2 v1.0.2
 	github.com/natessilva/dag v0.0.0-20180124060714-7194b8dcc5c4
+	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/extra/redisotel/v9 v9.5.3
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/rs/xid v1.5.0
@@ -128,7 +127,6 @@ require (
 	github.com/nyaruka/phonenumbers v1.0.55 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/redis/go-redis/extra/rediscmd/v9 v9.5.3 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
@@ -161,7 +159,7 @@ require (
 	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/term v0.24.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect

@@ -2,6 +2,9 @@ package vm
 
 import (
 	"context"
+	"fmt"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/cox96de/runner/api"
 
@@ -13,16 +16,14 @@ import (
 )
 
 type Option struct {
-	// ExecutorImage is the image of contains the executor binary.
-	ExecutorImage string
 	// ExecutorPath is the path of the executor binary in the executor image.
 	ExecutorPath string
 	// KubeConfig is the kube config used to connect to the kubernetes cluster.
 	// It's required when UsePortForward is true.
 	KubeConfig *rest.Config
-	// UsePortForward is true, the runner will use port-forward to connect to the executor.
-	// It is useful when the runner is running outside the kubernetes cluster.
-	UsePortForward bool
+	//// UsePortForward is true, the runner will use port-forward to connect to the executor.
+	//// It is useful when the runner is running outside the kubernetes cluster.
+	//UsePortForward bool
 	// Namespace is the namespace to create the runner pod.
 	Namespace string
 	// RuntimeImage is the image of contains the vm runtime binary and qemu binary.
@@ -30,28 +31,34 @@ type Option struct {
 	// VMImageRoot is the root directory in host witch contains qcow2 files.
 	// The VMImageRoot will be mounted to the runner pod.
 	VMImageRoot string
+
+	Volumes []string
 }
 type Engine struct {
-	client         kubernetes.Interface
-	executorImage  string
-	executorPath   string
-	namespace      string
-	kubeConfig     *rest.Config
-	usePortForward bool
-	runtimeImage   string
-	vmImageRoot    string
+	client              kubernetes.Interface
+	executorPath        string
+	namespace           string
+	kubeConfig          *rest.Config
+	runtimeImage        string
+	vmImageRoot         string
+	runtimeVolumes      []corev1.Volume
+	runtimeVolumeMounts []corev1.VolumeMount
 }
 
 func NewEngine(client kubernetes.Interface, opt *Option) (*Engine, error) {
+	volumes, volumeMounts, err := parseVolumes(opt.Volumes)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to parse volumes")
+	}
 	return &Engine{
-		client:         client,
-		executorImage:  opt.ExecutorImage,
-		executorPath:   opt.ExecutorPath,
-		namespace:      opt.Namespace,
-		kubeConfig:     opt.KubeConfig,
-		usePortForward: opt.UsePortForward,
-		runtimeImage:   opt.RuntimeImage,
-		vmImageRoot:    opt.VMImageRoot,
+		client:              client,
+		executorPath:        opt.ExecutorPath,
+		namespace:           opt.Namespace,
+		kubeConfig:          opt.KubeConfig,
+		runtimeImage:        opt.RuntimeImage,
+		vmImageRoot:         opt.VMImageRoot,
+		runtimeVolumeMounts: volumeMounts,
+		runtimeVolumes:      volumes,
 	}, nil
 }
 
@@ -60,6 +67,21 @@ func (e *Engine) Ping(ctx context.Context) error {
 	return err
 }
 
-func (e *Engine) CreateRunner(ctx context.Context, option *api.Job) (engine.Runner, error) {
-	return nil, errors.New("not implemented")
+func (e *Engine) CreateRunner(ctx context.Context, logProvider engine.LogProvider, spec *api.Job) (engine.Runner, error) {
+	if spec.RunsOn == nil || spec.RunsOn.VM == nil {
+		return nil, errors.Errorf("VM spec is required")
+	}
+	c := newCompiler(e.runtimeImage,
+		e.executorPath, e.vmImageRoot, e.runtimeVolumeMounts, e.runtimeVolumes)
+	compile, err := c.Compile(fmt.Sprintf("vm-%d", spec.Execution.ID), spec.RunsOn)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to compile compile vm-runner")
+	}
+	r := &Runner{
+		client:    e.client,
+		pod:       compile.pod,
+		port:      int32(executorPort),
+		namespace: e.namespace,
+	}
+	return r, nil
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/cox96de/runner/engine/internal"
+
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -15,18 +17,14 @@ import (
 
 	"github.com/cockroachdb/errors"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
-	watchtool "k8s.io/client-go/tools/watch"
 )
 
 type Runner struct {
 	defaultContainer   string
 	client             kubernetes.Interface
-	pod                *v1.Pod
+	pod                *corev1.Pod
 	executorPortMap    map[string]int32
 	portForwardPortMap map[string]int32
 	namespace          string
@@ -40,7 +38,7 @@ func (r *Runner) Start(ctx context.Context) (startErr error) {
 		return errors.WithStack(err)
 	}
 	r.pod = createdPod
-	err = r.waitPodReady(ctx)
+	r.pod, err = internal.WaitPodReady(ctx, r.client, r.pod)
 	if err != nil {
 		// Clean up the created kube resources if about to fail to avoid resource leak.
 		if cleanErr := r.clean(ctx); cleanErr != nil {
@@ -81,42 +79,6 @@ func (r *Runner) waitPortForwarderReady(ctx context.Context) error {
 			}
 		}
 		return nil
-	}
-}
-
-func (r *Runner) waitPodReady(ctx context.Context) error {
-	watcher, err := watchtool.NewRetryWatcher(r.pod.ResourceVersion, &cache.ListWatch{
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-			return r.client.CoreV1().Pods(r.namespace).Watch(ctx, metav1.ListOptions{
-				FieldSelector: "metadata.name=" + r.pod.Name,
-			})
-		},
-	})
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	defer watcher.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return errors.WithStack(ctx.Err())
-		case e := <-watcher.ResultChan():
-			switch e.Type {
-			case watch.Modified:
-				pod := e.Object.(*v1.Pod)
-				switch pod.Status.Phase {
-				case corev1.PodPending:
-					continue
-				case corev1.PodRunning:
-					r.pod = pod
-					return nil
-				case corev1.PodSucceeded, corev1.PodFailed:
-					return errors.Errorf("pod is %s", pod.Status.Phase)
-				default:
-					return errors.Errorf("unknown pod phase %s", pod.Status.Phase)
-				}
-			}
-		}
 	}
 }
 
