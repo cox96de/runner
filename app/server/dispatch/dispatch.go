@@ -21,8 +21,8 @@ type Service struct {
 	eventhook *eventhook.Service
 }
 
-func NewService(dbClient *db.Client) *Service {
-	return &Service{dbClient: dbClient}
+func NewService(dbClient *db.Client, eventhook *eventhook.Service) *Service {
+	return &Service{dbClient: dbClient, eventhook: eventhook}
 }
 
 // Dispatch dispatches the jobs and updates the job executions.

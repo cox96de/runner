@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"gorm.io/gorm/clause"
-
 	"github.com/cox96de/runner/api"
 
 	"github.com/samber/lo"
@@ -204,8 +202,8 @@ func (c *Client) CreateStepExecutions(ctx context.Context, options []*CreateStep
 	return executions, nil
 }
 
-// GetStepExecutionsID returns step executions by id.
-func (c *Client) GetStepExecutionsID(ctx context.Context, id int64) (*StepExecution, error) {
+// GetStepExecution returns step executions by id.
+func (c *Client) GetStepExecution(ctx context.Context, id int64) (*StepExecution, error) {
 	var step StepExecution
 	if err := c.conn.WithContext(ctx).First(&step, "id = ?", id).Error; err != nil {
 		return nil, err
@@ -243,19 +241,22 @@ type UpdateStepExecutionOption struct {
 
 // UpdateStepExecution updates a step execution.
 func (c *Client) UpdateStepExecution(ctx context.Context, option *UpdateStepExecutionOption) (*StepExecution, error) {
-	updateField := map[string]interface{}{}
+	stepExecution, err := c.GetStepExecution(ctx, option.ID)
+	if err != nil {
+		return nil, err
+	}
 	if option.Status != nil {
-		updateField["status"] = *option.Status
+		stepExecution.Status = *option.Status
 	}
 	if option.ExitCode != nil {
-		updateField["exit_code"] = *option.ExitCode
+		stepExecution.ExitCode = *option.ExitCode
 	}
 	if option.StartedAt != nil {
-		updateField["started_at"] = *option.StartedAt
+		stepExecution.StartedAt = option.StartedAt
 	}
 	if option.CompletedAt != nil {
-		updateField["completed_at"] = *option.CompletedAt
+		stepExecution.CompletedAt = option.CompletedAt
 	}
-	updated := &StepExecution{}
-	return updated, c.conn.WithContext(ctx).Model(&updated).Clauses(clause.Returning{}).Where("id = ?", option.ID).Updates(updateField).Error
+	err = c.conn.WithContext(ctx).Model(&stepExecution).Where("id = ?", option.ID).Save(stepExecution).Error
+	return stepExecution, err
 }

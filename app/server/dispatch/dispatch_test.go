@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/db"
 	"github.com/samber/lo"
@@ -30,7 +32,7 @@ func TestService_Dispatch(t *testing.T) {
 			},
 		})
 		assert.NilError(t, err)
-		s := NewService(dbClient)
+		s := NewService(dbClient, eventhook.NewService(eventhook.NewNopSender()))
 		err = s.Dispatch(context.Background(), createdPipeline.CreatedJobs, createdPipeline.CreatedJobExecutions)
 		assert.NilError(t, err)
 		for _, jobExecution := range createdPipeline.CreatedJobExecutions {
@@ -54,7 +56,7 @@ func TestService_Dispatch(t *testing.T) {
 			},
 		})
 		assert.NilError(t, err)
-		s := NewService(dbClient)
+		s := NewService(dbClient, eventhook.NewService(eventhook.NewNopSender()))
 		err = s.Dispatch(context.Background(), createdPipeline.CreatedJobs, createdPipeline.CreatedJobExecutions)
 		assert.NilError(t, err)
 		jobIDNameMap := lo.SliceToMap(createdPipeline.CreatedJobs, func(item *db.Job) (int64, string) {

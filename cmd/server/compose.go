@@ -1,7 +1,9 @@
 package main
 
 import (
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cockroachdb/errors"
+	"github.com/cox96de/runner/app/server/eventhook"
 	"github.com/cox96de/runner/app/server/logstorage"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/external/redis"
@@ -105,4 +107,21 @@ func ComposeRedis(r *Redis) (*redis.Client, error) {
 		ConnMaxLifetime:       r.ConnMaxLifetime,
 	})
 	return redis.NewClient(conn)
+}
+
+func ComposeCloudEventsClient(c *Event) (eventhook.Sender, error) {
+	switch {
+	case c != nil && len(c.HTTPEndPoint) > 0:
+		proto, err := cloudevents.NewHTTP(cloudevents.WithTarget(c.HTTPEndPoint))
+		if err != nil {
+			return nil, errors.WithMessagef(err, "failed to create http client sender")
+		}
+		http, err := cloudevents.NewClient(proto, cloudevents.WithTimeNow(), cloudevents.WithUUIDs())
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create http client event producer")
+		}
+		return http, nil
+	default:
+		return eventhook.NewNopSender(), nil
+	}
 }

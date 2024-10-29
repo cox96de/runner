@@ -14,7 +14,8 @@ import (
 )
 
 func TestHandler_UpdateStepExecution(t *testing.T) {
-	handler := NewHandler(mock.NewMockDB(t), nil, nil, nil, nil, eventhook.NewService())
+	handler := NewHandler(mock.NewMockDB(t), nil, nil, nil, nil,
+		eventhook.NewService(eventhook.NewNopSender()))
 	executions, err := handler.db.CreateStepExecutions(context.Background(), []*db.CreateStepExecutionOption{
 		{
 			JobExecutionID: 1,

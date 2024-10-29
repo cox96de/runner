@@ -16,7 +16,7 @@ func (h *Handler) UpdateStepExecution(ctx context.Context, request *api.UpdateSt
 	logger := log.ExtractLogger(ctx).WithFields(log.Fields{
 		"step_execution_id": request.StepExecutionID,
 	})
-	stepExecution, err := h.db.GetStepExecutionsID(ctx, request.StepExecutionID)
+	stepExecution, err := h.db.GetStepExecution(ctx, request.StepExecutionID)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to get step execution '%d'", request.StepExecutionID)
 	}
@@ -53,7 +53,7 @@ func (h *Handler) UpdateStepExecution(ctx context.Context, request *api.UpdateSt
 }
 
 func (h *Handler) GetStepExecution(ctx context.Context, request *api.GetStepExecutionRequest) (*api.GetStepExecutionResponse, error) {
-	stepExecution, err := h.db.GetStepExecutionsID(ctx, request.StepExecutionID)
+	stepExecution, err := h.db.GetStepExecution(ctx, request.StepExecutionID)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to get step execution '%d'", request.StepExecutionID)
 	}

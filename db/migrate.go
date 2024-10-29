@@ -1,14 +1,9 @@
 package db
 
 import (
-	"context"
-	"strings"
-	"time"
-
 	"github.com/cockroachdb/errors"
-	"github.com/samber/lo"
+	"github.com/cox96de/runner/util"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func getAllModels() []interface{} {
@@ -34,29 +29,7 @@ func migrateModels(conn *gorm.DB, models ...interface{}) error {
 	return nil
 }
 
-type recorderLogger struct {
-	logger.Interface
-	Statements []string
-}
-
-func (r *recorderLogger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
-	sql, _ := fc()
-	r.Statements = append(r.Statements, sql)
-}
-
 // ToMigrateSQL generates DDL SQL for the models.
 func (c *Client) ToMigrateSQL() ([]string, error) {
-	l := &recorderLogger{
-		Interface: logger.Default.LogMode(logger.Silent),
-	}
-	session := c.conn.Session(&gorm.Session{DryRun: true, Logger: l})
-	migrator := session.Migrator()
-	err := migrator.AutoMigrate(getAllModels()...)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to migrate")
-	}
-	filter := lo.Filter(l.Statements, func(item string, _ int) bool {
-		return strings.HasPrefix(item, "CREATE") || strings.HasPrefix(item, "ALTER")
-	})
-	return filter, nil
+	return util.GenerateMigrateSQL(c.conn, getAllModels()...)
 }

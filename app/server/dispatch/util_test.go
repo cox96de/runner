@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/app/server/eventhook"
+
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/mock"
@@ -13,7 +15,7 @@ import (
 
 func TestUpdateJobExecution(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
-	service := NewService(dbClient)
+	service := NewService(dbClient, eventhook.NewService(eventhook.NewNopSender()))
 	jobs, err := dbClient.CreateJobs(context.Background(), []*db.CreateJobOption{
 		{
 			PipelineID: 1,
