@@ -26,12 +26,13 @@ import (
 
 func TestNewClient(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
+	eventHook := eventhook.NewService(eventhook.NewNopSender())
 	pipelineService := pipeline.NewService(dbClient)
-	dispatchService := dispatch.NewService(dbClient)
+	dispatchService := dispatch.NewService(dbClient, eventHook)
 	locker := mock.NewMockLocker()
 	redis := mock.NewMockRedis(t)
 	h := handler.NewHandler(dbClient, pipelineService, dispatchService, locker, logstorage.NewService(redis,
-		logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())), eventhook.NewService())
+		logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())), eventHook)
 	engine := gin.New()
 	h.RegisterRouter(engine.Group("/api/v1"))
 	server := httptest.NewServer(engine)

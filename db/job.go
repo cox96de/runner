@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"gorm.io/gorm/clause"
-
 	"github.com/cox96de/runner/api"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -241,23 +239,25 @@ type UpdateJobExecutionOption struct {
 
 // UpdateJobExecution updates a job execution. Don't use this method directly, A helper function in dispatch.
 func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecutionOption) (*JobExecution, error) {
-	updateField := map[string]interface{}{}
+	jobExecution, err := c.GetJobExecution(ctx, option.ID)
+	if err != nil {
+		return nil, err
+	}
 	if option.Status != nil {
-		updateField["status"] = *option.Status
+		jobExecution.Status = *option.Status
 	}
 	if option.StartedAt != nil {
-		updateField["started_at"] = *option.StartedAt
+		jobExecution.StartedAt = option.StartedAt
 	}
 	if option.CompletedAt != nil {
-		updateField["completed_at"] = *option.CompletedAt
+		jobExecution.CompletedAt = option.CompletedAt
 	}
 	if option.Reason != nil {
 		bys, err := json.Marshal(option.Reason)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to marshal reason")
 		}
-		updateField["reason"] = bys
+		jobExecution.Reason = bys
 	}
-	updatedJob := &JobExecution{}
-	return updatedJob, c.conn.WithContext(ctx).Model(updatedJob).Clauses(clause.Returning{}).Where("id = ?", option.ID).Updates(updateField).Error
+	return jobExecution, c.conn.WithContext(ctx).Where("id = ?", option.ID).Save(jobExecution).Error
 }

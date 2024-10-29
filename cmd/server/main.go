@@ -118,6 +118,13 @@ func GetServerCommand() *cobra.Command {
 		FlagUsage: "the base dir of log archive. For fs backend, it is the root dir of log storage",
 		Env:       "RUNNER_LOG_STORAGE_ARCHIVE_BASE_DIR",
 	}))
+	checkError(util.BindStringArg(flags, vv, &util.StringArg{
+		ArgKey:    "event.http_endpoint",
+		FlagName:  "event.http_endpoint",
+		FlagValue: "",
+		FlagUsage: "enable http event endpoint",
+		Env:       "RUNNER_EVENT_HTTP_ENDPOINT",
+	}))
 	return c
 }
 
@@ -140,8 +147,12 @@ func RunServer(config *Config) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to compose log storage")
 	}
-	dispatchService := dispatch.NewService(dbClient)
-	eventhookService := eventhook.NewService()
+	cloudEventsClient, err := ComposeCloudEventsClient(config.Event)
+	if err != nil {
+		return errors.WithMessage(err, "failed to compose cloud events client")
+	}
+	eventhookService := eventhook.NewService(cloudEventsClient)
+	dispatchService := dispatch.NewService(dbClient, eventhookService)
 	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatchService, locker, logStorage,
 		eventhookService)
 	engine := gin.New()

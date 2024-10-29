@@ -73,9 +73,9 @@ func TestClient_CreateStepExecutions(t *testing.T) {
 		assert.NilError(t, err)
 		assert.DeepEqual(t, got, map[int64][]*StepExecution{1: stepExecutions}, cmpopts.IgnoreFields(StepExecution{}, "ID", "CreatedAt", "UpdatedAt", "StartedAt", "CompletedAt"))
 	})
-	t.Run("GetStepExecutionsID", func(t *testing.T) {
+	t.Run("GetStepExecution", func(t *testing.T) {
 		for _, stepExecution := range stepExecutions {
-			stepExecutionByID, err := db.GetStepExecutionsID(context.Background(), stepExecution.ID)
+			stepExecutionByID, err := db.GetStepExecution(context.Background(), stepExecution.ID)
 			assert.NilError(t, err)
 			assert.DeepEqual(t, stepExecution, stepExecutionByID)
 		}
@@ -98,7 +98,7 @@ func TestClient_UpdateStepExecution(t *testing.T) {
 		Status: lo.ToPtr(api.StatusRunning),
 	})
 	assert.NilError(t, err)
-	execution, err = db.GetStepExecutionsID(context.Background(), execution.ID)
+	execution, err = db.GetStepExecution(context.Background(), execution.ID)
 	assert.NilError(t, err)
 	assert.Equal(t, api.StatusRunning, execution.Status)
 	updatedStep, err := db.UpdateStepExecution(context.Background(), &UpdateStepExecutionOption{
@@ -107,7 +107,7 @@ func TestClient_UpdateStepExecution(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	assert.Equal(t, updatedStep.ExitCode, uint32(1))
-	execution, err = db.GetStepExecutionsID(context.Background(), execution.ID)
+	execution, err = db.GetStepExecution(context.Background(), execution.ID)
 	assert.NilError(t, err)
 	assert.Equal(t, uint32(1), execution.ExitCode)
 }

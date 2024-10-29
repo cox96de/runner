@@ -18,8 +18,9 @@ import (
 
 func TestHandler_createPipeline(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
-	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), nil,
-		nil, eventhook.NewService())
+	eventHook := eventhook.NewService(eventhook.NewNopSender())
+	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient, eventHook), nil,
+		nil, eventHook)
 	t.Run("normal", func(t *testing.T) {
 		p, err := handler.CreatePipeline(context.Background(), &api.CreatePipelineRequest{
 			Pipeline: &api.PipelineDSL{

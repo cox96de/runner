@@ -18,8 +18,10 @@ import (
 func TestHandler_CancelJobExecution(t *testing.T) {
 	ctx := context.Background()
 	db := mock.NewMockDB(t)
-	handler := NewHandler(db, pipeline.NewService(db), dispatch.NewService(db), mock.NewMockLocker(),
-		logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "test").Path())), eventhook.NewService())
+	eventHook := eventhook.NewService(eventhook.NewNopSender())
+	handler := NewHandler(db, pipeline.NewService(db), dispatch.NewService(db, eventHook), mock.NewMockLocker(),
+		logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "test").Path())),
+		eventHook)
 	t.Run("from_running", func(t *testing.T) {
 		job := handler.CreateAndPushToStatus(t, &api.PipelineDSL{
 			Jobs: []*api.JobDSL{{

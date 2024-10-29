@@ -186,3 +186,10 @@ message LogLine {
   int64 Number = 2;
   string Output = 3;
 }
+
+message Event {
+  string object_kind = 1;
+  optional StepExecution step_execution = 2;
+  optional JobExecution job_execution = 3;
+  optional PipelineExecution pipeline_execution = 4;
+}

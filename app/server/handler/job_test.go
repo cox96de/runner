@@ -16,8 +16,9 @@ import (
 
 func TestHandler_UpdateJobExecution(t *testing.T) {
 	dbCli := mock.NewMockDB(t)
-	handler := NewHandler(dbCli, nil, dispatch.NewService(dbCli), mock.NewMockLocker(),
-		nil, eventhook.NewService())
+	eventHook := eventhook.NewService(eventhook.NewNopSender())
+	handler := NewHandler(dbCli, nil, dispatch.NewService(dbCli, eventHook), mock.NewMockLocker(),
+		nil, eventHook)
 	jobs, err := handler.db.CreateJobs(context.Background(), []*db.CreateJobOption{
 		{
 			PipelineID: 1,
@@ -63,5 +64,39 @@ func TestHandler_UpdateJobExecution(t *testing.T) {
 		})
 		assert.NilError(t, err)
 		assert.Assert(t, jobExecutionResponse.JobExecution.ID == executions[0].ID)
+	})
+	t.Run("ToCancelling", func(t *testing.T) {
+		executions, err := handler.db.CreateJobExecutions(context.Background(), []*db.CreateJobExecutionOption{
+			{
+				JobID:  job.ID,
+				Status: api.StatusCreated,
+			},
+		})
+		assert.NilError(t, err)
+		jobExecution := executions[0]
+		_, err = handler.UpdateJobExecution(context.Background(), &api.UpdateJobExecutionRequest{
+			JobExecutionID: jobExecution.ID,
+			Status:         lo.ToPtr(api.StatusQueued),
+			Reason:         nil,
+		})
+		assert.NilError(t, err)
+		_, err = handler.UpdateJobExecution(context.Background(), &api.UpdateJobExecutionRequest{
+			JobExecutionID: jobExecution.ID,
+			Status:         lo.ToPtr(api.StatusPreparing),
+			Reason:         nil,
+		})
+		assert.NilError(t, err)
+		_, err = handler.UpdateJobExecution(context.Background(), &api.UpdateJobExecutionRequest{
+			JobExecutionID: jobExecution.ID,
+			Status:         lo.ToPtr(api.StatusRunning),
+			Reason:         nil,
+		})
+		assert.NilError(t, err)
+		_, err = handler.UpdateJobExecution(context.Background(), &api.UpdateJobExecutionRequest{
+			JobExecutionID: jobExecution.ID,
+			Status:         lo.ToPtr(api.StatusCanceling),
+			Reason:         nil,
+		})
+		assert.NilError(t, err)
 	})
 }

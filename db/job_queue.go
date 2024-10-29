@@ -12,7 +12,7 @@ type JobQueue struct {
 	Status         api.Status `gorm:"column:status"`
 	JobExecutionID int64      `gorm:"column:job_execution_id"`
 	Label          string     `gorm:"column:label"`
-	Heartbeat      time.Time  `gorm:"column:heartbeat"`
+	Heartbeat      time.Time  `gorm:"column:heartbeat;autoCreateTime"`
 	CreatedAt      time.Time  `gorm:"column:created_at;autoCreateTime"`
 	UpdatedAt      time.Time  `gorm:"column:updated_at;autoUpdateTime"`
 }

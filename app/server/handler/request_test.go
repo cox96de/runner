@@ -16,8 +16,9 @@ import (
 
 func TestHandler_requestJobHandler(t *testing.T) {
 	dbClient := mock.NewMockDB(t)
-	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), mock.NewMockLocker(),
-		nil, eventhook.NewService())
+	eventHook := eventhook.NewService(eventhook.NewNopSender())
+	handler := NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient, eventHook), mock.NewMockLocker(),
+		nil, eventHook)
 	createPipelineResponse, err := handler.CreatePipeline(context.Background(), &api.CreatePipelineRequest{
 		Pipeline: &api.PipelineDSL{
 			Jobs: []*api.JobDSL{

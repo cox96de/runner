@@ -28,8 +28,9 @@ import (
 
 func newMockServerHandler(t *testing.T) *httpserverclient.Client {
 	dbClient := mock.NewMockDB(t)
-	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient), mock.NewMockLocker(),
-		logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())), eventhook.NewService())
+	eventhook := eventhook.NewService(eventhook.NewNopSender())
+	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient, eventhook), mock.NewMockLocker(),
+		logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())), eventhook)
 	engine := gin.New()
 	h.RegisterRouter(engine.Group("/api/v1"))
 	server := httptest.NewServer(engine)

@@ -12,6 +12,7 @@ type Config struct {
 	// Locker is the config of distribute locker.
 	Locker     *Locker     `mapstructure:"locker" yaml:"locker"`
 	LogStorage *LogStorage `mapstructure:"log_storage" yaml:"log_storage"`
+	Event      *Event      `mapstructure:"event" yaml:"event"`
 }
 
 type DB struct {
@@ -56,4 +57,8 @@ type LogStorage struct {
 type LogArchive struct {
 	Backend string `mapstructure:"backend" yaml:"backend"`
 	BaseDir string `mapstructure:"base_dir" yaml:"base_dir"`
+}
+
+type Event struct {
+	HTTPEndPoint string `mapstructure:"http_endpoint" yaml:"http_endpoint"`
 }
