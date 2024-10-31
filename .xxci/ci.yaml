@@ -1,0 +1,14 @@
+jobs:
+  job1:
+    name: "Compile"
+    runs-on:
+      container-image: "registry.houzhiqiang.cn/golang:1.22"
+    steps:
+      - name: "build"
+        run:
+          - go env -w GOPROXY=https://goproxy.cn,direct
+          - "go build ./..."
+      - name: "test"
+        run:
+          - go env -w GOPROXY=https://goproxy.cn,direct
+          - "go test -race -coverprofile cover.out -coverpkg=./... ./..."
