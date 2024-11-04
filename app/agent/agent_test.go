@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/cox96de/runner/api"
 	mockapi "github.com/cox96de/runner/api/mock"
@@ -21,7 +20,16 @@ func TestAgent_poll(t *testing.T) {
 	a := &Agent{
 		client: client,
 	}
-	polledJob, err := a.poll(context.Background(), time.Microsecond)
+	c := make(chan struct{}, 2)
+	c <- struct{}{}
+	c <- struct{}{}
+	polledJob, err := a.poll(context.Background(), c)
 	assert.NilError(t, err)
 	assert.Equal(t, dispatchJob, polledJob)
+}
+
+func TestAgent_Run(t *testing.T) {
+	t.Run("concurrency", func(t *testing.T) {
+		// TODO: add test.
+	})
 }

@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/cox96de/runner/util"
 	"github.com/spf13/viper"
@@ -48,6 +52,13 @@ func GetAgentCommand() *cobra.Command {
 		FlagName:  "server_url",
 		FlagUsage: "the server url, such as http://127.0.0.1:8080",
 		Env:       "RUNNER_SERVER_URL",
+	}))
+	checkError(util.BindIntArg(flags, vv, &util.IntArg{
+		ArgKey:    "concurrency",
+		FlagName:  "concurrency",
+		FlagValue: 1,
+		FlagUsage: "the max concurrency of running jobs",
+		Env:       "RUNNER_CONCURRENCY",
 	}))
 	checkError(util.BindStringArg(flags, vv, &util.StringArg{
 		ArgKey:    "label",
@@ -130,5 +141,16 @@ func RunAgent(config *Config) error {
 	}
 	agent := agent.NewAgent(engine, serverClient, config.Label)
 	log.Infof("agent is running on '%s' with label: %s", config.ServerURL, config.Label)
-	return agent.Run(context.Background())
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	ctx, forceCancel := context.WithCancel(context.Background())
+	go func() {
+		<-sigChan
+		agent.GracefulShutdown()
+		log.Infof("await running job to be completed. Try again to force exit")
+		<-sigChan
+		forceCancel()
+	}()
+
+	return agent.Run(ctx, config.Concurrency, time.Second*10)
 }

@@ -20,7 +20,6 @@ import (
 	"github.com/cox96de/runner/engine"
 )
 
-// const timeoutError = util.StringError("job timeout")
 type abortedReason uint32
 
 const (

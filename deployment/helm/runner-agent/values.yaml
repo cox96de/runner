@@ -11,6 +11,7 @@ namespace: runner-agent
 serverUrl: ""
 ## The label of runner. The runner will only run the jobs with the same label.
 label: ""
+concurrency: 1
 ## The engine type of runner.
 engine: "kube"
 ## The config for kube engine. Only need to set when engine is kube.

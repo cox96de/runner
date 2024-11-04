@@ -163,7 +163,9 @@ func (h *Handler) WaitCommand(ctx context.Context, request *executorpb.WaitComma
 			Status: &executorpb.ProcessStatus{
 				Pid:      int32(c.Process.Pid),
 				ExitCode: int32(c.ProcessState.ExitCode()),
-				Exit:     c.ProcessState.Exited(),
+				// Don't use c.ProcessState.Exit().
+				// It's false if process is terminated by signal.
+				Exit: true,
 			},
 		}
 		if c.waitError != nil {
