@@ -1,9 +1,10 @@
 package main
 
 type Config struct {
-	ServerURL string `mapstructure:"server_url" yaml:"server_url"`
-	Label     string `mapstructure:"label" yaml:"label"`
-	Engine    Engine `mapstructure:"engine" yaml:"engine"`
+	ServerURL   string `mapstructure:"server_url" yaml:"server_url"`
+	Concurrency int    `mapstructure:"concurrency" yaml:"concurrency"`
+	Label       string `mapstructure:"label" yaml:"label"`
+	Engine      Engine `mapstructure:"engine" yaml:"engine"`
 }
 
 type Engine struct {

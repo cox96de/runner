@@ -17,6 +17,7 @@ jobs:
           - apt-get install -y build-essential tcl git
       - name: build
         commands:
+          - export https_proxy=192.168.31.229:20171
           - git clone https://github.com/redis/redis.git
           - cd redis/src
           - make -j4
