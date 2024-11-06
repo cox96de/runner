@@ -1,5 +1,5 @@
 jobs:
-  job1:
+  compile_test:
     name: "Compile"
     runs-on:
       container-image: "registry.houzhiqiang.cn/golang:1.22"

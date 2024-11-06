@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{.Values.namespace}}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{.Values.kube.executorNamespace}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{.Values.serviceAccount.name}}
+  namespace: {{.Values.kube.executorNamespace}}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/exec
+      - pods/log
+      - secrets
+      - services
+      - configmaps
+      - events
+      - namespaces
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - delete
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{.Values.serviceAccount.name}}
+  namespace: {{.Values.namespace}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{.Values.serviceAccount.name}}
+  namespace: {{.Values.kube.executorNamespace}}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{.Values.serviceAccount.name}}
+subjects:
+  - kind: ServiceAccount
+    name: {{.Values.serviceAccount.name}}
+    namespace: {{.Values.namespace}}
