@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,10 +35,12 @@ func WaitPodReady(ctx context.Context, client kubernetes.Interface, p *corev1.Po
 				pod := e.Object.(*corev1.Pod)
 				switch pod.Status.Phase {
 				case corev1.PodPending:
+					if err := checkContainsStatus(pod); err != nil {
+						return pod, err
+					}
 					continue
 				case corev1.PodRunning:
-					p = pod
-					return p, nil
+					return pod, nil
 				case corev1.PodSucceeded, corev1.PodFailed:
 					return pod, errors.Errorf("pod is %s", pod.Status.Phase)
 				default:
@@ -46,4 +49,18 @@ func WaitPodReady(ctx context.Context, client kubernetes.Interface, p *corev1.Po
 			}
 		}
 	}
+}
+
+func checkContainsStatus(pod *corev1.Pod) error {
+	errs := &multierror.Error{}
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.State.Waiting != nil {
+			switch c.State.Waiting.Reason {
+			case "ImagePullBackOff", "ErrImagePull":
+				errs = multierror.Append(errs, errors.Errorf("container %s is %s, message: %s",
+					c.Name, c.State.Waiting.Reason, c.State.Waiting.Message))
+			}
+		}
+	}
+	return errs.ErrorOrNil()
 }

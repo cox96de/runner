@@ -69,4 +69,36 @@ func TestWaitPodReady(t *testing.T) {
 		assert.ErrorContains(t, err, "Failed")
 		assert.Equal(t, readPod.Status.Phase, corev1.PodFailed)
 	})
+	t.Run("bad_image", func(t *testing.T) {
+		clientset := fake.NewSimpleClientset()
+		fakeWatcher := watch.NewFake()
+		clientset.PrependWatchReactor("pods", k8stest.DefaultWatchReactor(fakeWatcher, nil))
+		pod := corev1.Pod{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{
+				ResourceVersion: "1",
+				Name:            t.Name(),
+			},
+			Spec: corev1.PodSpec{},
+			Status: corev1.PodStatus{
+				Phase: corev1.PodPending,
+			},
+		}
+		go func() {
+			pod1 := pod
+			pod1.Status.Phase = corev1.PodPending
+			pod1.Status.ContainerStatuses = []corev1.ContainerStatus{
+				{
+					State: corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{
+						Reason: "ErrImagePull",
+					}},
+				},
+			}
+			fakeWatcher.Modify(&pod1)
+		}()
+
+		readPod, err := WaitPodReady(context.Background(), clientset, &pod)
+		assert.ErrorContains(t, err, "ErrImagePull")
+		assert.Assert(t, readPod != nil)
+	})
 }

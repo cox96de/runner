@@ -95,12 +95,11 @@ wait:
 			jobExecution = getJobExecutionResponse.JobExecution
 			if jobExecution.Status != status {
 				color.Green("########### job status transmit to %s ###########\n", jobExecution.Status)
-
 				status = jobExecution.Status
 			}
 			switch {
 			case jobExecution.Status.IsCompleted():
-				break wait
+				return nil
 			case jobExecution.Status == api.StatusRunning:
 				break wait
 			}
