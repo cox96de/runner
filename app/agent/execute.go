@@ -85,14 +85,21 @@ func (e *Execution) Execute(ctx context.Context) error {
 		}
 		return nil
 	}
-	e.runner, err = e.engine.CreateRunner(ctx, e, e.job)
+	e.runner, err = e.engine.CreateRunner(e.jobCtx, e, e.job)
 	if err != nil {
-		return err
+		return errors.WithMessage(err, "failed to create runner")
 	}
-	err = e.runner.Start(ctx)
+	// TODO: timeout is configurable.
+	startCtx, _ := context.WithTimeout(ctx, time.Minute)
+	err = e.runner.Start(startCtx)
 	if err != nil {
 		e.stop(ctx)
-		return err
+		logger.Errorf("failed to start runner: %v", err)
+		// TODO: add reason.
+		if err = e.updateJobStatus(ctx, api.StatusFailed, nil); err != nil {
+			return errors.WithMessage(err, "failed to update status")
+		}
+		return nil
 	}
 	defer e.stop(ctx)
 	if err = e.updateJobStatus(ctx, api.StatusRunning, nil); err != nil {

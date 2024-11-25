@@ -40,10 +40,12 @@ func (r *Runner) Start(ctx context.Context) (startErr error) {
 	r.pod = createdPod
 	r.pod, err = internal.WaitPodReady(ctx, r.client, r.pod)
 	if err != nil {
+		startErr = multierror.Append(startErr, err)
 		// Clean up the created kube resources if about to fail to avoid resource leak.
 		if cleanErr := r.clean(ctx); cleanErr != nil {
 			startErr = multierror.Append(startErr, cleanErr)
 		}
+		return
 	}
 	if r.portForwarder != nil {
 		err := r.waitPortForwarderReady(ctx)
