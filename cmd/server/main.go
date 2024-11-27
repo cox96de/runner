@@ -3,7 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"golang.org/x/sync/errgroup"
+
+	"github.com/cox96de/runner/api"
+	"google.golang.org/grpc"
 
 	"github.com/cox96de/runner/app/server/eventhook"
 
@@ -63,11 +70,18 @@ func GetServerCommand() *cobra.Command {
 	flags := c.Flags()
 	flags.StringVarP(&configFilePath, "config", "c", "config.yaml", "path to config file")
 	checkError(util.BindIntArg(flags, vv, &util.IntArg{
-		ArgKey:    "port",
-		FlagName:  "port",
+		ArgKey:    "http.port",
+		FlagName:  "http.port",
 		FlagValue: 8080,
-		FlagUsage: "port to listen",
-		Env:       "RUNNER_PORT",
+		FlagUsage: "port to http listen",
+		Env:       "RUNNER_HTTP_PORT",
+	}))
+	checkError(util.BindIntArg(flags, vv, &util.IntArg{
+		ArgKey:    "grpc.port",
+		FlagName:  "grpc.port",
+		FlagValue: 7080,
+		FlagUsage: "port to grpc listen",
+		Env:       "RUNNER_GRPC_PORT",
 	}))
 	checkError(util.BindStringArg(flags, vv, &util.StringArg{
 		ArgKey:    "db.dialect",
@@ -155,14 +169,30 @@ func RunServer(config *Config) error {
 	dispatchService := dispatch.NewService(dbClient, eventhookService)
 	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatchService, locker, logStorage,
 		eventhookService)
-	engine := gin.New()
-	// It's important to set the context with fallback to true, so that the context will be propagated to the next middleware.
-	engine.ContextWithFallback = true
-	engine.Use(otelgin.Middleware("runner-server"))
-	group := engine.Group("/api/v1")
-	h.RegisterRouter(group)
-	startConJob(monitor.NewService(dbClient, logStorage, eventhookService, dispatchService))
-	return engine.Run(fmt.Sprintf(":%d", config.Port))
+	errgroup := errgroup.Group{}
+	if config.HTTP.Port > 0 {
+		errgroup.Go(func() error {
+			engine := gin.New()
+			// It's important to set the context with fallback to true, so that the context will be propagated to the next middleware.
+			engine.ContextWithFallback = true
+			engine.Use(otelgin.Middleware("runner-server"))
+			group := engine.Group("/api/v1")
+			h.RegisterRouter(group)
+			startConJob(monitor.NewService(dbClient, logStorage, eventhookService, dispatchService))
+			return engine.Run(fmt.Sprintf(":%d", config.HTTP.Port))
+		})
+	}
+	if config.GRPC.Port > 0 {
+		errgroup.Go(func() error {
+			server := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
+			api.RegisterServerServer(server, h)
+			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", config.GRPC.Port))
+			checkError(err)
+			log.Infof("listenning and serving grpc on %s", listener.Addr().String())
+			return server.Serve(listener)
+		})
+	}
+	return errgroup.Wait()
 }
 
 func startConJob(service *monitor.Service) {

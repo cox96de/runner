@@ -2,12 +2,9 @@ package main
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/cox96de/runner/util"
 	"github.com/spf13/viper"
-
-	"github.com/cox96de/runner/api/httpserverclient"
 
 	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/app/agent"
@@ -127,7 +124,7 @@ func RunAgent(config *Config) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to compose engine")
 	}
-	serverClient, err := httpserverclient.NewClient(&http.Client{}, config.ServerURL)
+	serverClient, err := ComposeRunnerClient(config.ServerURL)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create server client")
 	}

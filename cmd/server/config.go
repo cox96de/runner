@@ -5,14 +5,22 @@ import (
 )
 
 type Config struct {
-	// Port is the port to listen on.
-	Port int `mapstructure:"port" yaml:"port"`
+	HTTP *HTTP `mapstructure:"http" yaml:"http"`
+	GRPC *GRPC `mapstructure:"grpc" yaml:"grpc"`
 	// DB is the database configuration.
 	DB *DB `mapstructure:"db" yaml:"db"`
 	// Locker is the config of distribute locker.
 	Locker     *Locker     `mapstructure:"locker" yaml:"locker"`
 	LogStorage *LogStorage `mapstructure:"log_storage" yaml:"log_storage"`
 	Event      *Event      `mapstructure:"event" yaml:"event"`
+}
+
+type HTTP struct {
+	Port int `mapstructure:"port" yaml:"port"`
+}
+
+type GRPC struct {
+	Port int `mapstructure:"port" yaml:"port"`
 }
 
 type DB struct {
