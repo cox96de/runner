@@ -1,7 +1,17 @@
 package main
 
 import (
+	"net/http"
+	"net/url"
 	"strings"
+
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+	"github.com/cox96de/runner/api"
+	"github.com/cox96de/runner/api/httpserverclient"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/engine"
@@ -74,4 +84,26 @@ func ComposeVMEngine(c *VM) (engine.Engine, error) {
 		VMImageRoot:  c.ImageRoot,
 		Volumes:      volumes,
 	})
+}
+
+func ComposeRunnerClient(u string) (api.ServerClient, error) {
+	parse, err := url.Parse(u)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to parse runner url")
+	}
+	switch parse.Scheme {
+	case "http", "https":
+		return httpserverclient.NewClient(&http.Client{
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
+		}, u)
+	case "grpc":
+		conn, err := grpc.NewClient(parse.Host, grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+		if err != nil {
+			return nil, err
+		}
+		return api.NewServerClient(conn), nil
+	default:
+		return nil, errors.Errorf("unsupported scheme '%s'", parse.Scheme)
+	}
 }
