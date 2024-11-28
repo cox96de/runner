@@ -95,10 +95,13 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error)
 	if err != nil {
 		return errors.WithMessage(err, "failed to update step jobExecution")
 	}
+	stepEnv := lo.MapToSlice(step.EnvVar, func(key string, value string) string {
+		return key + "=" + value
+	})
 	startCommandResponse, err := executor.StartCommand(ctx, &executorpb.StartCommandRequest{
 		Commands: commands,
 		Dir:      step.WorkingDirectory,
-		Env:      append(environment.Environment, "RUNNER_SCRIPT="+script),
+		Env:      append(append(environment.Environment, stepEnv...), "RUNNER_SCRIPT="+script),
 		Username: step.User,
 	})
 	if err != nil {
