@@ -4,9 +4,19 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/alicebob/miniredis/v2"
+	"github.com/cox96de/runner/api"
+	"github.com/cox96de/runner/app/server"
+	"github.com/redis/go-redis/extra/redisotel/v9"
+	goredis "github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 
 	"github.com/cox96de/runner/githubapp/ghclient"
 
@@ -14,7 +24,6 @@ import (
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/cockroachdb/errors"
-	"github.com/cox96de/runner/api/httpserverclient"
 	"github.com/cox96de/runner/githubapp/app"
 	"github.com/cox96de/runner/githubapp/db"
 	"github.com/gin-gonic/gin"
@@ -47,13 +56,25 @@ func main() {
 	transport, err := ghinstallation.NewAppsTransport(http.DefaultTransport, config.GithubAppID, []byte(config.PrivateKey))
 	checkError(err)
 	client := github.NewClient(&http.Client{Transport: transport})
-	runnerClient, err := httpserverclient.NewClient(&http.Client{}, config.RunnerURL)
-	checkError(err)
-	dbCli, err := ComposeDB(config.DB)
+	dbConn, err := ComposeDB(config.DB)
 	checkError(err)
 	ghClient := ghclient.NewClient(client)
-	app := app.NewApp(ghClient, runnerClient, config.ExportURL, dbCli, config.CloneStep)
-	dispatcher := githubapp.NewEventDispatcher([]githubapp.EventHandler{app}, "")
+	redis, err := ComposeRedis(config.RunnerServer.Redis)
+	checkError(err)
+	var a *app.App
+	runnerDB, err := ComposeDB(config.RunnerServer.DB)
+	checkError(err)
+	dbCli := db.NewClient(db.Dialect(dbConn.Dialector.Name()), dbConn)
+	a = app.NewApp(ghClient, config.ExportURL, dbCli, config.CloneStep)
+	runnerServer := server.NewApp(&server.Config{
+		DB:                   runnerDB,
+		LogPersistentStorage: server.NewLocalLogPersistentStorage(config.RunnerServer.LogArchiveDir),
+		LogCacheStorage:      redis,
+		Locker:               server.NewRedisLocker(redis),
+		EventHookSender:      a,
+	})
+	a.SetRunnerServer(runnerServer)
+	dispatcher := githubapp.NewEventDispatcher([]githubapp.EventHandler{a}, "")
 	engine := gin.New()
 	group := engine.Group(config.BaseURL)
 	group.Any("/ping", func(c *gin.Context) {
@@ -63,13 +84,25 @@ func main() {
 	group.GET("/log", func(c *gin.Context) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", logWebContent)
 	})
-	eventHandler, err := app.GetRunnerHandler(context.Background())
+	eventHandler, err := a.GetRunnerHandler(context.Background())
 	checkError(err)
 	group.POST("/runner_event", eventHandler)
-	group.POST("/runner_event/:job_execution_id", app.HandleJobExecutionRefresh)
+	group.POST("/runner_event/:job_execution_id", a.HandleJobExecutionRefresh)
 	// FIXME: this api is not authenticated.
-	group.GET("/job_executions/:job_execution_id/logs/:log_name", app.GetLogHandler)
-	err = http.ListenAndServe(config.ListenAddr, engine)
+	group.GET("/job_executions/:job_execution_id/logs/:log_name", a.GetLogHandler)
+	grpcServer := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
+	api.RegisterServerServer(grpcServer, runnerServer)
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", config.RunnerServer.GRPCPort))
+	checkError(err)
+	log.Infof("listenning and serving grpc on %s", listener.Addr().String())
+	g := &errgroup.Group{}
+	g.Go(func() error {
+		return grpcServer.Serve(listener)
+	})
+	g.Go(func() error {
+		return http.ListenAndServe(config.ListenAddr, engine)
+	})
+	err = g.Wait()
 	checkError(err)
 }
 
@@ -79,7 +112,7 @@ func checkError(err error) {
 	}
 }
 
-func ComposeDB(c *DB) (*db.Client, error) {
+func ComposeDB(c *DB) (*gorm.DB, error) {
 	var (
 		conn    *gorm.DB
 		err     error
@@ -108,12 +141,59 @@ func ComposeDB(c *DB) (*db.Client, error) {
 	if err = conn.Use(otelgorm.NewPlugin()); err != nil {
 		return nil, errors.WithMessage(err, "failed to use otelgorm plugin")
 	}
-	client := db.NewClient(db.Dialect(dialect), conn)
-	if db.Dialect(dialect) == db.SQLite {
-		log.Warningf("sqlite database is not recommended for production use")
-		if err := conn.AutoMigrate(&db.Pipeline{}, &db.Job{}); err != nil {
-			return nil, err
-		}
+	return conn, nil
+}
+
+func ComposeRedis(r *Redis) (*goredis.Client, error) {
+	if r.Addr == "internal" {
+		return ComposeInternalRedis()
 	}
-	return client, nil
+	conn := goredis.NewClient(&goredis.Options{
+		Addr:                  r.Addr,
+		Username:              r.Username,
+		Password:              r.Password,
+		DB:                    r.DB,
+		MaxRetries:            r.MaxRetries,
+		MinRetryBackoff:       r.MinRetryBackoff,
+		MaxRetryBackoff:       r.MaxRetryBackoff,
+		DialTimeout:           r.DialTimeout,
+		ReadTimeout:           r.ReadTimeout,
+		WriteTimeout:          r.WriteTimeout,
+		ContextTimeoutEnabled: true,
+		PoolFIFO:              r.PoolFIFO,
+		PoolSize:              r.PoolSize,
+		PoolTimeout:           r.PoolTimeout,
+		MinIdleConns:          r.MinIdleConns,
+		MaxIdleConns:          r.MaxIdleConns,
+		MaxActiveConns:        r.MaxActiveConns,
+		ConnMaxIdleTime:       r.ConnMaxIdleTime,
+		ConnMaxLifetime:       r.ConnMaxLifetime,
+	})
+	if err := redisotel.InstrumentTracing(conn); err != nil {
+		return nil, errors.WithMessage(err, "failed to instrument tracing")
+	}
+	if err := redisotel.InstrumentMetrics(conn); err != nil {
+		return nil, errors.WithMessage(err, "failed to instrument metrics")
+	}
+	return conn, nil
+}
+
+// ComposeInternalRedis returns a redis client with internal redis.
+func ComposeInternalRedis() (*goredis.Client, error) {
+	log.Warningf("You are using internal redis, it is not recommended for production.")
+	miniRedis := miniredis.NewMiniRedis()
+	if err := miniRedis.Start(); err != nil {
+		return nil, err
+	}
+	conn := goredis.NewClient(&goredis.Options{
+		Network: "",
+		Addr:    miniRedis.Addr(),
+	})
+	if err := redisotel.InstrumentTracing(conn); err != nil {
+		return nil, errors.WithMessage(err, "failed to instrument tracing")
+	}
+	if err := redisotel.InstrumentMetrics(conn); err != nil {
+		return nil, errors.WithMessage(err, "failed to instrument metrics")
+	}
+	return conn, nil
 }

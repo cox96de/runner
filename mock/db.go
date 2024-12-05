@@ -16,6 +16,11 @@ import (
 // It uses sqlite in memory as the database.
 func NewMockDB(t *testing.T) *db.Client {
 	t.Helper()
+	conn := NewMockDBConn(t)
+	return db.NewClient(conn)
+}
+
+func NewMockDBConn(t *testing.T) *gorm.DB {
 	file := util.RandomID("sql-mocker")
 	conn, err := gorm.Open(
 		sqlite.Open(fmt.Sprintf("file:%s?mode=memory", file)),
@@ -28,7 +33,7 @@ func NewMockDB(t *testing.T) *db.Client {
 	err = migrateModels(conn, &db.Pipeline{}, &db.Job{}, &db.JobExecution{}, &db.Step{}, &db.StepExecution{},
 		&db.JobQueue{})
 	assert.NilError(t, err)
-	return db.NewClient(db.SQLite, conn)
+	return conn
 }
 
 func migrateModels(conn *gorm.DB, models ...interface{}) error {

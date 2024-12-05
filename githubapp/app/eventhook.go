@@ -20,7 +20,7 @@ func (h *App) refreshJob(ctx context.Context, job *db.Job) error {
 	if err != nil {
 		return errors.WithMessagef(err, "failed to get pipeline %d", job.PipelineID)
 	}
-	getJobExecutionResp, err := h.runnerClient.GetJobExecution(ctx, &api.GetJobExecutionRequest{
+	getJobExecutionResp, err := h.runnerServer.GetJobExecution(ctx, &api.GetJobExecutionRequest{
 		JobExecutionID:    job.RunnerJobExecutionID,
 		WithStepExecution: lo.ToPtr(true),
 	})

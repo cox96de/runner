@@ -27,7 +27,7 @@ func NewMockDB(t *testing.T, models ...interface{}) *Client {
 	assert.NilError(t, err)
 	err = migrateModels(conn, models...)
 	assert.NilError(t, err)
-	return NewClient(SQLite, conn)
+	return NewClient(conn)
 }
 
 func TestClient_Transaction(t *testing.T) {

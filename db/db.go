@@ -15,14 +15,11 @@ const (
 
 type Client struct {
 	conn *gorm.DB
-	// dialect is the database dialect used by the client.
-	// Client uses dialect to generate specific SQL for better performance.
-	dialect Dialect
 }
 
 // NewClient creates a new database client.
-func NewClient(dialect Dialect, conn *gorm.DB) *Client {
-	return &Client{conn: conn, dialect: dialect}
+func NewClient(conn *gorm.DB) *Client {
+	return &Client{conn: conn}
 }
 
 // Transaction executes a block of code inside a database transaction.

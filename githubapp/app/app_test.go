@@ -38,12 +38,13 @@ jobs:
 			mock.WithRequestMatch(mock.PostReposCheckRunsByOwnerByRepo, &github.CheckRun{ID: lo.ToPtr(int64(1))},
 				&github.CheckRun{ID: lo.ToPtr(int64(1))}, &github.CheckRun{ID: lo.ToPtr(int64(1))}),
 		)
-		serverClient := mockserver.NewMockServer(t)
+		runnerServer := mockserver.NewMockServer(t)
 		dbConn := db.NewMockDB(t)
 		githubClient := github.NewClient(client)
 		ghClient := ghclient.NewClient(githubClient)
 		ghClient.SetDefaultHTTPClient(client)
-		app := NewApp(ghClient, serverClient, "http://base.url", dbConn, []string{"git clone"})
+		app := NewApp(ghClient, "http://base.url", dbConn, []string{"git clone"})
+		app.SetRunnerServer(runnerServer.App)
 		err := app.handleCheckSuite(context.Background(), &github.CheckSuiteEvent{
 			Action: lo.ToPtr("requested"),
 			Repo: &github.Repository{
@@ -67,12 +68,13 @@ jobs:
 			installTokenMatch,
 			repoContentMatch,
 		)
-		serverClient := mockserver.NewMockServer(t)
+		runnerServer := mockserver.NewMockServer(t)
 		dbConn := db.NewMockDB(t)
 		githubClient := github.NewClient(client)
 		ghClient := ghclient.NewClient(githubClient)
 		ghClient.SetDefaultHTTPClient(client)
-		app := NewApp(ghClient, serverClient, "http://base.url", dbConn, []string{"git clone"})
+		app := NewApp(ghClient, "http://base.url", dbConn, []string{"git clone"})
+		app.SetRunnerServer(runnerServer.App)
 		err := app.handleCheckSuite(context.Background(), &github.CheckSuiteEvent{
 			Action: lo.ToPtr("requested"),
 			Repo: &github.Repository{

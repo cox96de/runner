@@ -5,6 +5,7 @@ import (
 )
 
 func (h *Handler) RegisterRouter(g *gin.RouterGroup) {
+	g = g.Group("/api/v1")
 	g.Any("/ping", getGinHandler(h.Ping))
 	g.POST("/pipelines", getGinHandler(h.CreatePipeline))
 	g.POST("/jobs/request", h.RequestJobHandler)

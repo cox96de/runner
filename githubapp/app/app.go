@@ -7,6 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cloudevents/sdk-go/v2/event"
+	"github.com/cloudevents/sdk-go/v2/protocol"
+	"github.com/cox96de/runner/app/server"
+
 	"github.com/cox96de/runner/githubapp/ghclient"
 
 	"github.com/cockroachdb/errors"
@@ -27,15 +31,24 @@ const (
 )
 
 type App struct {
-	ghClient     *ghclient.Client
-	runnerClient api.ServerClient
+	ghClient *ghclient.Client
+	// runnerClient api.ServerClient
+	runnerServer *server.App
 	baseURL      string
 	db           *db.Client
 	cloneStep    []string
 }
 
-func NewApp(ghClient *ghclient.Client, runnerClient api.ServerClient, baseURL string, dbCli *db.Client, cloneStep []string) *App {
-	return &App{ghClient: ghClient, runnerClient: runnerClient, baseURL: baseURL, db: dbCli, cloneStep: cloneStep}
+func (h *App) Send(ctx context.Context, event event.Event) protocol.Result {
+	return h.handleCloudEvents(ctx, event)
+}
+
+func NewApp(ghClient *ghclient.Client, baseURL string, dbCli *db.Client, cloneStep []string) *App {
+	return &App{ghClient: ghClient, baseURL: baseURL, db: dbCli, cloneStep: cloneStep}
+}
+
+func (h *App) SetRunnerServer(runnerServer *server.App) {
+	h.runnerServer = runnerServer
 }
 
 func (h *App) Handles() []string {
@@ -194,13 +207,13 @@ func (h *App) handleRerequestCheckRun(ctx context.Context, event *github.CheckRu
 	if err != nil {
 		return errors.WithMessage(err, "failed to get job by check run id")
 	}
-	getJobExecutionResponse, err := h.runnerClient.GetJobExecution(ctx, &api.GetJobExecutionRequest{
+	getJobExecutionResponse, err := h.runnerServer.GetJobExecution(ctx, &api.GetJobExecutionRequest{
 		JobExecutionID: job.RunnerJobExecutionID,
 	})
 	if err != nil {
 		return errors.WithMessage(err, "failed to get job execution")
 	}
-	rerunJobResponse, err := h.runnerClient.RerunJob(ctx, &api.RerunJobRequest{
+	rerunJobResponse, err := h.runnerServer.RerunJob(ctx, &api.RerunJobRequest{
 		JobID: getJobExecutionResponse.JobExecution.JobID,
 	})
 	if err != nil {
@@ -288,7 +301,7 @@ func (h *App) createPipeline(ctx context.Context, repoName string, p *dsl.Pipeli
 			Steps:  runnerSteps,
 		})
 	}
-	pipeline, err := h.runnerClient.CreatePipeline(ctx, &api.CreatePipelineRequest{
+	pipeline, err := h.runnerServer.CreatePipeline(ctx, &api.CreatePipelineRequest{
 		Pipeline: runnerPipeline,
 	})
 	if err != nil {
@@ -314,7 +327,7 @@ func (h *App) GetLogHandler(ctx *gin.Context) {
 		handler.JSON(ctx, http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	getLogLinesResponse, err := h.runnerClient.GetLogLines(ctx, &api.GetLogLinesRequest{
+	getLogLinesResponse, err := h.runnerServer.GetLogLines(ctx, &api.GetLogLinesRequest{
 		JobExecutionID: req.JobExecutionID,
 		Name:           req.LogName,
 		Offset:         req.Offset,

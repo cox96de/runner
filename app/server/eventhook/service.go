@@ -3,6 +3,8 @@ package eventhook
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/cox96de/runner/log"
 
 	cloudeventshttp "github.com/cloudevents/sdk-go/v2/protocol/http"
@@ -73,10 +75,13 @@ func (s *Service) SendJobExecutionEvent(ctx context.Context, job *db.JobExecutio
 }
 
 func (s *Service) doSend(ctx context.Context, ev event.Event) {
+	eventID := uuid.New().String()
 	logger := log.ExtractLogger(ctx).WithFields(log.Fields{
-		"type": ev.Type(),
+		"type":     ev.Type(),
+		"event.id": eventID,
 	})
 	ev.SetSource(source)
+	ev.SetID(eventID)
 	result := s.client.Send(log.WithLogger(context.Background(), logger), ev)
 	var httpResult *cloudeventshttp.Result
 	switch {
