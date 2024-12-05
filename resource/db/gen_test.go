@@ -43,7 +43,7 @@ func TestGenDDL(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			dbCli := db.NewClient(db.Postgres, conn)
+			dbCli := db.NewClient(conn)
 			sqls, err = dbCli.ToMigrateSQL()
 			return err
 		}, backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), 10))
@@ -70,7 +70,7 @@ func TestGenDDL(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			dbCli := db.NewClient(db.Mysql, conn)
+			dbCli := db.NewClient(conn)
 			sqls, err = dbCli.ToMigrateSQL()
 			return err
 		}, backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), 10))
@@ -86,7 +86,7 @@ func TestGenDDL(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			dbCli := db.NewClient(db.Mysql, conn)
+			dbCli := db.NewClient(conn)
 			sqls, err = dbCli.ToMigrateSQL()
 			return err
 		}, backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), 10))

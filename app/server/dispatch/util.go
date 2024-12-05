@@ -19,7 +19,8 @@ func (s *Service) UpdateJobExecution(ctx context.Context, client *db.Client, opt
 		attribute.Int64("job_execution_id", option.ID),
 	))
 	defer span.End()
-	return client.Transaction(func(client *db.Client) error {
+	var updatedJob *db.JobExecution
+	err := client.Transaction(func(client *db.Client) error {
 		if option.Status != nil {
 			switch {
 			case option.Status.IsCompleted():
@@ -57,14 +58,18 @@ func (s *Service) UpdateJobExecution(ctx context.Context, client *db.Client, opt
 				}
 			}
 		}
-		updatedJob, err := client.UpdateJobExecution(ctx, option)
+		var err error
+		updatedJob, err = client.UpdateJobExecution(ctx, option)
 		if err != nil {
 			return errors.WithMessage(err, "failed to update job execution")
 		}
-		err = s.eventhook.SendJobExecutionEvent(ctx, updatedJob)
 		if err != nil {
 			return errors.WithMessage(err, "failed to send job execution event")
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+	return s.eventhook.SendJobExecutionEvent(ctx, updatedJob)
 }

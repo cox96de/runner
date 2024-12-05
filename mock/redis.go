@@ -12,6 +12,13 @@ import (
 // NewMockRedis returns a mock redis client for testing.
 func NewMockRedis(t *testing.T) *redis.Client {
 	t.Helper()
+	conn := NewMockRedisConn(t)
+	client := redis.NewClient(conn)
+	return client
+}
+
+func NewMockRedisConn(t *testing.T) *goredis.Client {
+	t.Helper()
 	minir := miniredis.NewMiniRedis()
 	err := minir.Start()
 	assert.NilError(t, err)
@@ -21,7 +28,5 @@ func NewMockRedis(t *testing.T) *redis.Client {
 	conn := goredis.NewClient(&goredis.Options{
 		Addr: minir.Addr(),
 	})
-	client, err := redis.NewClient(conn)
-	assert.NilError(t, err)
-	return client
+	return conn
 }

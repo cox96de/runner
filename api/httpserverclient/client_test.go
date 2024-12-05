@@ -34,7 +34,7 @@ func TestNewClient(t *testing.T) {
 	h := handler.NewHandler(dbClient, pipelineService, dispatchService, locker, logstorage.NewService(redis,
 		logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())), eventHook)
 	engine := gin.New()
-	h.RegisterRouter(engine.Group("/api/v1"))
+	h.RegisterRouter(engine.Group(""))
 	server := httptest.NewServer(engine)
 	client, err := NewClient(&http.Client{}, server.URL)
 	assert.NilError(t, err)

@@ -32,7 +32,7 @@ func newMockServerHandler(t *testing.T) *httpserverclient.Client {
 	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatch.NewService(dbClient, eventhook), mock.NewMockLocker(),
 		logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path())), eventhook)
 	engine := gin.New()
-	h.RegisterRouter(engine.Group("/api/v1"))
+	h.RegisterRouter(engine.Group(""))
 	server := httptest.NewServer(engine)
 	client, err := httpserverclient.NewClient(&http.Client{}, server.URL)
 	assert.NilError(t, err)

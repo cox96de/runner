@@ -80,5 +80,5 @@ func ComposeDB(dialect string, dsn string, tablePrefix string) (*db.Client, erro
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to open database connection")
 	}
-	return db.NewClient(db.Dialect(dialect), conn), nil
+	return db.NewClient(conn), nil
 }

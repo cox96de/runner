@@ -3,12 +3,12 @@ package main
 import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cockroachdb/errors"
+	"github.com/cox96de/runner/app/server"
 	"github.com/cox96de/runner/app/server/eventhook"
 	"github.com/cox96de/runner/app/server/logstorage"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/external/redis"
-	"github.com/cox96de/runner/lib"
-	"github.com/cox96de/runner/log"
+	"github.com/redis/go-redis/extra/redisotel/v9"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 	"gorm.io/driver/mysql"
@@ -18,7 +18,7 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-func ComposeDB(c *DB) (*db.Client, error) {
+func ComposeDB(c *DB) (*gorm.DB, error) {
 	var (
 		conn    *gorm.DB
 		err     error
@@ -47,41 +47,34 @@ func ComposeDB(c *DB) (*db.Client, error) {
 	if err = conn.Use(otelgorm.NewPlugin()); err != nil {
 		return nil, errors.WithMessage(err, "failed to use otelgorm plugin")
 	}
-	client := db.NewClient(db.Dialect(dialect), conn)
-	if db.Dialect(dialect) == db.SQLite {
-		log.Warningf("sqlite database is not recommended for production use")
-		if err := DetectSQLiteAndMigrate(client); err != nil {
-			return nil, err
-		}
-	}
-	return client, nil
+	return conn, nil
 }
 
-func ComposeLocker(l *Locker) (lib.Locker, error) {
+func ComposeLocker(l *Locker) (server.Locker, error) {
 	switch l.Backend {
 	case "redis":
-		return ComposeRedis(l.Redis)
+		r, err := ComposeRedis(l.Redis)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to compose redis")
+		}
+		return redis.NewClient(r), nil
 	default:
 		return nil, errors.Errorf("%s locker is not supported", l.Backend)
 	}
 }
 
-func ComposeLogStorage(l *LogStorage) (*logstorage.Service, error) {
-	composeRedis, err := ComposeRedis(l.Redis)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to compose redis")
-	}
-	var oss logstorage.OSS
-	switch l.LogArchive.Backend {
+func ComposeLogPersistentStorage(l *LogArchive) (server.LogPersistentStorage, error) {
+	var oss server.LogPersistentStorage
+	switch l.Backend {
 	case "fs":
-		oss = logstorage.NewFilesystemOSS(l.LogArchive.BaseDir)
+		oss = logstorage.NewFilesystemOSS(l.BaseDir)
 	default:
-		return nil, errors.Errorf("%s log archive is not supported", l.LogArchive.Backend)
+		return nil, errors.Errorf("%s log archive is not supported", l.Backend)
 	}
-	return logstorage.NewService(composeRedis, oss), nil
+	return oss, nil
 }
 
-func ComposeRedis(r *Redis) (*redis.Client, error) {
+func ComposeRedis(r *Redis) (*goredis.Client, error) {
 	if r.Addr == "internal" {
 		return ComposeInternalRedis()
 	}
@@ -106,7 +99,13 @@ func ComposeRedis(r *Redis) (*redis.Client, error) {
 		ConnMaxIdleTime:       r.ConnMaxIdleTime,
 		ConnMaxLifetime:       r.ConnMaxLifetime,
 	})
-	return redis.NewClient(conn)
+	if err := redisotel.InstrumentTracing(conn); err != nil {
+		return nil, errors.WithMessage(err, "failed to instrument tracing")
+	}
+	if err := redisotel.InstrumentMetrics(conn); err != nil {
+		return nil, errors.WithMessage(err, "failed to instrument metrics")
+	}
+	return conn, nil
 }
 
 func ComposeCloudEventsClient(c *Event) (eventhook.Sender, error) {

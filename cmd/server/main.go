@@ -6,29 +6,24 @@ import (
 	"net"
 	"time"
 
+	"github.com/cox96de/runner/app/server"
+
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/cox96de/runner/api"
 	"google.golang.org/grpc"
 
-	"github.com/cox96de/runner/app/server/eventhook"
-
 	"github.com/cox96de/runner/log"
 	"github.com/cox96de/runner/telemetry/trace"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"github.com/andeya/goutil/calendar/cron"
-	"github.com/cox96de/runner/app/server/monitor"
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/util"
 	"github.com/spf13/viper"
 
-	"github.com/cox96de/runner/app/server/dispatch"
-	"github.com/cox96de/runner/app/server/pipeline"
-
 	"github.com/cockroachdb/errors"
-	"github.com/cox96de/runner/app/server/handler"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 )
@@ -157,45 +152,52 @@ func RunServer(config *Config) error {
 	if err != nil {
 		return errors.WithMessage(err, "failed to compose locker")
 	}
-	logStorage, err := ComposeLogStorage(config.LogStorage)
+	persistentStorage, err := ComposeLogPersistentStorage(config.LogStorage.LogArchive)
 	if err != nil {
-		return errors.WithMessage(err, "failed to compose log storage")
+		return errors.WithMessage(err, "failed to compose log persistent storage")
+	}
+	cacheStorage, err := ComposeRedis(config.LogStorage.Redis)
+	if err != nil {
+		return errors.WithMessage(err, "failed to compose cache storage")
 	}
 	cloudEventsClient, err := ComposeCloudEventsClient(config.Event)
 	if err != nil {
 		return errors.WithMessage(err, "failed to compose cloud events client")
 	}
-	eventhookService := eventhook.NewService(cloudEventsClient)
-	dispatchService := dispatch.NewService(dbClient, eventhookService)
-	h := handler.NewHandler(dbClient, pipeline.NewService(dbClient), dispatchService, locker, logStorage,
-		eventhookService)
+	app := server.NewApp(&server.Config{
+		DB:                   dbClient,
+		LogPersistentStorage: persistentStorage,
+		LogCacheStorage:      cacheStorage,
+		Locker:               locker,
+		EventHookSender:      cloudEventsClient,
+	})
 	errgroup := errgroup.Group{}
 	if config.HTTP.Port > 0 {
+		engine := gin.New()
+		// It's important to set the context with fallback to true, so that the context will be propagated to the next middleware.
+		engine.ContextWithFallback = true
+		engine.Use(otelgin.Middleware("runner-server"))
+		group := engine.Group("")
+		app.RegisterRouter(group)
 		errgroup.Go(func() error {
-			engine := gin.New()
-			// It's important to set the context with fallback to true, so that the context will be propagated to the next middleware.
-			engine.ContextWithFallback = true
-			engine.Use(otelgin.Middleware("runner-server"))
-			group := engine.Group("/api/v1")
-			h.RegisterRouter(group)
-			startConJob(monitor.NewService(dbClient, logStorage, eventhookService, dispatchService))
 			return engine.Run(fmt.Sprintf(":%d", config.HTTP.Port))
 		})
 	}
 	if config.GRPC.Port > 0 {
 		errgroup.Go(func() error {
 			server := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
-			api.RegisterServerServer(server, h)
+			api.RegisterServerServer(server, app)
 			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", config.GRPC.Port))
 			checkError(err)
 			log.Infof("listenning and serving grpc on %s", listener.Addr().String())
 			return server.Serve(listener)
 		})
 	}
+	startConJob(app)
 	return errgroup.Wait()
 }
 
-func startConJob(service *monitor.Service) {
+func startConJob(service *server.App) {
 	c := cron.New()
 	err := c.AddFunc("@every 1m", func() {
 		ctx, span := trace.Start(context.Background(), "cronjob.recycle_heartbeat_timeout_jobs")
