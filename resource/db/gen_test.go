@@ -23,8 +23,8 @@ import (
 )
 
 func TestGenDDL(t *testing.T) {
-	if _, err := exec.LookPath("docker"); err != nil {
-		t.Skip("docker not found")
+	if os.Getenv("GEN_DDL") != "true" {
+		t.Skipf("skip gen ddl")
 	}
 	t.Run("GenPG", func(t *testing.T) {
 		name := "runner-gen-ddl-postgres"

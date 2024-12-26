@@ -195,14 +195,14 @@ func (h *App) createPipeline(ctx context.Context, repoName string, p *dsl.Pipeli
 			}
 			runnerSteps = append(runnerSteps, stepDSL)
 		}
-		mainContainer := "runner"
 		on := job.RunsOn
-		if on == nil || len(on.ContainerImage) == 0 {
-			return nil, errors.Errorf("container image is required for job: %s", jobID)
-		}
-		runnerPipeline.Jobs = append(runnerPipeline.Jobs, &api.JobDSL{
-			Name: jobID,
-			RunsOn: &api.RunsOn{
+		var runsOn *api.RunsOn
+		switch {
+		case on == nil:
+			return nil, errors.Errorf("runs_on is required for job: %s", jobID)
+		case on.ContainerImage != "":
+			mainContainer := "runner"
+			runsOn = &api.RunsOn{
 				// HARDCODE: the label is hardcoded.
 				Label: "kube",
 				Docker: &api.Docker{
@@ -214,8 +214,19 @@ func (h *App) createPipeline(ctx context.Context, repoName string, p *dsl.Pipeli
 					},
 					DefaultContainer: mainContainer,
 				},
-			},
-			Steps: runnerSteps,
+			}
+		case on.Linux != "":
+			runsOn = &api.RunsOn{
+				Label: "vm",
+				VM:    &api.VM{Image: on.Linux},
+			}
+		default:
+			return nil, errors.Errorf("runs_on should be not empty: %s", jobID)
+		}
+		runnerPipeline.Jobs = append(runnerPipeline.Jobs, &api.JobDSL{
+			Name:   jobID,
+			RunsOn: runsOn,
+			Steps:  runnerSteps,
 		})
 	}
 	pipeline, err := h.runnerClient.CreatePipeline(ctx, &api.CreatePipelineRequest{
