@@ -78,7 +78,7 @@ func (e *Engine) CreateRunner(ctx context.Context, logProvider engine.LogProvide
 		RuntimeVolumeMounts: e.runtimeVolumeMounts,
 		RuntimeVolumes:      e.runtimeVolumes,
 		CPU:                 spec.RunsOn.VM.CPU,
-		Memory:              spec.RunsOn.VM.MemoryMB,
+		Memory:              spec.RunsOn.VM.Memory,
 	})
 	compile, err := c.Compile(fmt.Sprintf("vm-%d", spec.Execution.ID), spec.RunsOn)
 	if err != nil {

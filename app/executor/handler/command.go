@@ -75,13 +75,27 @@ func (h *Handler) setCommand(c *command) (string, error) {
 	return "", errors.New("can not get a valid commandID")
 }
 
-func setUser(cmd *exec.Cmd, username string) error {
-	user, err := user.Lookup(username)
-	if err != nil {
-		return errors.WithMessagef(err, "failed to find user '%s'", username)
+var (
+	realUser      *user.User
+	effectiveUser *user.User
+)
+
+func setUser(cmd *exec.Cmd, username string) (*user.User, error) {
+	if len(username) > 0 {
+		if username == effectiveUser.Username {
+			return effectiveUser, nil
+		}
+		user, err := user.Lookup(username)
+		if err != nil {
+			return nil, errors.WithMessagef(err, "failed to find user '%s'", username)
+		}
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+		return user, setUserForSysProcAttr(cmd.SysProcAttr, user)
+	} else if effectiveUser.Uid != realUser.Uid {
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+		return realUser, setUserForSysProcAttr(cmd.SysProcAttr, realUser)
 	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{}
-	return setUserForSysProcAttr(cmd.SysProcAttr, user)
+	return realUser, nil
 }
 
 func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCommandRequest) (*executorpb.StartCommandResponse, error) {
@@ -106,13 +120,14 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 		}
 	}
 	cmd.Dir = request.Dir
-	if len(request.Env) > 0 {
-		cmd.Env = request.Env
+	user, err := setUser(cmd, request.Username)
+	if err != nil {
+		return nil, err
 	}
-	if len(request.Username) > 0 {
-		if err := setUser(cmd, request.Username); err != nil {
-			return nil, err
-		}
+	// The executor might be bootstrapped without login shell.
+	cmd.Env = append(cmd.Env, "HOME="+user.HomeDir)
+	if len(request.Env) > 0 {
+		cmd.Env = append(cmd.Env, request.Env...)
 	}
 	cmd.Stdout = rb
 	cmd.Stderr = rb
