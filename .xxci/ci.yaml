@@ -12,3 +12,20 @@ jobs:
         run:
           - go env -w GOPROXY=https://goproxy.cn,direct
           - "go test -race -coverprofile cover.out -coverpkg=./... ./..."
+  vm:
+    name: "Test in VM"
+    runs-on:
+      linux: "debian11"
+    steps:
+      - name: "build"
+        run:
+          - export PATH=$PATH:/usr/local/go/bin
+          - export HOME=/root
+          - go env -w GOPROXY=https://goproxy.cn,direct
+          - "go build ./..."
+      - name: "test"
+        run:
+          - export PATH=$PATH:/usr/local/go/bin
+          - export HOME=/root
+          - go env -w GOPROXY=https://goproxy.cn,direct
+          - "go test -race -coverprofile cover.out -coverpkg=./... ./..."
