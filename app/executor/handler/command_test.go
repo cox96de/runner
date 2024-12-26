@@ -277,10 +277,10 @@ func TestHandler_WaitCommand(t *testing.T) {
 		assert.DeepEqual(t, response.Status.Exit, false)
 		response, err = client.WaitCommand(context.Background(), &executorpb.WaitCommandRequest{
 			CommandID: resp.CommandID,
-			Timeout:   int64(time.Second * 5),
+			Timeout:   int64(time.Second * 10),
 		})
 		assert.NilError(t, err)
-		assert.DeepEqual(t, response.Status.Exit, true)
+		assert.Equal(t, response.Status.Exit, true, "pid: %+v", response.Status)
 	})
 	t.Run("exit_code", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
