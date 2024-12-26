@@ -53,7 +53,10 @@ func (h *App) Handle(ctx context.Context, eventType, deliveryID string, payload 
 		}
 		switch event := hook.(type) {
 		case *github.CheckRunEvent:
-			logger.Debugf("handle event: %+v", event)
+			if event.GetAction() != "rerequested" {
+				return nil
+			}
+			return h.handleRerequestCheckRun(ctx, event)
 		case *github.CheckSuiteEvent:
 			if err := h.handleCheckSuite(ctx, event); err != nil {
 				log.ExtractLogger(ctx).Errorf("failed to handle check suite event: %v", err)
@@ -185,6 +188,54 @@ func (h *App) handleCheckSuite(ctx context.Context, event *github.CheckSuiteEven
 	return nil
 }
 
+func (h *App) handleRerequestCheckRun(ctx context.Context, event *github.CheckRunEvent) error {
+	logger := log.ExtractLogger(ctx)
+	job, err := h.db.GetJobByCheckRunID(ctx, event.GetCheckRun().GetID())
+	if err != nil {
+		return errors.WithMessage(err, "failed to get job by check run id")
+	}
+	getJobExecutionResponse, err := h.runnerClient.GetJobExecution(ctx, &api.GetJobExecutionRequest{
+		JobExecutionID: job.RunnerJobExecutionID,
+	})
+	if err != nil {
+		return errors.WithMessage(err, "failed to get job execution")
+	}
+	rerunJobResponse, err := h.runnerClient.RerunJob(ctx, &api.RerunJobRequest{
+		JobID: getJobExecutionResponse.JobExecution.JobID,
+	})
+	if err != nil {
+		return errors.WithMessage(err, "failed to rerun job")
+	}
+	client, err := h.ghClient.AppInstallClient(event.Installation.GetID())
+	if err != nil {
+		return errors.WithMessage(err, "failed to get app install client")
+	}
+	oldCheckRun, _, err := client.Checks.GetCheckRun(ctx, event.GetRepo().GetOwner().GetLogin(), event.GetRepo().GetName(), job.CheckRunID)
+	if err != nil {
+		return errors.WithMessage(err, "failed to get old check run")
+	}
+	checkRun, _, err := client.Checks.CreateCheckRun(ctx, event.GetRepo().GetOwner().GetLogin(), event.GetRepo().GetName(), github.CreateCheckRunOptions{
+		Name:       lo.FromPtr(oldCheckRun.Name),
+		HeadSHA:    lo.FromPtr(oldCheckRun.HeadSHA),
+		DetailsURL: oldCheckRun.DetailsURL,
+		ExternalID: oldCheckRun.ExternalID,
+		Status:     lo.ToPtr("queued"),
+	})
+	if err != nil {
+		return errors.WithMessage(err, "failed to create new check run")
+	}
+	logger.Infof("created new check run with id: %d", checkRun.GetID())
+	if err := h.db.UpdateJob(ctx, job.ID, &db.UpdateJobOption{
+		RunnerJobExecutionID: &rerunJobResponse.JobExecution.ID,
+		CheckRunID:           checkRun.ID,
+	}); err != nil {
+		return errors.WithMessage(err, "failed to update job")
+	}
+	job.RunnerJobExecutionID = rerunJobResponse.JobExecution.ID
+	job.CheckRunID = checkRun.GetID()
+	return nil
+}
+
 func (h *App) createPipeline(ctx context.Context, repoName string, p *dsl.Pipeline) (*api.Pipeline, error) {
 	runnerPipeline := &api.PipelineDSL{}
 	workdir := filepath.Join("/home/runner/work/", repoName)
@@ -224,8 +275,8 @@ func (h *App) createPipeline(ctx context.Context, repoName string, p *dsl.Pipeli
 				Label: "vm",
 				VM: &api.VM{
 					Image:  on.Linux,
-					CPU:    2,
-					Memory: 4196,
+					CPU:    4,
+					Memory: 8196,
 				},
 			}
 		default:

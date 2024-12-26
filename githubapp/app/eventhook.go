@@ -33,7 +33,7 @@ func (h *App) refreshJob(ctx context.Context, job *db.Job) error {
 		// Continue.
 		logger.Errorf("failed to unmarashal steps: %+v", err)
 	}
-	logger.Infof("job execution status: %s", getJobExecutionResp.JobExecution.Status)
+	logger.Infof("job execution %d status: %s", getJobExecutionResp.JobExecution.ID, getJobExecutionResp.JobExecution.Status)
 	jobExecution := getJobExecutionResp.JobExecution
 	options, err := GenerateUpdateCheckRunOptions(h.baseURL, &RenderCheckRunOptions{
 		RunnerJob: jobExecution,

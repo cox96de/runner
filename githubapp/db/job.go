@@ -68,3 +68,30 @@ func (c *Client) GetJobByRunnerExecutionID(ctx context.Context, runnerExecutionI
 	}
 	return &job, nil
 }
+
+func (c *Client) GetJobByCheckRunID(ctx context.Context, checkRunID int64) (*Job, error) {
+	var job Job
+	if err := c.conn.WithContext(ctx).Where("check_run_id = ?", checkRunID).Take(&job).Error; err != nil {
+		return nil, err
+	}
+	return &job, nil
+}
+
+type UpdateJobOption struct {
+	RunnerJobExecutionID *int64
+	CheckRunID           *int64
+}
+
+func (c *Client) UpdateJob(ctx context.Context, id int64, option *UpdateJobOption) error {
+	updates := map[string]interface{}{}
+	if option.RunnerJobExecutionID != nil {
+		updates["runner_job_execution_id"] = *option.RunnerJobExecutionID
+	}
+	if option.CheckRunID != nil {
+		updates["check_run_id"] = *option.CheckRunID
+	}
+	if err := c.conn.WithContext(ctx).Model(&Job{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+		return err
+	}
+	return nil
+}

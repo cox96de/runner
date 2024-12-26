@@ -66,6 +66,7 @@ func main() {
 	eventHandler, err := app.GetRunnerHandler(context.Background())
 	checkError(err)
 	group.POST("/runner_event", eventHandler)
+	group.POST("/runner_event/:job_execution_id", app.HandleJobExecutionRefresh)
 	// FIXME: this api is not authenticated.
 	group.GET("/job_executions/:job_execution_id/logs/:log_name", app.GetLogHandler)
 	err = http.ListenAndServe(config.ListenAddr, engine)
