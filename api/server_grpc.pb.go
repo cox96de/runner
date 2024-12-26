@@ -25,6 +25,7 @@ type ServerClient interface {
 	Ping(ctx context.Context, in *ServerPingRequest, opts ...grpc.CallOption) (*ServerPingResponse, error)
 	CreatePipeline(ctx context.Context, in *CreatePipelineRequest, opts ...grpc.CallOption) (*CreatePipelineResponse, error)
 	RequestJob(ctx context.Context, in *RequestJobRequest, opts ...grpc.CallOption) (*RequestJobResponse, error)
+	RerunJob(ctx context.Context, in *RerunJobRequest, opts ...grpc.CallOption) (*RerunJobResponse, error)
 	GetJobExecution(ctx context.Context, in *GetJobExecutionRequest, opts ...grpc.CallOption) (*GetJobExecutionResponse, error)
 	CancelJobExecution(ctx context.Context, in *CancelJobExecutionRequest, opts ...grpc.CallOption) (*CancelJobExecutionResponse, error)
 	ListJobExecutions(ctx context.Context, in *ListJobExecutionsRequest, opts ...grpc.CallOption) (*ListJobExecutionsResponse, error)
@@ -65,6 +66,15 @@ func (c *serverClient) CreatePipeline(ctx context.Context, in *CreatePipelineReq
 func (c *serverClient) RequestJob(ctx context.Context, in *RequestJobRequest, opts ...grpc.CallOption) (*RequestJobResponse, error) {
 	out := new(RequestJobResponse)
 	err := c.cc.Invoke(ctx, "/Server/RequestJob", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serverClient) RerunJob(ctx context.Context, in *RerunJobRequest, opts ...grpc.CallOption) (*RerunJobResponse, error) {
+	out := new(RerunJobResponse)
+	err := c.cc.Invoke(ctx, "/Server/RerunJob", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -159,6 +169,7 @@ type ServerServer interface {
 	Ping(context.Context, *ServerPingRequest) (*ServerPingResponse, error)
 	CreatePipeline(context.Context, *CreatePipelineRequest) (*CreatePipelineResponse, error)
 	RequestJob(context.Context, *RequestJobRequest) (*RequestJobResponse, error)
+	RerunJob(context.Context, *RerunJobRequest) (*RerunJobResponse, error)
 	GetJobExecution(context.Context, *GetJobExecutionRequest) (*GetJobExecutionResponse, error)
 	CancelJobExecution(context.Context, *CancelJobExecutionRequest) (*CancelJobExecutionResponse, error)
 	ListJobExecutions(context.Context, *ListJobExecutionsRequest) (*ListJobExecutionsResponse, error)
@@ -183,6 +194,9 @@ func (UnimplementedServerServer) CreatePipeline(context.Context, *CreatePipeline
 }
 func (UnimplementedServerServer) RequestJob(context.Context, *RequestJobRequest) (*RequestJobResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RequestJob not implemented")
+}
+func (UnimplementedServerServer) RerunJob(context.Context, *RerunJobRequest) (*RerunJobResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RerunJob not implemented")
 }
 func (UnimplementedServerServer) GetJobExecution(context.Context, *GetJobExecutionRequest) (*GetJobExecutionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetJobExecution not implemented")
@@ -274,6 +288,24 @@ func _Server_RequestJob_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ServerServer).RequestJob(ctx, req.(*RequestJobRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Server_RerunJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RerunJobRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServerServer).RerunJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/Server/RerunJob",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServerServer).RerunJob(ctx, req.(*RerunJobRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -458,6 +490,10 @@ var Server_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RequestJob",
 			Handler:    _Server_RequestJob_Handler,
+		},
+		{
+			MethodName: "RerunJob",
+			Handler:    _Server_RerunJob_Handler,
 		},
 		{
 			MethodName: "GetJobExecution",
