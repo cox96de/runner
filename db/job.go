@@ -261,3 +261,12 @@ func (c *Client) UpdateJobExecution(ctx context.Context, option *UpdateJobExecut
 	}
 	return jobExecution, c.conn.WithContext(ctx).Where("id = ?", option.ID).Save(jobExecution).Error
 }
+
+func (c *Client) ResetJobExecution(ctx context.Context, jobExecutionID int64) error {
+	return c.conn.WithContext(ctx).Model(&JobExecution{}).Where("id = ?", jobExecutionID).Updates(map[string]interface{}{
+		"status":       api.StatusCreated,
+		"reason":       "",
+		"started_at":   nil,
+		"completed_at": nil,
+	}).Error
+}

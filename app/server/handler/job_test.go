@@ -4,6 +4,10 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cox96de/runner/app/server/logstorage"
+	pipeline2 "github.com/cox96de/runner/app/server/pipeline"
+	"gotest.tools/v3/fs"
+
 	"github.com/cox96de/runner/app/server/dispatch"
 	"github.com/cox96de/runner/app/server/eventhook"
 
@@ -98,5 +102,44 @@ func TestHandler_UpdateJobExecution(t *testing.T) {
 			Reason:         nil,
 		})
 		assert.NilError(t, err)
+	})
+}
+
+func TestHandler_RerunJob(t *testing.T) {
+	t.Run("rerun", func(t *testing.T) {
+		dbCli := mock.NewMockDB(t)
+		eventHook := eventhook.NewService(eventhook.NewNopSender())
+		mockLogService := logstorage.NewService(mock.NewMockRedis(t), logstorage.NewFilesystemOSS(fs.NewDir(t, "baseDir").Path()))
+		handler := NewHandler(dbCli, pipeline2.NewService(dbCli), dispatch.NewService(dbCli, eventHook),
+			mock.NewMockLocker(), mockLogService, eventHook)
+		createPipelineResp, err := handler.CreatePipeline(context.Background(), &api.CreatePipelineRequest{Pipeline: &api.PipelineDSL{Jobs: []*api.JobDSL{
+			{
+				Name: "Job",
+				RunsOn: &api.RunsOn{
+					Label: "label",
+				},
+				WorkingDirectory: "",
+				EnvVar:           nil,
+				DependsOn:        nil,
+				Steps:            []*api.StepDSL{{Name: "step", Commands: []string{"command"}}},
+				Timeout:          0,
+			},
+		}}})
+		assert.NilError(t, err)
+		job := createPipelineResp.Pipeline.Jobs[0]
+
+		jobExecutions, err := dbCli.GetJobExecutionsByJobID(context.Background(), job.ID)
+		jobExecution := jobExecutions[len(jobExecutions)-1]
+		PushJobToStatus(t, handler, context.Background(), jobExecution.ID, jobExecution.Status, api.StatusFailed)
+		assert.NilError(t, err)
+		rerunJobResponse, err := handler.RerunJob(context.Background(), &api.RerunJobRequest{
+			JobID: job.ID,
+		})
+		assert.NilError(t, err)
+		assert.Assert(t, rerunJobResponse.JobExecution.JobID == job.ID)
+		assert.DeepEqual(t, rerunJobResponse.JobExecution.Status, api.StatusCreated)
+		for _, step := range rerunJobResponse.JobExecution.Steps {
+			assert.DeepEqual(t, step.Status, api.StatusCreated)
+		}
 	})
 }

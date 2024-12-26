@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/cox96de/runner/api"
+
 	"github.com/cockroachdb/errors"
 
 	"github.com/gin-gonic/gin"
@@ -57,4 +59,36 @@ func Test_getGinHandler(t *testing.T) {
 	do, err := server.Client().Do(request)
 	assert.NilError(t, err)
 	assert.Equal(t, do.StatusCode, 444)
+}
+
+func CreateAndPushToStatus(t *testing.T, h *Handler, pipeline *api.PipelineDSL, targetStatus api.Status) *api.Job {
+	ctx := context.Background()
+	createPipelineResponse, err := h.CreatePipeline(ctx, &api.CreatePipelineRequest{Pipeline: pipeline})
+	assert.NilError(t, err)
+	jobExecutionID := createPipelineResponse.Pipeline.Jobs[0].Execution.ID
+	PushJobToStatus(t, h, ctx, jobExecutionID, api.StatusCreated, targetStatus)
+	return createPipelineResponse.Pipeline.Jobs[0]
+}
+
+func PushJobToStatus(t *testing.T, h *Handler, ctx context.Context, jobExecutionID int64, currentStatus, targetStatus api.Status) api.Status {
+	if currentStatus >= targetStatus {
+		return currentStatus
+	}
+	switch {
+	case targetStatus == api.StatusCreated:
+	case targetStatus == api.StatusQueued:
+	case targetStatus == api.StatusPreparing:
+		currentStatus = PushJobToStatus(t, h, ctx, jobExecutionID, currentStatus, api.StatusQueued)
+	case targetStatus == api.StatusRunning:
+		currentStatus = PushJobToStatus(t, h, ctx, jobExecutionID, currentStatus, api.StatusPreparing)
+	case targetStatus.IsCompleted():
+		currentStatus = PushJobToStatus(t, h, ctx, jobExecutionID, currentStatus, api.StatusRunning)
+	case targetStatus == api.StatusCanceling:
+	}
+	_, err := h.UpdateJobExecution(ctx, &api.UpdateJobExecutionRequest{
+		JobExecutionID: jobExecutionID,
+		Status:         &targetStatus,
+	})
+	assert.NilError(t, err)
+	return currentStatus
 }

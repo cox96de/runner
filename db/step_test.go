@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/cox96de/runner/api"
 	"github.com/samber/lo"
@@ -110,4 +111,32 @@ func TestClient_UpdateStepExecution(t *testing.T) {
 	execution, err = db.GetStepExecution(context.Background(), execution.ID)
 	assert.NilError(t, err)
 	assert.Equal(t, uint32(1), execution.ExitCode)
+}
+
+func TestClient_ResetStepExecutions(t *testing.T) {
+	db := NewMockDB(t, &StepExecution{})
+	executions, err := db.CreateStepExecutions(context.Background(), []*CreateStepExecutionOption{
+		{
+			JobExecutionID: 1,
+			StepID:         2,
+			Status:         api.StatusCreated,
+		},
+	})
+	assert.NilError(t, err)
+	_, err = db.UpdateStepExecution(context.Background(), &UpdateStepExecutionOption{
+		ID:          executions[0].ID,
+		Status:      lo.ToPtr(api.StatusFailed),
+		ExitCode:    lo.ToPtr(uint32(1)),
+		StartedAt:   lo.ToPtr(time.Now()),
+		CompletedAt: lo.ToPtr(time.Now()),
+	})
+	assert.NilError(t, err)
+	err = db.ResetStepExecutions(context.Background(), []int64{executions[0].ID})
+	assert.NilError(t, err)
+	execution, err := db.GetStepExecution(context.Background(), executions[0].ID)
+	assert.NilError(t, err)
+	assert.Equal(t, api.StatusCreated, execution.Status)
+	assert.Equal(t, uint32(0), execution.ExitCode)
+	assert.Equal(t, (*time.Time)(nil), execution.StartedAt)
+	assert.Equal(t, (*time.Time)(nil), execution.CompletedAt)
 }

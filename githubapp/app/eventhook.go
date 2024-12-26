@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/gin-gonic/gin"
@@ -77,7 +78,7 @@ func (h *App) handleCloudEvents(ctx context.Context, event cloudevents.Event) er
 	logger := log.ExtractLogger(ctx).WithField("event.id", event.ID())
 	switch {
 	case e.StepExecution != nil:
-		return h.handleStepExecutionUpdate(log.WithLogger(ctx, logger), e.StepExecution)
+		return h.handleJobExecutionUpdate(log.WithLogger(ctx, logger), e.StepExecution.JobExecutionID)
 	case e.JobExecution != nil:
 		if e.JobExecution.Status == api.StatusQueued {
 			// Runner dispatch the job to queue when the job is created and can be executed.
@@ -85,28 +86,26 @@ func (h *App) handleCloudEvents(ctx context.Context, event cloudevents.Event) er
 			// So cannot find the job in the database.
 			return nil
 		}
-		return h.handleJobExecutionUpdate(log.WithLogger(ctx, logger), e.JobExecution)
+		return h.handleJobExecutionUpdate(log.WithLogger(ctx, logger), e.JobExecution.ID)
 	}
 	return nil
 }
 
-func (h *App) handleStepExecutionUpdate(ctx context.Context, e *api.StepExecution) error {
-	job, err := h.db.GetJobByRunnerExecutionID(ctx, e.JobExecutionID)
+func (h *App) HandleJobExecutionRefresh(ctx *gin.Context) {
+	jobExecutionID := ctx.GetInt64("job_execution_id")
+	err := h.handleJobExecutionUpdate(ctx, jobExecutionID)
 	if err != nil {
-		if db.IsRecordNotFoundError(err) {
-			log.ExtractLogger(ctx).Warningf("job not found for runner execution: %d", e.JobExecutionID)
-			return nil
-		}
-		return errors.WithMessage(err, "failed to get job by runner execution id")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	return h.refreshJob(ctx, job)
+	ctx.Status(http.StatusOK)
 }
 
-func (h *App) handleJobExecutionUpdate(ctx context.Context, e *api.JobExecution) error {
-	job, err := h.db.GetJobByRunnerExecutionID(ctx, e.ID)
+func (h *App) handleJobExecutionUpdate(ctx context.Context, jobExecutionID int64) error {
+	job, err := h.db.GetJobByRunnerExecutionID(ctx, jobExecutionID)
 	if err != nil {
 		if db.IsRecordNotFoundError(err) {
-			log.ExtractLogger(ctx).Warningf("job not found for runner execution: %d", e.ID)
+			log.ExtractLogger(ctx).Warningf("job not found for runner execution: %d", jobExecutionID)
 			return nil
 		}
 		return errors.WithMessage(err, "failed to get job by runner execution id")
