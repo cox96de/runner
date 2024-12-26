@@ -202,7 +202,7 @@ func (c *Client) CreateStepExecutions(ctx context.Context, options []*CreateStep
 	return executions, nil
 }
 
-// GetStepExecution returns step executions by id.
+// GetStepExecution returns step execution by id.
 func (c *Client) GetStepExecution(ctx context.Context, id int64) (*StepExecution, error) {
 	var step StepExecution
 	if err := c.conn.WithContext(ctx).First(&step, "id = ?", id).Error; err != nil {
@@ -259,4 +259,13 @@ func (c *Client) UpdateStepExecution(ctx context.Context, option *UpdateStepExec
 	}
 	err = c.conn.WithContext(ctx).Model(&stepExecution).Where("id = ?", option.ID).Save(stepExecution).Error
 	return stepExecution, err
+}
+
+func (c *Client) ResetStepExecutions(ctx context.Context, stepExecutionIDs []int64) error {
+	return c.conn.WithContext(ctx).Model(&StepExecution{}).Where("id in ?", stepExecutionIDs).Updates(map[string]interface{}{
+		"status":       api.StatusCreated,
+		"exit_code":    0,
+		"started_at":   nil,
+		"completed_at": nil,
+	}).Error
 }

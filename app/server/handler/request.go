@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cox96de/runner/log"
 	"github.com/cox96de/runner/telemetry/trace"
 	"go.opentelemetry.io/otel/attribute"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/cox96de/runner/db"
 	"github.com/cox96de/runner/lib"
 	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
 )
 
 func (h *Handler) RequestJobHandler(c *gin.Context) {
@@ -23,6 +23,8 @@ func (h *Handler) RequestJobHandler(c *gin.Context) {
 		JSON(c, http.StatusBadRequest, &Message{Message: err})
 		return
 	}
+	logger := log.ExtractLogger(c)
+	logger.Debugf("handle job request for label: %s", request.Label)
 	response, err := h.RequestJob(c, request)
 	if err != nil {
 		log.Errorf("failed to request job: %v", err)
@@ -38,6 +40,7 @@ func (h *Handler) RequestJobHandler(c *gin.Context) {
 
 func (h *Handler) RequestJob(ctx context.Context, request *api.RequestJobRequest) (*api.RequestJobResponse, error) {
 	// TODO: the limit should be configurable.
+	logger := log.ExtractLogger(ctx)
 	ctx, span := trace.Start(ctx, "handler.request_job",
 		trace.WithAttributes(attribute.String("label", request.Label)))
 	defer span.End()
@@ -46,11 +49,13 @@ func (h *Handler) RequestJob(ctx context.Context, request *api.RequestJobRequest
 		return nil, errors.WithMessage(err, "failed to get queued job executions")
 	}
 	for _, jobQueue := range jobQueues {
+		logger.Debugf("get job execution: %d", jobQueue.JobExecutionID)
 		job, ok := h.tryLockJobExecution(ctx, jobQueue.JobExecutionID)
 		if !ok {
+			logger.Debugf("failed to lock job execution: %d", jobQueue.JobExecutionID)
 			continue
 		}
-		log.WithContext(ctx).Infof("dispatch job: %v, job execution: %d", job.ID, jobQueue.JobExecutionID)
+		logger.Infof("dispatch job: %v, job execution: %d", job.ID, jobQueue.JobExecutionID)
 		span.AddEvent("Dispatch job", trace.WithAttributes(attribute.Int64("job_execution_id", jobQueue.JobExecutionID)))
 		return &api.RequestJobResponse{
 			Job: job,
@@ -63,11 +68,12 @@ func (h *Handler) RequestJob(ctx context.Context, request *api.RequestJobRequest
 }
 
 func (h *Handler) tryLockJobExecution(ctx context.Context, jobExecutionID int64) (job *api.Job, ok bool) {
+	logger := log.ExtractLogger(ctx)
 	lockKey := lib.BuildJobRequestLockKey(jobExecutionID)
 	lock, err := h.locker.Lock(ctx, lockKey, "request_job",
 		time.Second*10)
 	if err != nil {
-		log.Warnf("failed to lock job execution: %v", err)
+		logger.Warnf("failed to lock job execution: %v", err)
 		return nil, false
 	}
 	if !lock {
@@ -78,7 +84,7 @@ func (h *Handler) tryLockJobExecution(ctx context.Context, jobExecutionID int64)
 		if !ok {
 			_, err := h.locker.Unlock(ctx, lockKey)
 			if err != nil {
-				log.Warnf("failed to unlock job execution: %v", err)
+				logger.Warnf("failed to unlock job execution: %v", err)
 			}
 		}
 	}()

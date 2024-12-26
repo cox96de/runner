@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/cox96de/runner/api"
 
@@ -98,4 +99,34 @@ func TestClient_UpdateJobExecution(t *testing.T) {
 	execution, err := db.GetJobExecution(context.Background(), executions[0].ID)
 	assert.NilError(t, err)
 	assert.Equal(t, api.StatusRunning, execution.Status)
+}
+
+func TestClient_ResetJobExecution(t *testing.T) {
+	db := NewMockDB(t, &JobExecution{})
+	executions, err := db.CreateJobExecutions(context.Background(), []*CreateJobExecutionOption{
+		{
+			JobID:  1,
+			Status: api.StatusCreated,
+		},
+	})
+	assert.NilError(t, err)
+	_, err = db.UpdateJobExecution(context.Background(), &UpdateJobExecutionOption{
+		ID:     executions[0].ID,
+		Status: lo.ToPtr(api.StatusFailed),
+		Reason: &api.Reason{
+			Reason:  api.FailedReasonStepFailed,
+			Message: "step failed",
+		},
+		StartedAt:   lo.ToPtr(time.Now()),
+		CompletedAt: lo.ToPtr(time.Now()),
+	})
+	assert.NilError(t, err)
+	err = db.ResetJobExecution(context.Background(), executions[0].ID)
+	assert.NilError(t, err)
+	execution, err := db.GetJobExecution(context.Background(), executions[0].ID)
+	assert.NilError(t, err)
+	assert.Equal(t, api.StatusCreated, execution.Status)
+	assert.Equal(t, "", string(execution.Reason))
+	assert.Assert(t, execution.StartedAt == nil)
+	assert.Assert(t, execution.CompletedAt == nil)
 }

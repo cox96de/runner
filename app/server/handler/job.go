@@ -130,30 +130,62 @@ func (h *Handler) GetJobExecution(ctx context.Context, in *api.GetJobExecutionRe
 func (h *Handler) RerunJob(ctx context.Context, in *api.RerunJobRequest) (*api.RerunJobResponse, error) {
 	logger := log.ExtractLogger(ctx)
 	logger.Infof("rerun job: %d", in.JobID)
+	var latestJobExecution *db.JobExecution
 	jobExecutions, err := h.db.GetJobExecutionsByJobID(ctx, in.JobID)
 	if err != nil {
 		return nil, errors.WithMessagef(err, "failed to job executions '%d'", in.JobID)
 	}
 	// Get the latest job execution.
-	latestJobExecution := getLatestJobExecution(jobExecutions)
+	latestJobExecution = getLatestJobExecution(jobExecutions)
 	if !latestJobExecution.Status.IsCompleted() {
 		return nil, errors.Errorf("job '%d' is not completed", in.JobID)
 	}
-	err = h.dispatchService.UpdateJobExecution(ctx, h.db, &db.UpdateJobExecutionOption{
-		ID:     latestJobExecution.ID,
-		Status: lo.ToPtr(api.StatusQueued),
-	})
+	job, err := h.db.GetJobByID(ctx, latestJobExecution.JobID)
 	if err != nil {
-		return nil, errors.WithMessagef(err, "failed to rerun job '%d'", in.JobID)
+		return nil, errors.WithMessagef(err, "failed to get job '%d'", latestJobExecution.JobID)
 	}
-	latestJobExecution.Status = api.StatusQueued
+	latestJobExecution, err = h.resetJobExecution(ctx, latestJobExecution)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to reset job execution")
+	}
+	// FIXME: if dispatch failed, cannot redispatch.
+	err = h.dispatchService.Dispatch(ctx, []*db.Job{job}, []*db.JobExecution{latestJobExecution})
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to dispatch job")
+	}
 	execution, err := db.PackJobExecution(latestJobExecution, nil)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to pack job execution")
 	}
+	// FIXME: the status of job execution might be not correct because of dispatching.
 	return &api.RerunJobResponse{
 		JobExecution: execution,
 	}, nil
+}
+
+func (h *Handler) resetJobExecution(ctx context.Context, latestJobExecution *db.JobExecution) (*db.JobExecution, error) {
+	err := h.db.Transaction(func(dbClient *db.Client) error {
+		stepExecutions, err := dbClient.GetStepExecutionsByJobExecutionID(ctx, latestJobExecution.ID)
+		if err != nil {
+			return errors.WithMessagef(err, "failed to get step executions for job execution '%d'", latestJobExecution.ID)
+		}
+		err = dbClient.ResetStepExecutions(ctx, lo.Map(stepExecutions, func(stepExecution *db.StepExecution, _ int) int64 {
+			return stepExecution.ID
+		}))
+		if err != nil {
+			return errors.WithMessage(err, "failed to update step executions")
+		}
+		err = dbClient.ResetJobExecution(ctx, latestJobExecution.ID)
+		if err != nil {
+			return errors.WithMessagef(err, "failed to reset job execution '%d'", latestJobExecution.ID)
+		}
+		latestJobExecution, err = dbClient.GetJobExecution(ctx, latestJobExecution.ID)
+		if err != nil {
+			return errors.WithMessagef(err, "failed to get job execution '%d'", latestJobExecution.ID)
+		}
+		return nil
+	})
+	return latestJobExecution, err
 }
 
 func getLatestJobExecution(jobExecutions []*db.JobExecution) *db.JobExecution {
