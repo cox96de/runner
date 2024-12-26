@@ -124,3 +124,44 @@ func (h *Handler) GetJobExecution(ctx context.Context, in *api.GetJobExecutionRe
 	jobExecution, err := db.PackJobExecution(jobExecutionPO, steps)
 	return &api.GetJobExecutionResponse{JobExecution: jobExecution}, err
 }
+
+// RerunJob rerun the job by the latest job execution.
+// TODO: this implementation is not correct, rerun should create new job executions include jobs depends on it.
+func (h *Handler) RerunJob(ctx context.Context, in *api.RerunJobRequest) (*api.RerunJobResponse, error) {
+	logger := log.ExtractLogger(ctx)
+	logger.Infof("rerun job: %d", in.JobID)
+	jobExecutions, err := h.db.GetJobExecutionsByJobID(ctx, in.JobID)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to job executions '%d'", in.JobID)
+	}
+	// Get the latest job execution.
+	latestJobExecution := getLatestJobExecution(jobExecutions)
+	if !latestJobExecution.Status.IsCompleted() {
+		return nil, errors.Errorf("job '%d' is not completed", in.JobID)
+	}
+	err = h.dispatchService.UpdateJobExecution(ctx, h.db, &db.UpdateJobExecutionOption{
+		ID:     latestJobExecution.ID,
+		Status: lo.ToPtr(api.StatusQueued),
+	})
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to rerun job '%d'", in.JobID)
+	}
+	latestJobExecution.Status = api.StatusQueued
+	execution, err := db.PackJobExecution(latestJobExecution, nil)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to pack job execution")
+	}
+	return &api.RerunJobResponse{
+		JobExecution: execution,
+	}, nil
+}
+
+func getLatestJobExecution(jobExecutions []*db.JobExecution) *db.JobExecution {
+	var latestJobExecution *db.JobExecution
+	for _, jobExecution := range jobExecutions {
+		if latestJobExecution == nil || jobExecution.CreatedAt.After(latestJobExecution.CreatedAt) {
+			latestJobExecution = jobExecution
+		}
+	}
+	return latestJobExecution
+}

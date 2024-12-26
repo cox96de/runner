@@ -9,6 +9,7 @@ service Server {
   rpc Ping(ServerPingRequest) returns (ServerPingResponse) {}
   rpc CreatePipeline(CreatePipelineRequest) returns (CreatePipelineResponse) {}
   rpc RequestJob(RequestJobRequest) returns (RequestJobResponse) {}
+  rpc RerunJob(RerunJobRequest) returns (RerunJobResponse) {}
   rpc GetJobExecution(GetJobExecutionRequest) returns (GetJobExecutionResponse) {}
   rpc CancelJobExecution(CancelJobExecutionRequest) returns (CancelJobExecutionResponse) {}
   rpc ListJobExecutions(ListJobExecutionsRequest) returns (ListJobExecutionsResponse) {}
@@ -47,32 +48,32 @@ message UpdateJobExecutionRequest {
 }
 
 message UpdateJobExecutionResponse {
-  JobExecution JobExecution = 1;
+  JobExecution job_execution = 1;
 }
 
 message GetJobExecutionRequest {
   //@gotags: path:"job_execution_id"
-  int64 JobExecutionID = 1 [(go.field).name = "JobExecutionID"];
+  int64 job_execution_id = 1 [(go.field).name = "JobExecutionID"];
   //@gotags: query:"with_step_execution"
-  optional bool WithStepExecution = 100;
+  optional bool with_step_execution = 100;
 }
 
 message GetJobExecutionResponse {
-  JobExecution JobExecution = 1;
+  JobExecution job_execution = 1;
 }
 
 message CancelJobExecutionRequest {
   //@gotags: path:"job_execution_id"
-  int64 JobExecutionID = 1 [(go.field).name = "JobExecutionID"];
+  int64 job_execution_id = 1 [(go.field).name = "JobExecutionID"];
 }
 
 message CancelJobExecutionResponse {
-  JobExecution JobExecution = 1;
+  JobExecution job_execution = 1;
 }
 
 message ListJobExecutionsRequest {
   //@gotags: path:"job_id"
-  int64 JobID = 1 [(go.field).name = "JobID"];
+  int64 job_id = 1 [(go.field).name = "JobID"];
 }
 
 message ListJobExecutionsResponse {
@@ -81,27 +82,27 @@ message ListJobExecutionsResponse {
 
 message GetStepExecutionRequest {
   //@gotags: path:"step_execution_id"
-  int64 StepExecutionID = 1;
+  int64 step_execution_id = 1 [(go.field).name = "StepExecutionID"];
 }
 
 message GetStepExecutionResponse {
-  StepExecution StepExecution = 1;
+  StepExecution step_execution = 1;
 }
 message UpdateStepExecutionRequest {
   //@gotags: path:"step_execution_id"
-  int64 StepExecutionID = 1;
+  int64 step_execution_id = 1 [(go.field).name = "StepExecutionID"];
   optional Status status = 2;
   optional uint32 exit_code = 3;
 }
 
 message UpdateStepExecutionResponse {
-  StepExecution StepExecution = 1;
+  StepExecution step_execution = 1;
 }
 
 message UpdateLogLinesRequest {
   //@gotags: path:"job_execution_id"
-  int64 JobExecutionID = 1 [(go.field).name = "JobExecutionID"];
-  string Name = 2;
+  int64 job_execution_id = 1 [(go.field).name = "JobExecutionID"];
+  string name = 2;
   repeated LogLine lines = 3;
 }
 
@@ -109,13 +110,13 @@ message UpdateLogLinesResponse {}
 
 message GetLogLinesRequest {
   //@gotags: path:"job_execution_id"
-  int64 JobExecutionID = 1 [(go.field).name = "JobExecutionID"];
+  int64 job_execution_id = 1 [(go.field).name = "JobExecutionID"];
   //@gotags: path:"name"
-  string Name = 2;
+  string name = 2;
   //@gotags: query:"offset"
   int64 Offset = 3;
   //@gotags: query:"limit"
-  optional int64 Limit = 4;
+  optional int64 limit = 4;
 }
 
 message GetLogLinesResponse {
@@ -123,9 +124,18 @@ message GetLogLinesResponse {
 }
 
 message HeartbeatRequest {
-  int64 JobExecutionID = 1 [(go.field).name = "JobExecutionID"];
+  int64 job_execution_id = 1 [(go.field).name = "JobExecutionID"];
 }
 
 message HeartbeatResponse {
   Status status = 1;
+}
+
+message RerunJobRequest {
+  //@gotags: path:"job_id"
+  int64 job_id = 1 [(go.field).name = "JobID"];
+}
+
+message RerunJobResponse {
+  JobExecution job_execution = 1;
 }

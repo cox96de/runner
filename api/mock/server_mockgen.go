@@ -437,6 +437,50 @@ func (c *MockServerClientRequestJobCall) DoAndReturn(f func(context.Context, *ap
 	return c
 }
 
+// RerunJob mocks base method.
+func (m *MockServerClient) RerunJob(arg0 context.Context, arg1 *api.RerunJobRequest, arg2 ...grpc.CallOption) (*api.RerunJobResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RerunJob", varargs...)
+	ret0, _ := ret[0].(*api.RerunJobResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RerunJob indicates an expected call of RerunJob.
+func (mr *MockServerClientMockRecorder) RerunJob(arg0, arg1 any, arg2 ...any) *MockServerClientRerunJobCall {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RerunJob", reflect.TypeOf((*MockServerClient)(nil).RerunJob), varargs...)
+	return &MockServerClientRerunJobCall{Call: call}
+}
+
+// MockServerClientRerunJobCall wrap *gomock.Call
+type MockServerClientRerunJobCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockServerClientRerunJobCall) Return(arg0 *api.RerunJobResponse, arg1 error) *MockServerClientRerunJobCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockServerClientRerunJobCall) Do(f func(context.Context, *api.RerunJobRequest, ...grpc.CallOption) (*api.RerunJobResponse, error)) *MockServerClientRerunJobCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockServerClientRerunJobCall) DoAndReturn(f func(context.Context, *api.RerunJobRequest, ...grpc.CallOption) (*api.RerunJobResponse, error)) *MockServerClientRerunJobCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // UpdateJobExecution mocks base method.
 func (m *MockServerClient) UpdateJobExecution(arg0 context.Context, arg1 *api.UpdateJobExecutionRequest, arg2 ...grpc.CallOption) (*api.UpdateJobExecutionResponse, error) {
 	m.ctrl.T.Helper()

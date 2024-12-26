@@ -66,6 +66,16 @@ func (c *Client) ListJobExecutions(ctx context.Context, in *api.ListJobExecution
 	return resp, nil
 }
 
+func (c *Client) RerunJob(ctx context.Context, in *api.RerunJobRequest, opts ...grpc.CallOption) (*api.RerunJobResponse, error) {
+	u := c.u.JoinPath(fmt.Sprintf("/api/v1/jobs/%d/rerun/", in.JobID))
+	resp := &api.RerunJobResponse{}
+	err := c.doRequest(ctx, u.String(), http.MethodPost, in, resp)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 func (c *Client) GetStepExecution(ctx context.Context, in *api.GetStepExecutionRequest, opts ...grpc.CallOption) (*api.GetStepExecutionResponse, error) {
 	u := c.u.JoinPath(fmt.Sprintf("/api/v1/step_executions/%d", in.StepExecutionID))
 	resp := &api.GetStepExecutionResponse{}

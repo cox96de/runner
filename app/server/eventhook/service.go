@@ -74,8 +74,7 @@ func (s *Service) SendJobExecutionEvent(ctx context.Context, job *db.JobExecutio
 
 func (s *Service) doSend(ctx context.Context, ev event.Event) {
 	logger := log.ExtractLogger(ctx).WithFields(log.Fields{
-		"event_id": ev.ID(),
-		"type":     ev.Type(),
+		"type": ev.Type(),
 	})
 	ev.SetSource(source)
 	result := s.client.Send(log.WithLogger(context.Background(), logger), ev)
