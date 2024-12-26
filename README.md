@@ -40,6 +40,7 @@ docker run cox96de/runner-agent-debian:latest --engine shell --server_url http:/
 ```
 
 ### Install `Runner Agent` from source
+
 ```bash
 make build_agent
 ./output/agent --engine shell --server_url http://{your_server_ip}:8080
@@ -54,3 +55,5 @@ Notice: replace `{your_server_ip}` with your server ip.
 ```bash
 docker run cox96de/runner-simplecli --server http://{your_server_ip}:8080 /examples/compile_redis.yaml
 ```
+
+## Bundle Runner Server as a library(TODO)
