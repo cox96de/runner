@@ -21,6 +21,10 @@ import (
 )
 
 const filePATH = ".xxci/ci.yaml"
+const (
+	CloneURLEnvKey = "CI_CLONE_URL"
+	RefEnvKey      = "CI_REF"
+)
 
 type App struct {
 	ghClient     *ghclient.Client
@@ -218,7 +222,11 @@ func (h *App) createPipeline(ctx context.Context, repoName string, p *dsl.Pipeli
 		case on.Linux != "":
 			runsOn = &api.RunsOn{
 				Label: "vm",
-				VM:    &api.VM{Image: on.Linux},
+				VM: &api.VM{
+					Image:    on.Linux,
+					CPU:      4,
+					MemoryMB: 8196,
+				},
 			}
 		default:
 			return nil, errors.Errorf("runs_on should be not empty: %s", jobID)

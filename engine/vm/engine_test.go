@@ -30,7 +30,11 @@ func TestEngine_CreateRunner(t *testing.T) {
 		RunsOn: &api.RunsOn{
 			Label:  "",
 			Docker: nil,
-			VM:     &api.VM{Image: "debian-11.qcow2"},
+			VM: &api.VM{
+				Image:    "debian-11.qcow2",
+				CPU:      2,
+				MemoryMB: 1024,
+			},
 		},
 		Execution: &api.JobExecution{ID: 1},
 	})

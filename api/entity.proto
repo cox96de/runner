@@ -140,6 +140,9 @@ message VolumeMount {
 
 message VM {
   string image = 1;
+  int32 CPU = 2;
+  // Memory in MB
+  int32 MemoryMB = 3;
 }
 
 // StepDSL represents a step definition.
