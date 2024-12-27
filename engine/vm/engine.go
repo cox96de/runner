@@ -71,8 +71,15 @@ func (e *Engine) CreateRunner(ctx context.Context, logProvider engine.LogProvide
 	if spec.RunsOn == nil || spec.RunsOn.VM == nil {
 		return nil, errors.Errorf("VM spec is required")
 	}
-	c := newCompiler(e.runtimeImage,
-		e.executorPath, e.vmImageRoot, e.runtimeVolumeMounts, e.runtimeVolumes)
+	c := newCompiler(&createCompilerOption{
+		RuntimeImage:        e.runtimeImage,
+		ExecutorPath:        e.executorPath,
+		ImageBaseDir:        e.vmImageRoot,
+		RuntimeVolumeMounts: e.runtimeVolumeMounts,
+		RuntimeVolumes:      e.runtimeVolumes,
+		CPU:                 spec.RunsOn.VM.CPU,
+		Memory:              spec.RunsOn.VM.MemoryMB,
+	})
 	compile, err := c.Compile(fmt.Sprintf("vm-%d", spec.Execution.ID), spec.RunsOn)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to compile compile vm-runner")

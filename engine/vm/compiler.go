@@ -24,14 +24,24 @@ type compiler struct {
 	imageBaseDir        string
 	runtimeVolumeMounts []corev1.VolumeMount
 	runtimeVolumes      []corev1.Volume
+	cpu                 int32
+	memory              int32
 }
 
-func newCompiler(runtimeImage string, executorPath string, imageBaseDir string, runtimeVolumeMounts []corev1.VolumeMount,
-	runtimeVolumes []corev1.Volume,
-) *compiler {
+type createCompilerOption struct {
+	RuntimeImage        string
+	ExecutorPath        string
+	ImageBaseDir        string
+	RuntimeVolumeMounts []corev1.VolumeMount
+	RuntimeVolumes      []corev1.Volume
+	CPU                 int32
+	Memory              int32
+}
+
+func newCompiler(opt *createCompilerOption) *compiler {
 	return &compiler{
-		runtimeImage: runtimeImage, executorPath: executorPath, imageBaseDir: imageBaseDir,
-		runtimeVolumeMounts: runtimeVolumeMounts, runtimeVolumes: runtimeVolumes,
+		runtimeImage: opt.RuntimeImage, executorPath: opt.ExecutorPath, imageBaseDir: opt.ImageBaseDir,
+		runtimeVolumeMounts: opt.RuntimeVolumeMounts, runtimeVolumes: opt.RuntimeVolumes, cpu: opt.CPU, memory: opt.Memory,
 	}
 }
 
@@ -59,7 +69,7 @@ func (c *compiler) Compile(id string, spec *api.RunsOn) (*compileResult, error) 
 }
 
 func (c *compiler) compileContainers(imageName string) ([]corev1.Container, error) {
-	q := newQemuCompiler(2, 1024)
+	q := newQemuCompiler(c.cpu, c.memory)
 	q.AddDisk(filepath.Join(c.imageBaseDir, imageName))
 	q.AddShare(filepath.Dir(c.executorPath), executorMountTag)
 	metaData := `instance-id: vm-runner
@@ -126,14 +136,14 @@ func (c *compiler) getSystemVolumes() []corev1.Volume {
 
 // qemuCompiler is to compile qemu command
 type qemuCompiler struct {
-	cpu       int
-	memory    int // MB
+	cpu       int32
+	memory    int32 // MB
 	disks     []*disk
 	shares    []*shareVolume
 	enableVGA bool
 }
 
-func newQemuCompiler(cpu int, memory int) *qemuCompiler {
+func newQemuCompiler(cpu int32, memory int32) *qemuCompiler {
 	return &qemuCompiler{cpu: cpu, memory: memory}
 }
 
