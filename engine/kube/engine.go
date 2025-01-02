@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/cox96de/runner/util"
+
 	"github.com/cox96de/runner/api"
 
 	"github.com/cockroachdb/errors"
@@ -63,7 +65,7 @@ func (e *Engine) CreateRunner(ctx context.Context, logProvider engine.LogProvide
 		return nil, errors.New("runs_on.docker is nil")
 	}
 	c := newCompiler(e.executorImage, e.executorPath)
-	compile := c.Compile("kube-runner-"+strconv.FormatInt(spec.Execution.ID, 10), spec.RunsOn)
+	compile := c.Compile("kube-runner-"+strconv.FormatInt(spec.Execution.ID, 10)+"-"+util.RandomLower(5), spec.RunsOn)
 	r := &Runner{
 		defaultContainer: spec.RunsOn.Docker.DefaultContainer,
 		client:           e.client,

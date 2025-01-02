@@ -140,9 +140,9 @@ message VolumeMount {
 
 message VM {
   string image = 1;
-  int32 CPU = 2;
+  int32 cpu = 2 [(go.field).name = "CPU"];
   // Memory in MB
-  int32 MemoryMB = 3;
+  int32 memory = 3;
 }
 
 // StepDSL represents a step definition.

@@ -1,9 +1,10 @@
 {
   "metadata": {
-    "name": "vm-1",
+    "name": "vm-1-mock-random-string",
     "creationTimestamp": null
   },
   "spec": {
+    "restartPolicy": "Never",
     "volumes": [
       {
         "name": "mnt",

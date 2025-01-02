@@ -223,9 +223,9 @@ func (h *App) createPipeline(ctx context.Context, repoName string, p *dsl.Pipeli
 			runsOn = &api.RunsOn{
 				Label: "vm",
 				VM: &api.VM{
-					Image:    on.Linux,
-					CPU:      4,
-					MemoryMB: 8196,
+					Image:  on.Linux,
+					CPU:    2,
+					Memory: 4196,
 				},
 			}
 		default:

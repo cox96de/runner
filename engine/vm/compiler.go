@@ -60,8 +60,9 @@ func (c *compiler) Compile(id string, spec *api.RunsOn) (*compileResult, error) 
 				Name: id,
 			},
 			Spec: corev1.PodSpec{
-				Containers: containers,
-				Volumes:    c.compileVolumes(),
+				Containers:    containers,
+				RestartPolicy: corev1.RestartPolicyNever,
+				Volumes:       c.compileVolumes(),
 			},
 		},
 	}
