@@ -8,7 +8,10 @@ import (
 	"golang.org/x/exp/rand"
 )
 
-const defaultCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const (
+	defaultCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	lowercase      = "abcdefghijklmnopqrstuvwxyz"
+)
 
 func init() {
 	rand.Seed(uint64(time.Now().UnixNano()))
@@ -17,6 +20,10 @@ func init() {
 // RandomString returns a random string with the given length.
 func RandomString(length int) string {
 	return RandomStringFromCharset(length, defaultCharset)
+}
+
+var RandomLower = func(length int) string {
+	return RandomStringFromCharset(length, lowercase)
 }
 
 func RandomStringFromCharset(length int, charset string) string {

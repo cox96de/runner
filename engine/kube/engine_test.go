@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cox96de/runner/util"
+
 	"github.com/cox96de/runner/engine/mock"
 
 	"github.com/cox96de/runner/app/executor/executorpb"
@@ -58,6 +60,13 @@ func TestEngine_Ping(t *testing.T) {
 }
 
 func TestEngine_CreateRunner(t *testing.T) {
+	old := util.RandomString
+	util.RandomLower = func(n int) string {
+		return "mock-random-string"
+	}
+	t.Cleanup(func() {
+		util.RandomLower = old
+	})
 	// FIXME: All tests should be skipped in windows automatically.
 	if runtime.GOOS == "windows" {
 		t.Skip("Skip test on windows")

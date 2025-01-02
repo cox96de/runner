@@ -5,6 +5,8 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/cox96de/runner/util"
+
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/testtool"
 	"gotest.tools/v3/assert"
@@ -14,6 +16,13 @@ func TestEngine_CreateRunner(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skip test on Windows")
 	}
+	old := util.RandomString
+	util.RandomLower = func(n int) string {
+		return "mock-random-string"
+	}
+	t.Cleanup(func() {
+		util.RandomLower = old
+	})
 	volumes, mounts, err := parseVolumes([]string{"type=hostPath,name=mnt,mountPath=/mnt,path=/root/mnt"})
 	assert.NilError(t, err)
 	namespace := "default"
@@ -31,9 +40,9 @@ func TestEngine_CreateRunner(t *testing.T) {
 			Label:  "",
 			Docker: nil,
 			VM: &api.VM{
-				Image:    "debian-11.qcow2",
-				CPU:      2,
-				MemoryMB: 1024,
+				Image:  "debian-11.qcow2",
+				CPU:    2,
+				Memory: 1024,
 			},
 		},
 		Execution: &api.JobExecution{ID: 1},

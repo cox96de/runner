@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cox96de/runner/util"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/cox96de/runner/api"
@@ -78,9 +80,9 @@ func (e *Engine) CreateRunner(ctx context.Context, logProvider engine.LogProvide
 		RuntimeVolumeMounts: e.runtimeVolumeMounts,
 		RuntimeVolumes:      e.runtimeVolumes,
 		CPU:                 spec.RunsOn.VM.CPU,
-		Memory:              spec.RunsOn.VM.MemoryMB,
+		Memory:              spec.RunsOn.VM.Memory,
 	})
-	compile, err := c.Compile(fmt.Sprintf("vm-%d", spec.Execution.ID), spec.RunsOn)
+	compile, err := c.Compile(fmt.Sprintf("vm-%d-%s", spec.Execution.ID, util.RandomLower(5)), spec.RunsOn)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to compile compile vm-runner")
 	}

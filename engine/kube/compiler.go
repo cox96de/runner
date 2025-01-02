@@ -42,6 +42,7 @@ func (c *compiler) Compile(id string, spec *api.RunsOn) *compileResult {
 				InitContainers: []corev1.Container{c.compileInitContainer()},
 				Containers:     c.compileContainers(spec.Docker.Containers),
 				Volumes:        c.compileVolumes(spec.Docker.Volumes),
+				RestartPolicy:  corev1.RestartPolicyNever,
 			},
 		},
 	}
