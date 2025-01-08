@@ -95,6 +95,34 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error)
 	if err != nil {
 		return errors.WithMessage(err, "failed to update step jobExecution")
 	}
+	stepDone := make(chan interface{})
+	defer close(stepDone)
+	go func() {
+		count := 0
+		for {
+			select {
+			case <-stepDone:
+				return
+			case <-ctx.Done():
+				logger.Warnf("context is done, stop getting runtime info")
+				return
+			case <-time.After(time.Second * 5):
+				// Use it as ping.
+				getRuntimeInfoResp, err = executor.GetRuntimeInfo(ctx, &executorpb.GetRuntimeInfoRequest{})
+				if err != nil {
+					logger.Errorf("failed to get runtime info: %v", err)
+					count++
+					if count > 3 {
+						// TODO: add abort reason.
+						logger.Infof("executor is down, cancel job")
+						e.jobCanceller()
+					}
+					continue
+				}
+				count = 0
+			}
+		}
+	}()
 	stepEnv := lo.MapToSlice(step.EnvVar, func(key string, value string) string {
 		return key + "=" + value
 	})
