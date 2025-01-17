@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -10,9 +11,11 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/cox96de/containervm/network"
 	"github.com/cox96de/runner/util"
+	"github.com/spf13/cobra"
 
 	"github.com/cockroachdb/errors"
 	"github.com/cox96de/containervm/cloudinit"
@@ -35,7 +38,27 @@ const (
 )
 
 func main() {
-	pflag.Parse()
+	var consolePath string
+	root := cobra.Command{
+		Run: func(cmd *cobra.Command, args []string) {
+			qemu(cmd.Flags(), consolePath)
+		},
+	}
+	pflag := root.Flags()
+	pflag.StringVarP(&consolePath, "console", "c", "", "console socket path")
+	root.AddCommand(&cobra.Command{
+		Use: "socat",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) != 2 {
+				log.Fatalf("socat requires 2 arguments")
+			}
+			socat(args[0], args[1])
+		},
+	})
+	checkError(root.Execute())
+}
+
+func qemu(pflag *pflag.FlagSet, consolePath string) {
 	defaultNIC, err := vmutil.GetDefaultNIC()
 	checkError(err, "failed to get default network interface")
 	newMac := vmutil.GetRandomMAC()
@@ -89,6 +112,45 @@ func main() {
 		sig := <-exitSig
 		log.Infof("recieve signal %+v", sig)
 		_ = qemuCMD.Process.Kill()
+	}()
+	go func() {
+		if len(consolePath) == 0 {
+			return
+		}
+		var conn net.Conn
+		for {
+			stat, err := os.Stat(consolePath)
+			if err != nil {
+				time.Sleep(time.Second)
+				continue
+			}
+			if stat.Mode()&os.ModeSocket == 0 {
+				return
+			}
+			conn, err = net.Dial("unix", consolePath)
+			if err != nil {
+				log.Errorf("failed to dial console socket: %+v", err)
+				time.Sleep(time.Second)
+				continue
+			}
+			break
+		}
+		defer conn.Close()
+		buf := make([]byte, 1024)
+		for {
+			n, err := conn.Read(buf)
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Errorf("failed to read from console socket: %+v", err)
+				return
+			}
+			_, err = os.Stdout.Write(buf[:n])
+			if err != nil {
+				log.Errorf("failed to write to stdout: %+v", err)
+			}
+		}
 	}()
 	if err := qemuCMD.Wait(); err != nil {
 		log.Errorf("failed to wait for qemu: %+v", err)

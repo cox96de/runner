@@ -18,6 +18,8 @@
         "name": "vm-runtime",
         "image": "registry.houzhiqiang.cn/runner-vm-runtime:latest",
         "args": [
+          "--console",
+          "/tmp/console.sock",
           "--",
           "qemu-system-x86_64",
           "-nodefaults",
