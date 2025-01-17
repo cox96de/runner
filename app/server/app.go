@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/cox96de/runner/app/server/dispatch"
 	"github.com/cox96de/runner/app/server/eventhook"
 	"github.com/cox96de/runner/app/server/handler"
@@ -58,4 +59,8 @@ func NewRedisLocker(client *goredis.Client) Locker {
 
 func NewLocalLogPersistentStorage(dir string) LogPersistentStorage {
 	return logstorage.NewFilesystemOSS(dir)
+}
+
+func NewS3LogPersistentStorage(bucket string, s3 s3iface.S3API) LogPersistentStorage {
+	return logstorage.NewS3(bucket, s3)
 }

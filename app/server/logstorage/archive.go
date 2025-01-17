@@ -69,7 +69,7 @@ func (s *Service) Archive(ctx context.Context, jobExecutionID int64) error {
 		if err != nil {
 			return errors.WithMessage(err, "failed to marshal archive")
 		}
-		_, err = s.oss.Save(ctx, key, bytes.NewReader(content))
+		err = s.oss.Save(ctx, key, bytes.NewReader(content))
 		if err != nil {
 			return errors.WithMessage(err, "failed to put object")
 		}
