@@ -43,7 +43,7 @@ build_executor_docker:
 build_agent_docker:
 	docker build -t $(DOCKER_IMG_BASE)/runner-agent -f build/agent.Dockerfile .
 build_agent_debug_docker:
-	docker build -t $(DOCKER_IMG_BASE)/runner-agent-debug -f build/agent.debug.Dockerfile .
+	docker build -t $(DOCKER_IMG_BASE)/runner-agent:debug -f build/agent.debug.Dockerfile .
 build_agent_debian_docker:
 	docker build -t $(DOCKER_IMG_BASE)/runner-agent-debian -f build/agent.debian.Dockerfile .
 build_vm_runtime:
