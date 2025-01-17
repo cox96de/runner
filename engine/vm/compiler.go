@@ -15,7 +15,7 @@ import (
 const (
 	executorMountTag   = "_executor"
 	executorMountPoint = "/executor"
-	executorPort       = 1234
+	executorPort       = 8080
 )
 
 type compiler struct {
@@ -26,6 +26,7 @@ type compiler struct {
 	runtimeVolumes      []corev1.Volume
 	cpu                 int32
 	memory              int32
+	os                  string
 }
 
 type createCompilerOption struct {
@@ -36,12 +37,17 @@ type createCompilerOption struct {
 	RuntimeVolumes      []corev1.Volume
 	CPU                 int32
 	Memory              int32
+	OS                  string
 }
 
 func newCompiler(opt *createCompilerOption) *compiler {
 	return &compiler{
-		runtimeImage: opt.RuntimeImage, executorPath: opt.ExecutorPath, imageBaseDir: opt.ImageBaseDir,
-		runtimeVolumeMounts: opt.RuntimeVolumeMounts, runtimeVolumes: opt.RuntimeVolumes, cpu: opt.CPU, memory: opt.Memory,
+		runtimeImage:        opt.RuntimeImage,
+		executorPath:        opt.ExecutorPath,
+		imageBaseDir:        opt.ImageBaseDir,
+		runtimeVolumeMounts: opt.RuntimeVolumeMounts,
+		runtimeVolumes:      opt.RuntimeVolumes, cpu: opt.CPU, memory: opt.Memory,
+		os: opt.OS,
 	}
 }
 
@@ -69,30 +75,57 @@ func (c *compiler) Compile(id string, spec *api.RunsOn) (*compileResult, error) 
 	return result, nil
 }
 
+func (c *compiler) getCloudInitMount() [][]string {
+	if c.os == "windows" {
+		return [][]string{}
+	}
+	return [][]string{
+		{
+			executorMountTag, executorMountPoint, "9p", "trans=virtio,version=9p2000.L,msize=104857600", "0", "0",
+		},
+	}
+}
+
+func (c *compiler) getCloudInitRunCMD() [][]string {
+	if c.os == "windows" {
+		return [][]string{
+			{"powershell", "D:\\\\windows_boot.ps1"},
+			{"powershell", "E:\\\\windows_boot.ps1"},
+			{"powershell", "F:\\\\windows_boot.ps1"},
+			{"powershell", "G:\\\\windows_boot.ps1"},
+			{"powershell", "Z:\\\\windows_boot.ps1"},
+		}
+	}
+	executorPathInVM := filepath.Join(executorMountPoint, filepath.Base(c.executorPath))
+	return [][]string{
+		{
+			"sh",
+			"-c",
+			fmt.Sprintf("while true; do if [ -f %s ]; then nohup %s --port %d > /var/executor.log 2>&1 & break; else echo \"Executor binary file not found. Retrying in 1 second...\"; sleep 1; fi; done",
+				executorPathInVM, executorPathInVM, executorPort),
+		},
+	}
+}
+
 func (c *compiler) compileContainers(imageName string) ([]corev1.Container, error) {
 	q := newQemuCompiler(c.cpu, c.memory)
 	q.AddDisk(filepath.Join(c.imageBaseDir, imageName))
-	q.AddShare(filepath.Dir(c.executorPath), executorMountTag)
+	if c.os == api.WindowsOS {
+		q.SetCDRom("/runner/executor.iso")
+	} else {
+		q.AddShare(filepath.Dir(c.executorPath), executorMountTag)
+	}
 	metaData := `instance-id: vm-runner
-local-hostname: vm-runner
 `
 	const console = "/tmp/console.sock"
 	q.SetConsole(console)
-	executorPathInVM := filepath.Join(executorMountPoint, filepath.Base(c.executorPath))
+	if c.os == api.WindowsOS {
+		q.EnableVGA()
+		q.SetVNC("/tmp/vnc.sock")
+	}
 	data := cloudInitUserData{
-		RunCMD: [][]string{
-			{
-				"sh",
-				"-c",
-				fmt.Sprintf("while true; do if [ -f %s ]; then nohup %s --port %d > /var/executor.log 2>&1 & break; else echo \"Executor binary file not found. Retrying in 1 second...\"; sleep 1; fi; done",
-					executorPathInVM, executorPathInVM, executorPort),
-			},
-		},
-		Mounts: [][]string{
-			{
-				executorMountTag, executorMountPoint, "9p", "trans=virtio,version=9p2000.L,msize=104857600", "0", "0",
-			},
-		},
+		RunCMD: c.getCloudInitRunCMD(),
+		Mounts: c.getCloudInitMount(),
 	}
 	userData, err := data.Marshal()
 	if err != nil {
@@ -144,7 +177,9 @@ type qemuCompiler struct {
 	disks     []*disk
 	shares    []*shareVolume
 	enableVGA bool
+	vnc       string
 	console   string
+	cdRom     string
 }
 
 func newQemuCompiler(cpu int32, memory int32) *qemuCompiler {
@@ -164,12 +199,24 @@ func (c *qemuCompiler) AddDisk(path string) {
 	c.disks = append(c.disks, &disk{path})
 }
 
+func (c *qemuCompiler) SetCDRom(path string) {
+	c.cdRom = path
+}
+
 func (c *qemuCompiler) AddShare(path string, tag string) {
 	c.shares = append(c.shares, &shareVolume{path: path, tag: tag})
 }
 
 func (c *qemuCompiler) SetConsole(console string) {
 	c.console = console
+}
+
+func (c *qemuCompiler) EnableVGA() {
+	c.enableVGA = true
+}
+
+func (c *qemuCompiler) SetVNC(vnc string) {
+	c.vnc = vnc
 }
 
 func (c *qemuCompiler) Compile() []string {
@@ -197,6 +244,12 @@ func (c *qemuCompiler) Compile() []string {
 	}
 	if c.enableVGA {
 		cmds = append(cmds, "-device", "VGA")
+	}
+	if len(c.vnc) > 0 {
+		cmds = append(cmds, "-vnc", "unix:"+c.vnc)
+	}
+	if c.cdRom != "" {
+		cmds = append(cmds, "-cdrom", c.cdRom)
 	}
 	return cmds
 }

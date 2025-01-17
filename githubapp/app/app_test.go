@@ -43,7 +43,7 @@ jobs:
 		githubClient := github.NewClient(client)
 		ghClient := ghclient.NewClient(githubClient)
 		ghClient.SetDefaultHTTPClient(client)
-		app := NewApp(ghClient, "http://base.url", dbConn, []string{"git clone"})
+		app := NewApp(ghClient, "http://base.url", dbConn, []string{"git clone"}, []string{"git clone"}, nil)
 		app.SetRunnerServer(runnerServer.App)
 		err := app.handleCheckSuite(context.Background(), &github.CheckSuiteEvent{
 			Action: lo.ToPtr("requested"),
@@ -73,7 +73,7 @@ jobs:
 		githubClient := github.NewClient(client)
 		ghClient := ghclient.NewClient(githubClient)
 		ghClient.SetDefaultHTTPClient(client)
-		app := NewApp(ghClient, "http://base.url", dbConn, []string{"git clone"})
+		app := NewApp(ghClient, "http://base.url", dbConn, []string{"git clone"}, []string{"git clone"}, nil)
 		app.SetRunnerServer(runnerServer.App)
 		err := app.handleCheckSuite(context.Background(), &github.CheckSuiteEvent{
 			Action: lo.ToPtr("requested"),

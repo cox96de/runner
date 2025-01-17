@@ -143,6 +143,8 @@ message VM {
   int32 cpu = 2 [(go.field).name = "CPU"];
   // Memory in MB
   int32 memory = 3;
+  // os is the operating system of the VM. It can be one of the following values: "linux", "windows".
+  string os = 4 [(go.field).name = "OS"];
 }
 
 // StepDSL represents a step definition.

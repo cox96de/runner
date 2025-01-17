@@ -51,11 +51,11 @@
         "env": [
           {
             "name": "CLOUD_INIT_USER_DATA",
-            "value": "#cloud-config\nruncmd:\n    - - sh\n      - -c\n      - while true; do if [ -f /executor/executor ]; then nohup /executor/executor --port 1234 \u003e /var/executor.log 2\u003e\u00261 \u0026 break; else echo \"Executor binary file not found. Retrying in 1 second...\"; sleep 1; fi; done\nmounts:\n    - - _executor\n      - /executor\n      - 9p\n      - trans=virtio,version=9p2000.L,msize=104857600\n      - \"0\"\n      - \"0\"\n"
+            "value": "#cloud-config\nruncmd:\n    - - sh\n      - -c\n      - while true; do if [ -f /executor/executor ]; then nohup /executor/executor --port 8080 \u003e /var/executor.log 2\u003e\u00261 \u0026 break; else echo \"Executor binary file not found. Retrying in 1 second...\"; sleep 1; fi; done\nmounts:\n    - - _executor\n      - /executor\n      - 9p\n      - trans=virtio,version=9p2000.L,msize=104857600\n      - \"0\"\n      - \"0\"\n"
           },
           {
             "name": "CLOUD_INIT_META_DATA",
-            "value": "instance-id: vm-runner\nlocal-hostname: vm-runner\n"
+            "value": "instance-id: vm-runner\n"
           }
         ],
         "resources": {},

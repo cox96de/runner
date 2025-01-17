@@ -88,7 +88,7 @@ func (e *Execution) Execute(ctx context.Context) error {
 		return errors.WithMessage(err, "failed to create runner")
 	}
 	// TODO: timeout is configurable.
-	startCtx, _ := context.WithTimeout(ctx, time.Minute*2)
+	startCtx, _ := context.WithTimeout(ctx, time.Minute*4)
 	err = e.runner.Start(startCtx)
 	if err != nil {
 		e.stop(ctx)

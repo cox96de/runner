@@ -81,6 +81,7 @@ func (e *Engine) CreateRunner(ctx context.Context, logProvider engine.LogProvide
 		RuntimeVolumes:      e.runtimeVolumes,
 		CPU:                 spec.RunsOn.VM.CPU,
 		Memory:              spec.RunsOn.VM.Memory,
+		OS:                  spec.RunsOn.VM.OS,
 	})
 	compile, err := c.Compile(fmt.Sprintf("vm-%d-%s", spec.Execution.ID, util.RandomLower(5)), spec.RunsOn)
 	if err != nil {
