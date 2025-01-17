@@ -76,6 +76,8 @@ func (c *compiler) compileContainers(imageName string) ([]corev1.Container, erro
 	metaData := `instance-id: vm-runner
 local-hostname: vm-runner
 `
+	const console = "/tmp/console.sock"
+	q.SetConsole(console)
 	executorPathInVM := filepath.Join(executorMountPoint, filepath.Base(c.executorPath))
 	data := cloudInitUserData{
 		RunCMD: [][]string{
@@ -100,7 +102,7 @@ local-hostname: vm-runner
 		Name:            "vm-runtime",
 		Image:           c.runtimeImage,
 		ImagePullPolicy: corev1.PullAlways,
-		Args:            append([]string{"--"}, q.Compile()...),
+		Args:            append([]string{"--console", console, "--"}, q.Compile()...),
 		Env: []corev1.EnvVar{
 			{
 				Name:  "CLOUD_INIT_USER_DATA",
@@ -142,6 +144,7 @@ type qemuCompiler struct {
 	disks     []*disk
 	shares    []*shareVolume
 	enableVGA bool
+	console   string
 }
 
 func newQemuCompiler(cpu int32, memory int32) *qemuCompiler {
@@ -165,6 +168,10 @@ func (c *qemuCompiler) AddShare(path string, tag string) {
 	c.shares = append(c.shares, &shareVolume{path: path, tag: tag})
 }
 
+func (c *qemuCompiler) SetConsole(console string) {
+	c.console = console
+}
+
 func (c *qemuCompiler) Compile() []string {
 	var cmds []string
 	// HARDCODE x86_64
@@ -185,7 +192,9 @@ func (c *qemuCompiler) Compile() []string {
 		cmds = append(cmds, "-fsdev", fmt.Sprintf("local,security_model=passthrough,id=fsdev%d,path=%s", idx, share.path))
 		cmds = append(cmds, "-device", fmt.Sprintf("virtio-9p-pci,fsdev=fsdev%d,mount_tag=%s", idx, share.tag))
 	}
-	cmds = append(cmds, "-serial", "chardev:serial0", "-chardev", "socket,id=serial0,server=on,wait=off,path=/tmp/console.sock")
+	if len(c.console) > 0 {
+		cmds = append(cmds, "-serial", "chardev:serial0", "-chardev", "socket,id=serial0,server=on,wait=off,path="+c.console)
+	}
 	if c.enableVGA {
 		cmds = append(cmds, "-device", "VGA")
 	}

@@ -46,7 +46,8 @@ local-hostname: vm-runner
 runcmd:
   - [sh, -c, "nohup python3 -m http.server > /var/server.log 2>&1 &"]`
 	qemuCMD := fmt.Sprintf(
-		"-- " +
+		"--console /tmp/console.sock " +
+			"-- " +
 			"qemu-system-x86_64 " +
 			"-nodefaults " +
 			"--nographic " +

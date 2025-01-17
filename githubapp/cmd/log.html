@@ -28,7 +28,7 @@
 <script>
     const logContainer = document.getElementById('log-container');
     var term = new Terminal({
-        wordWrap: true // Enable word wrapping
+        wordWrap: true, // Enable word wrapping
     });
     term.open(logContainer);
 
@@ -76,7 +76,8 @@
             if (!log.Output) {
                 log.Output = ""
             }
-            term.write(log.Output + "\r\n");
+            // Booting log from vm's console contains much control characters. Should be escaped
+            term.write(log.Output.replace(/\u001b\[\d+;\d+H|\u001b\[\d+A|\u001b\[\d+B|\u001b\[\d+C|\u001b\[\d+D/g, '') + "\r\n");
         });
     }
 
