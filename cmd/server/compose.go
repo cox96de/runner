@@ -6,41 +6,16 @@ import (
 	"github.com/cox96de/runner/app/server"
 	"github.com/cox96de/runner/app/server/eventhook"
 	"github.com/cox96de/runner/app/server/logstorage"
-	"github.com/cox96de/runner/db"
+	"github.com/cox96de/runner/composer"
 	"github.com/cox96de/runner/external/redis"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
 )
 
-func ComposeDB(c *DB) (*gorm.DB, error) {
-	var (
-		conn    *gorm.DB
-		err     error
-		dialect = c.Dialect
-		dsn     = c.DSN
-	)
-	opts := &gorm.Config{}
-	if c.TablePrefix != "" {
-		opts.NamingStrategy = &schema.NamingStrategy{
-			TablePrefix: c.TablePrefix,
-		}
-	}
-	switch db.Dialect(dialect) {
-	case db.Mysql:
-		conn, err = gorm.Open(mysql.Open(dsn), opts)
-	case db.Postgres:
-		conn, err = gorm.Open(postgres.Open(dsn), opts)
-	case db.SQLite:
-		conn, err = gorm.Open(sqlite.Open(dsn), opts)
-	default:
-		return nil, errors.Errorf("unsupported dialect: %s", dialect)
-	}
+func ComposeDB(c *composer.DB) (*gorm.DB, error) {
+	conn, err := composer.ComposeDB(c)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to open database connection")
 	}
@@ -74,31 +49,11 @@ func ComposeLogPersistentStorage(l *LogArchive) (server.LogPersistentStorage, er
 	return oss, nil
 }
 
-func ComposeRedis(r *Redis) (*goredis.Client, error) {
+func ComposeRedis(r *composer.Redis) (*goredis.Client, error) {
 	if r.Addr == "internal" {
 		return ComposeInternalRedis()
 	}
-	conn := goredis.NewClient(&goredis.Options{
-		Addr:                  r.Addr,
-		Username:              r.Username,
-		Password:              r.Password,
-		DB:                    r.DB,
-		MaxRetries:            r.MaxRetries,
-		MinRetryBackoff:       r.MinRetryBackoff,
-		MaxRetryBackoff:       r.MaxRetryBackoff,
-		DialTimeout:           r.DialTimeout,
-		ReadTimeout:           r.ReadTimeout,
-		WriteTimeout:          r.WriteTimeout,
-		ContextTimeoutEnabled: true,
-		PoolFIFO:              r.PoolFIFO,
-		PoolSize:              r.PoolSize,
-		PoolTimeout:           r.PoolTimeout,
-		MinIdleConns:          r.MinIdleConns,
-		MaxIdleConns:          r.MaxIdleConns,
-		MaxActiveConns:        r.MaxActiveConns,
-		ConnMaxIdleTime:       r.ConnMaxIdleTime,
-		ConnMaxLifetime:       r.ConnMaxLifetime,
-	})
+	conn := composer.ComposeRedis(r)
 	if err := redisotel.InstrumentTracing(conn); err != nil {
 		return nil, errors.WithMessage(err, "failed to instrument tracing")
 	}
