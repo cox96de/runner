@@ -13,9 +13,13 @@ import (
 
 const ErrNotFound = util.StringError("not found")
 
+type Reader interface {
+	io.Reader
+	io.Seeker
+}
 type OSS interface {
 	Open(ctx context.Context, filename string) (io.ReadCloser, error)
-	Save(ctx context.Context, filename string, r io.Reader) (int64, error)
+	Save(ctx context.Context, filename string, r Reader) error
 }
 
 type FilesystemOSS struct {
@@ -37,16 +41,17 @@ func (o *FilesystemOSS) Open(ctx context.Context, filename string) (io.ReadClose
 	return file, err
 }
 
-func (o *FilesystemOSS) Save(ctx context.Context, filename string, r io.Reader) (int64, error) {
+func (o *FilesystemOSS) Save(ctx context.Context, filename string, r Reader) error {
 	fp := filepath.Join(o.baseDir, filename)
 	err := os.MkdirAll(filepath.Dir(fp), 0o755)
 	if err != nil {
-		return 0, errors.WithMessage(err, "failed to create directory")
+		return errors.WithMessage(err, "failed to create directory")
 	}
 	file, err := os.Create(fp)
 	if err != nil {
-		return 0, errors.WithMessage(err, "failed to create file")
+		return errors.WithMessage(err, "failed to create file")
 	}
 	defer file.Close()
-	return io.Copy(file, r)
+	_, err = io.Copy(file, r)
+	return err
 }
