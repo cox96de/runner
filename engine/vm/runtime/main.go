@@ -35,6 +35,7 @@ const (
 )
 
 func main() {
+	pflag.Parse()
 	defaultNIC, err := vmutil.GetDefaultNIC()
 	checkError(err, "failed to get default network interface")
 	newMac := vmutil.GetRandomMAC()
@@ -65,7 +66,7 @@ func main() {
 	}
 	cloudInitOpt, err := generateCloudInitOpt(cloudinitConfig, cloudInitUserData, cloudInitMetaData)
 	checkError(err)
-	pflag.Parse()
+
 	args := pflag.Args()
 	log.SetLevel(log.DebugLevel)
 	if len(args) == 0 {

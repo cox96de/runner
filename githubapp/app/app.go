@@ -31,8 +31,7 @@ const (
 )
 
 type App struct {
-	ghClient *ghclient.Client
-	// runnerClient api.ServerClient
+	ghClient     *ghclient.Client
 	runnerServer *server.App
 	baseURL      string
 	db           *db.Client

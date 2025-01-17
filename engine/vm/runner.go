@@ -102,18 +102,22 @@ func (r *Runner) waitExecutorReady(ctx context.Context, interval, timeout time.D
 	if err != nil {
 		return err
 	}
+	var (
+		lastError error
+		ticker    = time.NewTicker(interval)
+	)
+	defer ticker.Stop()
 	for {
-		ticker := time.NewTicker(interval)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			_, err := executor.Ping(ctx, &executorpb.PingRequest{})
-			if err == nil {
+			_, lastError = executor.Ping(ctx, &executorpb.PingRequest{})
+			if lastError == nil {
 				return nil
 			}
 		case <-time.After(timeout):
-			return errors.New("timeout waiting for executor ready")
+			return errors.Errorf("timeout waiting for executor ready, last error: %+v", lastError)
 		}
 	}
 }

@@ -21,4 +21,4 @@ CREATE TABLE `job`
     `created_at`              datetime(3) NULL,
     `updated_at`              datetime(3) NULL,
     PRIMARY KEY (`id`)
-)
+);

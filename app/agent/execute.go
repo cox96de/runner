@@ -7,13 +7,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/cox96de/runner/app/agent/dag"
-	"github.com/samber/lo"
-
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/lib"
-
 	"github.com/cox96de/runner/log"
+
+	"github.com/cox96de/runner/app/agent/dag"
+	"github.com/samber/lo"
 
 	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/app/executor/executorpb"

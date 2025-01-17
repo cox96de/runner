@@ -5,7 +5,7 @@
 # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
 replicaCount: 1
 image: "cox96de/runner-agent"
-imagePullPolicy: IfNotPresent
+imagePullPolicy: Always
 namespace: runner-agent
 ## The url of server.
 serverUrl: ""
@@ -22,7 +22,7 @@ kube:
   executorPath: "/executor"
 vm:
   runtimeImage: "cox96de/runner-vm-runtime:latest"
-  executorPath: "/executor"
+  executorPath: "/runner/executor"
   executorNamespace: "runner-agent-executor"
   volumes: ""
   imageRoot: "/images"
