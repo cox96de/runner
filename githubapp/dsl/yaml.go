@@ -15,7 +15,7 @@ type Job struct {
 
 type RunsOn struct {
 	ContainerImage string `yaml:"container-image"`
-	Linux          string `yaml:"linux"`
+	Image          string `yaml:"image"`
 }
 
 type Step struct {

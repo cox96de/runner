@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/cox96de/runner/composer"
+	"github.com/cox96de/runner/githubapp/app"
 )
 
 type Config struct {
@@ -15,8 +16,14 @@ type Config struct {
 	ListenAddr string `yaml:"listen_addr"`
 	// BaseURL is the prefix path of the web server.
 	BaseURL      string        `yaml:"base_url"`
-	CloneStep    []string      `yaml:"clone_step"`
+	CloneStep    *CloneStep    `yaml:"clone_step"`
 	RunnerServer *RunnerServer `yaml:"runner_server"`
+	VMs          []*app.VMMeta `yaml:"vms"`
+}
+
+type CloneStep struct {
+	Unix    []string `yaml:"unix"`
+	Windows []string `yaml:"windows"`
 }
 
 type RunnerServer struct {

@@ -22,6 +22,7 @@ import (
 type MockServerClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockServerClientMockRecorder
+	isgomock struct{}
 }
 
 // MockServerClientMockRecorder is the mock recorder for MockServerClient.
@@ -42,10 +43,10 @@ func (m *MockServerClient) EXPECT() *MockServerClientMockRecorder {
 }
 
 // CancelJobExecution mocks base method.
-func (m *MockServerClient) CancelJobExecution(arg0 context.Context, arg1 *api.CancelJobExecutionRequest, arg2 ...grpc.CallOption) (*api.CancelJobExecutionResponse, error) {
+func (m *MockServerClient) CancelJobExecution(ctx context.Context, in *api.CancelJobExecutionRequest, opts ...grpc.CallOption) (*api.CancelJobExecutionResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "CancelJobExecution", varargs...)
@@ -55,9 +56,9 @@ func (m *MockServerClient) CancelJobExecution(arg0 context.Context, arg1 *api.Ca
 }
 
 // CancelJobExecution indicates an expected call of CancelJobExecution.
-func (mr *MockServerClientMockRecorder) CancelJobExecution(arg0, arg1 any, arg2 ...any) *MockServerClientCancelJobExecutionCall {
+func (mr *MockServerClientMockRecorder) CancelJobExecution(ctx, in any, opts ...any) *MockServerClientCancelJobExecutionCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelJobExecution", reflect.TypeOf((*MockServerClient)(nil).CancelJobExecution), varargs...)
 	return &MockServerClientCancelJobExecutionCall{Call: call}
 }
@@ -86,10 +87,10 @@ func (c *MockServerClientCancelJobExecutionCall) DoAndReturn(f func(context.Cont
 }
 
 // CreatePipeline mocks base method.
-func (m *MockServerClient) CreatePipeline(arg0 context.Context, arg1 *api.CreatePipelineRequest, arg2 ...grpc.CallOption) (*api.CreatePipelineResponse, error) {
+func (m *MockServerClient) CreatePipeline(ctx context.Context, in *api.CreatePipelineRequest, opts ...grpc.CallOption) (*api.CreatePipelineResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "CreatePipeline", varargs...)
@@ -99,9 +100,9 @@ func (m *MockServerClient) CreatePipeline(arg0 context.Context, arg1 *api.Create
 }
 
 // CreatePipeline indicates an expected call of CreatePipeline.
-func (mr *MockServerClientMockRecorder) CreatePipeline(arg0, arg1 any, arg2 ...any) *MockServerClientCreatePipelineCall {
+func (mr *MockServerClientMockRecorder) CreatePipeline(ctx, in any, opts ...any) *MockServerClientCreatePipelineCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePipeline", reflect.TypeOf((*MockServerClient)(nil).CreatePipeline), varargs...)
 	return &MockServerClientCreatePipelineCall{Call: call}
 }
@@ -130,10 +131,10 @@ func (c *MockServerClientCreatePipelineCall) DoAndReturn(f func(context.Context,
 }
 
 // GetJobExecution mocks base method.
-func (m *MockServerClient) GetJobExecution(arg0 context.Context, arg1 *api.GetJobExecutionRequest, arg2 ...grpc.CallOption) (*api.GetJobExecutionResponse, error) {
+func (m *MockServerClient) GetJobExecution(ctx context.Context, in *api.GetJobExecutionRequest, opts ...grpc.CallOption) (*api.GetJobExecutionResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetJobExecution", varargs...)
@@ -143,9 +144,9 @@ func (m *MockServerClient) GetJobExecution(arg0 context.Context, arg1 *api.GetJo
 }
 
 // GetJobExecution indicates an expected call of GetJobExecution.
-func (mr *MockServerClientMockRecorder) GetJobExecution(arg0, arg1 any, arg2 ...any) *MockServerClientGetJobExecutionCall {
+func (mr *MockServerClientMockRecorder) GetJobExecution(ctx, in any, opts ...any) *MockServerClientGetJobExecutionCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJobExecution", reflect.TypeOf((*MockServerClient)(nil).GetJobExecution), varargs...)
 	return &MockServerClientGetJobExecutionCall{Call: call}
 }
@@ -174,10 +175,10 @@ func (c *MockServerClientGetJobExecutionCall) DoAndReturn(f func(context.Context
 }
 
 // GetLogLines mocks base method.
-func (m *MockServerClient) GetLogLines(arg0 context.Context, arg1 *api.GetLogLinesRequest, arg2 ...grpc.CallOption) (*api.GetLogLinesResponse, error) {
+func (m *MockServerClient) GetLogLines(ctx context.Context, in *api.GetLogLinesRequest, opts ...grpc.CallOption) (*api.GetLogLinesResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetLogLines", varargs...)
@@ -187,9 +188,9 @@ func (m *MockServerClient) GetLogLines(arg0 context.Context, arg1 *api.GetLogLin
 }
 
 // GetLogLines indicates an expected call of GetLogLines.
-func (mr *MockServerClientMockRecorder) GetLogLines(arg0, arg1 any, arg2 ...any) *MockServerClientGetLogLinesCall {
+func (mr *MockServerClientMockRecorder) GetLogLines(ctx, in any, opts ...any) *MockServerClientGetLogLinesCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLogLines", reflect.TypeOf((*MockServerClient)(nil).GetLogLines), varargs...)
 	return &MockServerClientGetLogLinesCall{Call: call}
 }
@@ -218,10 +219,10 @@ func (c *MockServerClientGetLogLinesCall) DoAndReturn(f func(context.Context, *a
 }
 
 // GetStepExecution mocks base method.
-func (m *MockServerClient) GetStepExecution(arg0 context.Context, arg1 *api.GetStepExecutionRequest, arg2 ...grpc.CallOption) (*api.GetStepExecutionResponse, error) {
+func (m *MockServerClient) GetStepExecution(ctx context.Context, in *api.GetStepExecutionRequest, opts ...grpc.CallOption) (*api.GetStepExecutionResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetStepExecution", varargs...)
@@ -231,9 +232,9 @@ func (m *MockServerClient) GetStepExecution(arg0 context.Context, arg1 *api.GetS
 }
 
 // GetStepExecution indicates an expected call of GetStepExecution.
-func (mr *MockServerClientMockRecorder) GetStepExecution(arg0, arg1 any, arg2 ...any) *MockServerClientGetStepExecutionCall {
+func (mr *MockServerClientMockRecorder) GetStepExecution(ctx, in any, opts ...any) *MockServerClientGetStepExecutionCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStepExecution", reflect.TypeOf((*MockServerClient)(nil).GetStepExecution), varargs...)
 	return &MockServerClientGetStepExecutionCall{Call: call}
 }
@@ -262,10 +263,10 @@ func (c *MockServerClientGetStepExecutionCall) DoAndReturn(f func(context.Contex
 }
 
 // Heartbeat mocks base method.
-func (m *MockServerClient) Heartbeat(arg0 context.Context, arg1 *api.HeartbeatRequest, arg2 ...grpc.CallOption) (*api.HeartbeatResponse, error) {
+func (m *MockServerClient) Heartbeat(ctx context.Context, in *api.HeartbeatRequest, opts ...grpc.CallOption) (*api.HeartbeatResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Heartbeat", varargs...)
@@ -275,9 +276,9 @@ func (m *MockServerClient) Heartbeat(arg0 context.Context, arg1 *api.HeartbeatRe
 }
 
 // Heartbeat indicates an expected call of Heartbeat.
-func (mr *MockServerClientMockRecorder) Heartbeat(arg0, arg1 any, arg2 ...any) *MockServerClientHeartbeatCall {
+func (mr *MockServerClientMockRecorder) Heartbeat(ctx, in any, opts ...any) *MockServerClientHeartbeatCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Heartbeat", reflect.TypeOf((*MockServerClient)(nil).Heartbeat), varargs...)
 	return &MockServerClientHeartbeatCall{Call: call}
 }
@@ -306,10 +307,10 @@ func (c *MockServerClientHeartbeatCall) DoAndReturn(f func(context.Context, *api
 }
 
 // ListJobExecutions mocks base method.
-func (m *MockServerClient) ListJobExecutions(arg0 context.Context, arg1 *api.ListJobExecutionsRequest, arg2 ...grpc.CallOption) (*api.ListJobExecutionsResponse, error) {
+func (m *MockServerClient) ListJobExecutions(ctx context.Context, in *api.ListJobExecutionsRequest, opts ...grpc.CallOption) (*api.ListJobExecutionsResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ListJobExecutions", varargs...)
@@ -319,9 +320,9 @@ func (m *MockServerClient) ListJobExecutions(arg0 context.Context, arg1 *api.Lis
 }
 
 // ListJobExecutions indicates an expected call of ListJobExecutions.
-func (mr *MockServerClientMockRecorder) ListJobExecutions(arg0, arg1 any, arg2 ...any) *MockServerClientListJobExecutionsCall {
+func (mr *MockServerClientMockRecorder) ListJobExecutions(ctx, in any, opts ...any) *MockServerClientListJobExecutionsCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListJobExecutions", reflect.TypeOf((*MockServerClient)(nil).ListJobExecutions), varargs...)
 	return &MockServerClientListJobExecutionsCall{Call: call}
 }
@@ -350,10 +351,10 @@ func (c *MockServerClientListJobExecutionsCall) DoAndReturn(f func(context.Conte
 }
 
 // Ping mocks base method.
-func (m *MockServerClient) Ping(arg0 context.Context, arg1 *api.ServerPingRequest, arg2 ...grpc.CallOption) (*api.ServerPingResponse, error) {
+func (m *MockServerClient) Ping(ctx context.Context, in *api.ServerPingRequest, opts ...grpc.CallOption) (*api.ServerPingResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Ping", varargs...)
@@ -363,9 +364,9 @@ func (m *MockServerClient) Ping(arg0 context.Context, arg1 *api.ServerPingReques
 }
 
 // Ping indicates an expected call of Ping.
-func (mr *MockServerClientMockRecorder) Ping(arg0, arg1 any, arg2 ...any) *MockServerClientPingCall {
+func (mr *MockServerClientMockRecorder) Ping(ctx, in any, opts ...any) *MockServerClientPingCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockServerClient)(nil).Ping), varargs...)
 	return &MockServerClientPingCall{Call: call}
 }
@@ -394,10 +395,10 @@ func (c *MockServerClientPingCall) DoAndReturn(f func(context.Context, *api.Serv
 }
 
 // RequestJob mocks base method.
-func (m *MockServerClient) RequestJob(arg0 context.Context, arg1 *api.RequestJobRequest, arg2 ...grpc.CallOption) (*api.RequestJobResponse, error) {
+func (m *MockServerClient) RequestJob(ctx context.Context, in *api.RequestJobRequest, opts ...grpc.CallOption) (*api.RequestJobResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "RequestJob", varargs...)
@@ -407,9 +408,9 @@ func (m *MockServerClient) RequestJob(arg0 context.Context, arg1 *api.RequestJob
 }
 
 // RequestJob indicates an expected call of RequestJob.
-func (mr *MockServerClientMockRecorder) RequestJob(arg0, arg1 any, arg2 ...any) *MockServerClientRequestJobCall {
+func (mr *MockServerClientMockRecorder) RequestJob(ctx, in any, opts ...any) *MockServerClientRequestJobCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestJob", reflect.TypeOf((*MockServerClient)(nil).RequestJob), varargs...)
 	return &MockServerClientRequestJobCall{Call: call}
 }
@@ -438,10 +439,10 @@ func (c *MockServerClientRequestJobCall) DoAndReturn(f func(context.Context, *ap
 }
 
 // RerunJob mocks base method.
-func (m *MockServerClient) RerunJob(arg0 context.Context, arg1 *api.RerunJobRequest, arg2 ...grpc.CallOption) (*api.RerunJobResponse, error) {
+func (m *MockServerClient) RerunJob(ctx context.Context, in *api.RerunJobRequest, opts ...grpc.CallOption) (*api.RerunJobResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "RerunJob", varargs...)
@@ -451,9 +452,9 @@ func (m *MockServerClient) RerunJob(arg0 context.Context, arg1 *api.RerunJobRequ
 }
 
 // RerunJob indicates an expected call of RerunJob.
-func (mr *MockServerClientMockRecorder) RerunJob(arg0, arg1 any, arg2 ...any) *MockServerClientRerunJobCall {
+func (mr *MockServerClientMockRecorder) RerunJob(ctx, in any, opts ...any) *MockServerClientRerunJobCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RerunJob", reflect.TypeOf((*MockServerClient)(nil).RerunJob), varargs...)
 	return &MockServerClientRerunJobCall{Call: call}
 }
@@ -482,10 +483,10 @@ func (c *MockServerClientRerunJobCall) DoAndReturn(f func(context.Context, *api.
 }
 
 // UpdateJobExecution mocks base method.
-func (m *MockServerClient) UpdateJobExecution(arg0 context.Context, arg1 *api.UpdateJobExecutionRequest, arg2 ...grpc.CallOption) (*api.UpdateJobExecutionResponse, error) {
+func (m *MockServerClient) UpdateJobExecution(ctx context.Context, in *api.UpdateJobExecutionRequest, opts ...grpc.CallOption) (*api.UpdateJobExecutionResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UpdateJobExecution", varargs...)
@@ -495,9 +496,9 @@ func (m *MockServerClient) UpdateJobExecution(arg0 context.Context, arg1 *api.Up
 }
 
 // UpdateJobExecution indicates an expected call of UpdateJobExecution.
-func (mr *MockServerClientMockRecorder) UpdateJobExecution(arg0, arg1 any, arg2 ...any) *MockServerClientUpdateJobExecutionCall {
+func (mr *MockServerClientMockRecorder) UpdateJobExecution(ctx, in any, opts ...any) *MockServerClientUpdateJobExecutionCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJobExecution", reflect.TypeOf((*MockServerClient)(nil).UpdateJobExecution), varargs...)
 	return &MockServerClientUpdateJobExecutionCall{Call: call}
 }
@@ -526,10 +527,10 @@ func (c *MockServerClientUpdateJobExecutionCall) DoAndReturn(f func(context.Cont
 }
 
 // UpdateStepExecution mocks base method.
-func (m *MockServerClient) UpdateStepExecution(arg0 context.Context, arg1 *api.UpdateStepExecutionRequest, arg2 ...grpc.CallOption) (*api.UpdateStepExecutionResponse, error) {
+func (m *MockServerClient) UpdateStepExecution(ctx context.Context, in *api.UpdateStepExecutionRequest, opts ...grpc.CallOption) (*api.UpdateStepExecutionResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UpdateStepExecution", varargs...)
@@ -539,9 +540,9 @@ func (m *MockServerClient) UpdateStepExecution(arg0 context.Context, arg1 *api.U
 }
 
 // UpdateStepExecution indicates an expected call of UpdateStepExecution.
-func (mr *MockServerClientMockRecorder) UpdateStepExecution(arg0, arg1 any, arg2 ...any) *MockServerClientUpdateStepExecutionCall {
+func (mr *MockServerClientMockRecorder) UpdateStepExecution(ctx, in any, opts ...any) *MockServerClientUpdateStepExecutionCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStepExecution", reflect.TypeOf((*MockServerClient)(nil).UpdateStepExecution), varargs...)
 	return &MockServerClientUpdateStepExecutionCall{Call: call}
 }
@@ -570,10 +571,10 @@ func (c *MockServerClientUpdateStepExecutionCall) DoAndReturn(f func(context.Con
 }
 
 // UploadLogLines mocks base method.
-func (m *MockServerClient) UploadLogLines(arg0 context.Context, arg1 *api.UpdateLogLinesRequest, arg2 ...grpc.CallOption) (*api.UpdateLogLinesResponse, error) {
+func (m *MockServerClient) UploadLogLines(ctx context.Context, in *api.UpdateLogLinesRequest, opts ...grpc.CallOption) (*api.UpdateLogLinesResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "UploadLogLines", varargs...)
@@ -583,9 +584,9 @@ func (m *MockServerClient) UploadLogLines(arg0 context.Context, arg1 *api.Update
 }
 
 // UploadLogLines indicates an expected call of UploadLogLines.
-func (mr *MockServerClientMockRecorder) UploadLogLines(arg0, arg1 any, arg2 ...any) *MockServerClientUploadLogLinesCall {
+func (mr *MockServerClientMockRecorder) UploadLogLines(ctx, in any, opts ...any) *MockServerClientUploadLogLinesCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadLogLines", reflect.TypeOf((*MockServerClient)(nil).UploadLogLines), varargs...)
 	return &MockServerClientUploadLogLinesCall{Call: call}
 }

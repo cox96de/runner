@@ -31,19 +31,32 @@ const (
 )
 
 type App struct {
-	ghClient     *ghclient.Client
-	runnerServer *server.App
-	baseURL      string
-	db           *db.Client
-	cloneStep    []string
+	ghClient         *ghclient.Client
+	runnerServer     *server.App
+	baseURL          string
+	db               *db.Client
+	cloneStep        []string
+	cloneStepWindows []string
+	vms              map[string]*VMMeta
 }
 
 func (h *App) Send(ctx context.Context, event event.Event) protocol.Result {
 	return h.handleCloudEvents(ctx, event)
 }
 
-func NewApp(ghClient *ghclient.Client, baseURL string, dbCli *db.Client, cloneStep []string) *App {
-	return &App{ghClient: ghClient, baseURL: baseURL, db: dbCli, cloneStep: cloneStep}
+func NewApp(ghClient *ghclient.Client, baseURL string, dbCli *db.Client, cloneStep []string, cloneStepWindows []string,
+	vms []*VMMeta,
+) *App {
+	return &App{
+		ghClient:         ghClient,
+		baseURL:          baseURL,
+		db:               dbCli,
+		cloneStep:        cloneStep,
+		cloneStepWindows: cloneStepWindows,
+		vms: lo.SliceToMap(vms, func(item *VMMeta) (string, *VMMeta) {
+			return item.Image, item
+		}),
+	}
 }
 
 func (h *App) SetRunnerServer(runnerServer *server.App) {
@@ -116,10 +129,15 @@ func (h *App) handleCheckSuite(ctx context.Context, event *github.CheckSuiteEven
 	}
 	// Append clone step.
 	for jobID, job := range pipelineDSL.Jobs {
+		cloneStep := h.cloneStep
+		meta, ok := h.getImageMeta(job.RunsOn.Image)
+		if ok && meta.OS == api.WindowsOS {
+			cloneStep = h.cloneStepWindows
+		}
 		job.Steps = append([]*dsl.Step{
 			{
 				Name: "clone",
-				Run:  h.cloneStep,
+				Run:  cloneStep,
 				Env: map[string]string{
 					CloneURLEnvKey: event.Repo.GetCloneURL(),
 					RefEnvKey:      event.CheckSuite.GetAfterSHA(),
@@ -282,11 +300,17 @@ func (h *App) createPipeline(ctx context.Context, repoName string, p *dsl.Pipeli
 					DefaultContainer: mainContainer,
 				},
 			}
-		case on.Linux != "":
+		case on.Image != "":
+			os := "linux"
+			meta, ok := h.getImageMeta(on.Image)
+			if ok {
+				os = meta.OS
+			}
 			runsOn = &api.RunsOn{
 				Label: "vm",
 				VM: &api.VM{
-					Image:  on.Linux,
+					Image:  on.Image,
+					OS:     os,
 					CPU:    4,
 					Memory: 8196,
 				},
