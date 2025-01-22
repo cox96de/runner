@@ -156,7 +156,7 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error)
 		if err != nil {
 			statusError, ok := status.FromError(err)
 			if !ok {
-				// TODO: auto retry.
+				// TODO: auto retry or fail the job.
 				return errors.WithMessage(err, "failed to wait command")
 			}
 			if statusError.Code() == codes.Canceled {
