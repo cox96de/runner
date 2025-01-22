@@ -66,6 +66,7 @@ runcmd:
 		fmt.Sprintf("-e CLOUD_INIT_META_DATA='%s' ", metaData) +
 		"-v /tmp/containervm:/tmp " +
 		"-v $PWD:/root " +
+		"--entrypoint='' " +
 		"--name " + containerName + " " +
 		"-w /root " +
 		runtimeImage + " " +
@@ -148,6 +149,131 @@ runcmd:
 	assert.Assert(t, pass)
 }
 
+func TestRunWindows(t *testing.T) {
+	gitRoot, err := testtool.GetRepositoryRoot()
+	assert.NilError(t, err)
+	env.ChangeWorkingDir(t, gitRoot)
+	containerName := "vm-runtime-test-run-windows"
+	_ = run("docker", "rm", containerName)
+	err = runtimeBuild()
+	assert.NilError(t, err)
+	err = run("bash", "-c", "GOOS=windows go build -o output/executor.exe ./cmd/executor")
+	assert.NilError(t, err)
+	err = run("bash", "-c", "GOOS=windows go build -o output/executor.exe ./cmd/executor")
+	assert.NilError(t, err)
+	err = run("bash", "-c", "genisoimage -output output/executor.iso -joliet -rock output/executor.exe engine/vm/runtime/windows_boot.ps1")
+	assert.NilError(t, err)
+	imagePath := "engine/vm/runtime/windows.qcow2"
+	_ = imagePath
+	metaData := `instance-id: vm-runner
+local-hostname: vm-runner
+`
+	userData := `#cloud-config
+
+runcmd:
+  - [powershell,"D:\\windows_boot.ps1"]
+  - [powershell,"E:\\windows_boot.ps1"]
+  - [powershell,"F:\\windows_boot.ps1"]
+  - [powershell,"G:\\windows_boot.ps1"]
+  - [powershell,"Z:\\windows_boot.ps1"]
+`
+	qemuCMD := fmt.Sprintf(
+		"-- " +
+			"qemu-system-x86_64 " +
+			"-nodefaults " +
+			"--nographic " +
+			"-display none " +
+			"-machine type=pc,usb=off " +
+			"-cpu host " +
+			"--enable-kvm " +
+			"-smp 4,sockets=1,cores=4,threads=1 " +
+			"-m 4096M -device virtio-balloon-pci,id=balloon0 " +
+			fmt.Sprintf("-drive file=%s,format=qcow2,if=virtio,aio=threads,media=disk,cache=unsafe,snapshot=on ", imagePath) +
+			"-cdrom output/executor.iso " +
+			"-serial chardev:serial0 -chardev socket,id=serial0,path=/tmp/console.sock,server=on,wait=off " +
+			"-vnc unix:/tmp/vnc.sock -device VGA ",
+	)
+	dockerRunCMD := "docker run " +
+		"--privileged " +
+		fmt.Sprintf("-e CLOUD_INIT_USER_DATA='%s' ", userData) +
+		fmt.Sprintf("-e CLOUD_INIT_META_DATA='%s' ", metaData) +
+		"-v /tmp/containervm:/tmp " +
+		"-v $PWD:/root " +
+		"--entrypoint='' " +
+		"--name " + containerName + " " +
+		"-w /root " +
+		runtimeImage + " " +
+		runtimeBinary + " " +
+		qemuCMD
+	dockerProcessChan := make(chan error)
+	go func() {
+		err := run("bash", "-c", dockerRunCMD)
+		if err != nil {
+			t.Logf("qemu image exit with: %+v", err)
+			dockerProcessChan <- err
+		}
+	}()
+	defer func() {
+		_ = run("docker", "stop", containerName)
+		_ = run("docker", "rm", containerName)
+	}()
+
+	var ip string
+	for i := 0; i < 100; i++ {
+		select {
+		case err := <-dockerProcessChan:
+			assert.NilError(t, err)
+			t.FailNow()
+		default:
+
+		}
+		time.Sleep(time.Second * 3)
+		ip, err = getContainerIP(containerName)
+		assert.NilError(t, err)
+		if ip != "" {
+			break
+		}
+	}
+	ip = strings.TrimRight(strings.TrimLeft(strings.TrimSpace(ip), "'"), "'")
+	t.Logf("ip: %s", ip)
+	testVM := func() (string, error) {
+		conn, err := grpc.NewClient(ip+":8080", grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithNoProxy())
+		if err != nil {
+			return "", errors.WithMessage(err, "failed to connect to executor")
+		}
+		client := executorpb.NewExecutorClient(conn)
+		_, err = client.Ping(context.Background(), &executorpb.PingRequest{})
+		if err != nil {
+			return "", errors.WithMessage(err, "failed to ping executor")
+		}
+		environment, err := client.Environment(context.Background(), &executorpb.EnvironmentRequest{})
+		if err != nil {
+			return "", errors.WithMessage(err, "failed to ping executor")
+		}
+		t.Logf("%+v", environment.Environment)
+		return "", nil
+	}
+	pass := false
+	for i := 0; i < 100; i++ {
+		select {
+		case err := <-dockerProcessChan:
+			assert.NilError(t, err)
+			t.FailNow()
+		default:
+
+		}
+		output, err := testVM()
+		if err == nil {
+			pass = true
+			break
+		}
+		t.Logf("error: %+v, output: %s", err, output)
+		time.Sleep(time.Second * 5)
+	}
+	assert.Assert(t, pass)
+}
+
 func TestMount9P(t *testing.T) {
 	gitRoot, err := testtool.GetRepositoryRoot()
 	assert.NilError(t, err)
@@ -192,6 +318,7 @@ mounts:
 		fmt.Sprintf("-e CLOUD_INIT_META_DATA='%s' ", metaData) +
 		"-v /tmp/containervm:/tmp " +
 		"-v $PWD:/root " +
+		"--entrypoint='' " +
 		"-v " + testDir.Path() + ":/mnt/9p " +
 		"--name " + containerName + " " +
 		"-w /root " +
@@ -319,7 +446,7 @@ mounts:
 		fmt.Sprintf("-e CLOUD_INIT_META_DATA='%s' ", metaData) +
 		"-v /tmp/containervm:/tmp " +
 		"-v $PWD:/root " +
-		"-v " + "$PWD/output:/mnt/9p " +
+		"--entrypoint='' " + "-v " + "$PWD/output:/mnt/9p " +
 		"--name " + containerName + " " +
 		"-w /root " +
 		runtimeImage + " " +
@@ -390,7 +517,7 @@ mounts:
 }
 
 const (
-	runtimeImage  = "cox96de/qemu-static:8.0.2"
+	runtimeImage  = "cox96de/runner-vm-runtime:latest"
 	runtimeBinary = "engine/vm/runtime/runtime"
 )
 
