@@ -9,6 +9,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/andeya/goutil/calendar/cron"
+	"github.com/cox96de/runner/telemetry/trace"
+
 	"github.com/alicebob/miniredis/v2"
 	"github.com/cox96de/runner/api"
 	"github.com/cox96de/runner/app/server"
@@ -101,6 +104,19 @@ func main() {
 	})
 	g.Go(func() error {
 		return http.ListenAndServe(config.ListenAddr, engine)
+	})
+	c := cron.New()
+	err = c.AddFunc("@every 1m", func() {
+		ctx, span := trace.Start(context.Background(), "cronjob.recycle_heartbeat_timeout_jobs")
+		defer span.End()
+		if err := runnerServer.RecycleHeartbeatTimeoutJobs(ctx, time.Minute); err != nil {
+			log.Errorf("failed to rcycle heartbeat timeout job executions")
+		}
+	})
+	checkError(err)
+	g.Go(func() error {
+		c.Run()
+		return err
 	})
 	err = g.Wait()
 	checkError(err)
