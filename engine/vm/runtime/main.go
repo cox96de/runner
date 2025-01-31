@@ -126,7 +126,7 @@ func generateCloudinitConfig(nic *vmutil.NIC) (*cloudinit.NetworkConfig, error) 
 }
 
 func generateCloudInitOpt(n *cloudinit.NetworkConfig, userData string, metaData string) ([]string, error) {
-	content, err := cloudinit.GenerateNetworkConfig(n)
+	content, err := GenerateNetworkConfig(n)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to generate network config")
 	}
@@ -147,8 +147,7 @@ func generateCloudInitOpt(n *cloudinit.NetworkConfig, userData string, metaData 
 		return nil, errors.WithMessage(err, "failed to write meta-data")
 	}
 	isoFile := "seed.iso"
-
-	err = vmutil.GenISO(tempDir, isoFile, []string{"network-config", "meta-data", "user-data"}, "cidata")
+	err = GenISO(tempDir, isoFile, []string{"network-config", "meta-data", "user-data"}, "cidata")
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to generate cloud-init iso")
 	}
@@ -168,4 +167,12 @@ func checkError(err error, s ...string) {
 	}
 	log.Error(s)
 	panic(err)
+}
+
+func GenISO(workDir string, output string, files []string, label string) error {
+	args := []string{"-output", output, "-volid", label, "-joliet", "-rock"}
+	args = append(args, files...)
+	cmd := exec.Command("genisoimage", args...)
+	cmd.Dir = workDir
+	return cmd.Run()
 }

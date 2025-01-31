@@ -1,0 +1,1 @@
+Start-Process -FilePath D:\executor.exe -RedirectStandardOutput "C:\executor.log" -RedirectStandardError "C:\executor_error.log"
