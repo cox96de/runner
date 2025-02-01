@@ -87,10 +87,11 @@ func (e *Engine) CreateRunner(ctx context.Context, logProvider engine.LogProvide
 		return nil, errors.WithMessage(err, "failed to compile compile vm-runner")
 	}
 	r := &Runner{
-		client:    e.client,
-		pod:       compile.pod,
-		port:      int32(executorPort),
-		namespace: e.namespace,
+		client:      e.client,
+		pod:         compile.pod,
+		port:        int32(executorPort),
+		namespace:   e.namespace,
+		logProvider: logProvider,
 	}
 	return r, nil
 }

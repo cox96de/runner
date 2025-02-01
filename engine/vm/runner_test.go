@@ -6,6 +6,7 @@ import (
 
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/app/executor/executorpb/mock"
+	mockengine "github.com/cox96de/runner/engine/mock"
 	"go.uber.org/mock/gomock"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -26,6 +27,13 @@ func TestRunner_Start(t *testing.T) {
 			ResourceVersion: "1",
 			Namespace:       "namespace",
 		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name: "runtime",
+				},
+			},
+		},
 		Status: corev1.PodStatus{
 			Phase: corev1.PodPending,
 		},
@@ -38,10 +46,11 @@ func TestRunner_Start(t *testing.T) {
 		fakeWatcher.Stop()
 	}()
 	r := &Runner{
-		client:    clientset,
-		pod:       &pod,
-		port:      50051,
-		namespace: "namespace",
+		client:      clientset,
+		pod:         &pod,
+		port:        50051,
+		namespace:   "namespace",
+		logProvider: mockengine.NewNopLogProvider(),
 		executorDialer: func(ctx context.Context, address string) (executorpb.ExecutorClient, error) {
 			assert.Equal(t, address, "fakeip:50051")
 			client := mock.NewMockExecutorClient(gomock.NewController(t))
