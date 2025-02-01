@@ -3,8 +3,12 @@ package vm
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"time"
+
+	"github.com/cox96de/runner/engine"
+	"github.com/cox96de/runner/log"
 
 	"github.com/cox96de/runner/engine/internal"
 
@@ -28,6 +32,43 @@ type Runner struct {
 	namespace       string
 	// executorDialer makes it easy to mock the dialer in tests.
 	executorDialer func(ctx context.Context, address string) (executorpb.ExecutorClient, error)
+	logProvider    engine.LogProvider
+}
+
+func (r *Runner) fetchLogs(ctx context.Context) {
+	logger := log.ExtractLogger(ctx)
+	logWriter := r.logProvider.CreateLogWriter(context.Background(), "_runtime")
+	defer logWriter.Close()
+	req := r.client.CoreV1().Pods(r.pod.Namespace).GetLogs(r.pod.Name, &corev1.PodLogOptions{
+		Follow:    true,
+		Container: r.pod.Spec.Containers[0].Name,
+	})
+	stream, err := req.Stream(context.Background())
+	if err != nil {
+		logger.Errorf("failed to start to fetch runtime's log: %v", err)
+		return
+	}
+	defer stream.Close()
+	buf := make([]byte, 2000)
+	for {
+		numBytes, err := stream.Read(buf)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logger.Errorf("failed to read logs: %+v", err)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		if numBytes == 0 {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		_, err = logWriter.Write(buf[:numBytes])
+		if err != nil {
+			logger.Errorf("failed to write logs: %+v", err)
+		}
+	}
 }
 
 func (r *Runner) Start(ctx context.Context) (startErr error) {
@@ -45,6 +86,7 @@ func (r *Runner) Start(ctx context.Context) (startErr error) {
 		}
 		return startErr
 	}
+	go r.fetchLogs(ctx)
 	err = r.waitExecutorReady(ctx, time.Second, time.Minute*2)
 	if err != nil {
 		// Clean up the created kube resources if about to fail to avoid resource leak.
