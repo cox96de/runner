@@ -18,10 +18,12 @@ build_executor:
 build_server:
 	mkdir -p output
 	go build -o output/server ./cmd/server/
-
 build_agent:
 	mkdir -p output
 	CGO_ENABLED=0 go build -o output/agent ./cmd/agent/
+build_agent_debug:
+	mkdir -p output
+	CGO_ENABLED=0 go build -gcflags "all=-N -l" -o output/agent ./cmd/agent/
 build_docker: build_agent_docker build_agent_debian_docker build_executor_docker build_server_docker build_simplecli_docker
 
 build_server_docker:
@@ -30,6 +32,8 @@ build_executor_docker:
 	docker build -t $(DOCKER_IMG_BASE)/runner-executor -f build/executor.Dockerfile .
 build_agent_docker:
 	docker build -t $(DOCKER_IMG_BASE)/runner-agent -f build/agent.Dockerfile .
+build_agent_debug_docker:
+	docker build -t $(DOCKER_IMG_BASE)/runner-agent-debug -f build/agent.debug.Dockerfile .
 build_agent_debian_docker:
 	docker build -t $(DOCKER_IMG_BASE)/runner-agent-debian -f build/agent.debian.Dockerfile .
 build_vm_runtime:
