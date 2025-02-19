@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/cox96de/containervm/cloudinit"
+	"github.com/cox96de/runner/util"
 	"gopkg.in/yaml.v3"
 )
 
@@ -11,10 +12,12 @@ type CloudInitV1 struct {
 }
 
 type Config struct {
-	Type    string    `yaml:"type"`
-	Name    string    `yaml:"name"`
-	MacAddr string    `yaml:"mac_address"`
-	Subnets []*Subnet `yaml:"subnets"`
+	Type    string    `yaml:"type,omitempty"`
+	Name    string    `yaml:"name,omitempty"`
+	MacAddr string    `yaml:"mac_address,omitempty"`
+	Subnets []*Subnet `yaml:"subnets,omitempty"`
+	Address []string  `yaml:"address,omitempty"`
+	Search  []string  `yaml:"search,omitempty"`
 }
 
 type Subnet struct {
@@ -23,10 +26,20 @@ type Subnet struct {
 	Gateway string `yaml:"gateway"`
 }
 
-func GenerateNetworkConfig(config *cloudinit.NetworkConfig) ([]byte, error) {
+type NetworkConfig struct {
+	cloudinit.NetworkConfig
+	Nameservers   []string
+	SearchDomains []string
+}
+
+func GenerateNetworkConfig(config *NetworkConfig) ([]byte, error) {
 	cc := &Config{
-		Type:    "physical",
-		Name:    "net0",
+		Type: "physical",
+		// In windows, occurs
+		//   cloudbase init '{Object Exists} An attempt was made to create an object and the object name already existed.
+		//   ' 'Renaming interface \"Ethernet\" to \"net0\" failed': cloudbaseinit.exception.CloudbaseInitException: Renaming interface \"Ethernet\" to \"net0\" failed
+		// Create a random interface name.
+		Name:    "net" + util.RandomLower(2),
 		MacAddr: config.Mac.String(),
 	}
 	if config.Gateway4 != nil {
@@ -61,6 +74,13 @@ func GenerateNetworkConfig(config *cloudinit.NetworkConfig) ([]byte, error) {
 		Config: []*Config{
 			cc,
 		},
+	}
+	if len(config.Nameservers) > 0 {
+		c.Config = append(c.Config, &Config{
+			Type:    "nameserver",
+			Address: config.Nameservers,
+			Search:  config.SearchDomains,
+		})
 	}
 	out, err := yaml.Marshal(c)
 	if err != nil {

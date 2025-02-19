@@ -15,7 +15,7 @@ jobs:
   vm:
     name: "Test in VM"
     runs-on:
-      linux: "debian11"
+      image: "debian11"
     steps:
       - name: "build"
         run:
