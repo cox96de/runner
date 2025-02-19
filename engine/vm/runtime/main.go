@@ -13,12 +13,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cox96de/containervm/cloudinit"
+	"github.com/cox96de/containervm/resolvconf"
+	"github.com/samber/lo"
+
 	"github.com/cox96de/containervm/network"
 	"github.com/cox96de/runner/util"
 	"github.com/spf13/cobra"
 
 	"github.com/cockroachdb/errors"
-	"github.com/cox96de/containervm/cloudinit"
 	vmutil "github.com/cox96de/containervm/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -159,7 +162,7 @@ func qemu(pflag *pflag.FlagSet, consolePath string) {
 	log.Infof("qemu exited with code %d", qemuCMD.ProcessState.ExitCode())
 }
 
-func generateCloudinitConfig(nic *vmutil.NIC) (*cloudinit.NetworkConfig, error) {
+func generateCloudinitConfig(nic *vmutil.NIC) (*NetworkConfig, error) {
 	iPv4DefaultGateway, err := vmutil.GetIPv4DefaultGateway()
 	if err != nil && !errors.Is(err, vmutil.NotFoundError) {
 		return nil, errors.WithMessage(err, "failed to get default gateway")
@@ -180,19 +183,30 @@ func generateCloudinitConfig(nic *vmutil.NIC) (*cloudinit.NetworkConfig, error) 
 		}
 		addresses = append(addresses, ipNet)
 	}
-	return &cloudinit.NetworkConfig{
-		Mac:       nic.HardwareAddr,
-		Addresses: addresses,
-		Gateway4:  iPv4DefaultGateway,
-		Gateway6:  iPv6DefaultGateway,
+	nameservers, searchDomains, err := getNameserversAndSearchDomain()
+	checkError(err)
+	nameservers = lo.Filter(nameservers, func(nameserver string, _ int) bool {
+		ip := net.ParseIP(nameserver)
+		return !ip.IsLoopback()
+	})
+	return &NetworkConfig{
+		NetworkConfig: cloudinit.NetworkConfig{
+			Mac:       nic.HardwareAddr,
+			Addresses: addresses,
+			Gateway4:  iPv4DefaultGateway,
+			Gateway6:  iPv6DefaultGateway,
+		},
+		Nameservers:   nameservers,
+		SearchDomains: searchDomains,
 	}, nil
 }
 
-func generateCloudInitOpt(n *cloudinit.NetworkConfig, userData string, metaData string) ([]string, error) {
+func generateCloudInitOpt(n *NetworkConfig, userData string, metaData string) ([]string, error) {
 	content, err := GenerateNetworkConfig(n)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to generate network config")
 	}
+	log.Infof("generate network config content:\n%s", content)
 	tempDir, err := os.MkdirTemp("", "cloud-init-*")
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create temp dir")
@@ -238,4 +252,14 @@ func GenISO(workDir string, output string, files []string, label string) error {
 	cmd := exec.Command("genisoimage", args...)
 	cmd.Dir = workDir
 	return cmd.Run()
+}
+
+func getNameserversAndSearchDomain() (nameservers []string, searchDomains []string, err error) {
+	resolvFile, err := os.ReadFile("/etc/resolv.conf")
+	if err != nil {
+		return nil, nil, errors.WithMessagef(err, "failed to read /etc/resolv.conf")
+	}
+	nameservers = resolvconf.GetNameservers(resolvFile)
+	searchDomains = resolvconf.GetSearchDomains(resolvFile)
+	return nameservers, searchDomains, nil
 }

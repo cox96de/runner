@@ -167,7 +167,6 @@ func TestRunWindows(t *testing.T) {
 	imagePath := "engine/vm/runtime/windows.qcow2"
 	_ = imagePath
 	metaData := `instance-id: vm-runner
-local-hostname: vm-runner
 `
 	userData := `#cloud-config
 
@@ -179,7 +178,8 @@ runcmd:
   - [powershell,"Z:\\windows_boot.ps1"]
 `
 	qemuCMD := fmt.Sprintf(
-		"-- " +
+		"--console /tmp/console.sock " +
+			"-- " +
 			"qemu-system-x86_64 " +
 			"-nodefaults " +
 			"--nographic " +
