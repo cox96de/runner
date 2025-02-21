@@ -49,6 +49,7 @@ func (s *Service) CreatePipeline(ctx context.Context, pipeline *api.PipelineDSL)
 				EnvVar:           step.EnvVar,
 				DependsOn:        step.DependsOn,
 				Commands:         step.Commands,
+				Script:           step.Script,
 			})
 		}
 		createStepOptMap[job.Name] = stepOpts

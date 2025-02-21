@@ -22,6 +22,7 @@ import (
 type MockExecutorClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockExecutorClientMockRecorder
+	isgomock struct{}
 }
 
 // MockExecutorClientMockRecorder is the mock recorder for MockExecutorClient.
@@ -42,10 +43,10 @@ func (m *MockExecutorClient) EXPECT() *MockExecutorClientMockRecorder {
 }
 
 // Environment mocks base method.
-func (m *MockExecutorClient) Environment(arg0 context.Context, arg1 *executorpb.EnvironmentRequest, arg2 ...grpc.CallOption) (*executorpb.EnvironmentResponse, error) {
+func (m *MockExecutorClient) Environment(ctx context.Context, in *executorpb.EnvironmentRequest, opts ...grpc.CallOption) (*executorpb.EnvironmentResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Environment", varargs...)
@@ -55,9 +56,9 @@ func (m *MockExecutorClient) Environment(arg0 context.Context, arg1 *executorpb.
 }
 
 // Environment indicates an expected call of Environment.
-func (mr *MockExecutorClientMockRecorder) Environment(arg0, arg1 any, arg2 ...any) *MockExecutorClientEnvironmentCall {
+func (mr *MockExecutorClientMockRecorder) Environment(ctx, in any, opts ...any) *MockExecutorClientEnvironmentCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Environment", reflect.TypeOf((*MockExecutorClient)(nil).Environment), varargs...)
 	return &MockExecutorClientEnvironmentCall{Call: call}
 }
@@ -86,10 +87,10 @@ func (c *MockExecutorClientEnvironmentCall) DoAndReturn(f func(context.Context, 
 }
 
 // GetCommandLog mocks base method.
-func (m *MockExecutorClient) GetCommandLog(arg0 context.Context, arg1 *executorpb.GetCommandLogRequest, arg2 ...grpc.CallOption) (executorpb.Executor_GetCommandLogClient, error) {
+func (m *MockExecutorClient) GetCommandLog(ctx context.Context, in *executorpb.GetCommandLogRequest, opts ...grpc.CallOption) (executorpb.Executor_GetCommandLogClient, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetCommandLog", varargs...)
@@ -99,9 +100,9 @@ func (m *MockExecutorClient) GetCommandLog(arg0 context.Context, arg1 *executorp
 }
 
 // GetCommandLog indicates an expected call of GetCommandLog.
-func (mr *MockExecutorClientMockRecorder) GetCommandLog(arg0, arg1 any, arg2 ...any) *MockExecutorClientGetCommandLogCall {
+func (mr *MockExecutorClientMockRecorder) GetCommandLog(ctx, in any, opts ...any) *MockExecutorClientGetCommandLogCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommandLog", reflect.TypeOf((*MockExecutorClient)(nil).GetCommandLog), varargs...)
 	return &MockExecutorClientGetCommandLogCall{Call: call}
 }
@@ -130,10 +131,10 @@ func (c *MockExecutorClientGetCommandLogCall) DoAndReturn(f func(context.Context
 }
 
 // GetRuntimeInfo mocks base method.
-func (m *MockExecutorClient) GetRuntimeInfo(arg0 context.Context, arg1 *executorpb.GetRuntimeInfoRequest, arg2 ...grpc.CallOption) (*executorpb.GetRuntimeInfoResponse, error) {
+func (m *MockExecutorClient) GetRuntimeInfo(ctx context.Context, in *executorpb.GetRuntimeInfoRequest, opts ...grpc.CallOption) (*executorpb.GetRuntimeInfoResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetRuntimeInfo", varargs...)
@@ -143,9 +144,9 @@ func (m *MockExecutorClient) GetRuntimeInfo(arg0 context.Context, arg1 *executor
 }
 
 // GetRuntimeInfo indicates an expected call of GetRuntimeInfo.
-func (mr *MockExecutorClientMockRecorder) GetRuntimeInfo(arg0, arg1 any, arg2 ...any) *MockExecutorClientGetRuntimeInfoCall {
+func (mr *MockExecutorClientMockRecorder) GetRuntimeInfo(ctx, in any, opts ...any) *MockExecutorClientGetRuntimeInfoCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRuntimeInfo", reflect.TypeOf((*MockExecutorClient)(nil).GetRuntimeInfo), varargs...)
 	return &MockExecutorClientGetRuntimeInfoCall{Call: call}
 }
@@ -174,10 +175,10 @@ func (c *MockExecutorClientGetRuntimeInfoCall) DoAndReturn(f func(context.Contex
 }
 
 // Ping mocks base method.
-func (m *MockExecutorClient) Ping(arg0 context.Context, arg1 *executorpb.PingRequest, arg2 ...grpc.CallOption) (*executorpb.PingResponse, error) {
+func (m *MockExecutorClient) Ping(ctx context.Context, in *executorpb.PingRequest, opts ...grpc.CallOption) (*executorpb.PingResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Ping", varargs...)
@@ -187,9 +188,9 @@ func (m *MockExecutorClient) Ping(arg0 context.Context, arg1 *executorpb.PingReq
 }
 
 // Ping indicates an expected call of Ping.
-func (mr *MockExecutorClientMockRecorder) Ping(arg0, arg1 any, arg2 ...any) *MockExecutorClientPingCall {
+func (mr *MockExecutorClientMockRecorder) Ping(ctx, in any, opts ...any) *MockExecutorClientPingCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockExecutorClient)(nil).Ping), varargs...)
 	return &MockExecutorClientPingCall{Call: call}
 }
@@ -218,10 +219,10 @@ func (c *MockExecutorClientPingCall) DoAndReturn(f func(context.Context, *execut
 }
 
 // StartCommand mocks base method.
-func (m *MockExecutorClient) StartCommand(arg0 context.Context, arg1 *executorpb.StartCommandRequest, arg2 ...grpc.CallOption) (*executorpb.StartCommandResponse, error) {
+func (m *MockExecutorClient) StartCommand(ctx context.Context, in *executorpb.StartCommandRequest, opts ...grpc.CallOption) (*executorpb.StartCommandResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "StartCommand", varargs...)
@@ -231,9 +232,9 @@ func (m *MockExecutorClient) StartCommand(arg0 context.Context, arg1 *executorpb
 }
 
 // StartCommand indicates an expected call of StartCommand.
-func (mr *MockExecutorClientMockRecorder) StartCommand(arg0, arg1 any, arg2 ...any) *MockExecutorClientStartCommandCall {
+func (mr *MockExecutorClientMockRecorder) StartCommand(ctx, in any, opts ...any) *MockExecutorClientStartCommandCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartCommand", reflect.TypeOf((*MockExecutorClient)(nil).StartCommand), varargs...)
 	return &MockExecutorClientStartCommandCall{Call: call}
 }
@@ -262,10 +263,10 @@ func (c *MockExecutorClientStartCommandCall) DoAndReturn(f func(context.Context,
 }
 
 // WaitCommand mocks base method.
-func (m *MockExecutorClient) WaitCommand(arg0 context.Context, arg1 *executorpb.WaitCommandRequest, arg2 ...grpc.CallOption) (*executorpb.WaitCommandResponse, error) {
+func (m *MockExecutorClient) WaitCommand(ctx context.Context, in *executorpb.WaitCommandRequest, opts ...grpc.CallOption) (*executorpb.WaitCommandResponse, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0, arg1}
-	for _, a := range arg2 {
+	varargs := []any{ctx, in}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "WaitCommand", varargs...)
@@ -275,9 +276,9 @@ func (m *MockExecutorClient) WaitCommand(arg0 context.Context, arg1 *executorpb.
 }
 
 // WaitCommand indicates an expected call of WaitCommand.
-func (mr *MockExecutorClientMockRecorder) WaitCommand(arg0, arg1 any, arg2 ...any) *MockExecutorClientWaitCommandCall {
+func (mr *MockExecutorClientMockRecorder) WaitCommand(ctx, in any, opts ...any) *MockExecutorClientWaitCommandCall {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0, arg1}, arg2...)
+	varargs := append([]any{ctx, in}, opts...)
 	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitCommand", reflect.TypeOf((*MockExecutorClient)(nil).WaitCommand), varargs...)
 	return &MockExecutorClientWaitCommandCall{Call: call}
 }

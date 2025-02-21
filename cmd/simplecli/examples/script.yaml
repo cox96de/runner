@@ -1,0 +1,12 @@
+## Compile redis with shell engine.
+jobs:
+  - name: compile_redis
+    runson:
+      label: shell
+    steps:
+      - name: script
+        script: |
+          if platform_system() == "Linux":
+            print("Hello Linux")
+          else:
+            print("Hello Windows")

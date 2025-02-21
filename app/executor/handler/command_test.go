@@ -96,7 +96,7 @@ func TestHandler_StartCommand(t *testing.T) {
 		pid := resp.Status.Pid
 		assert.Assert(t, pid > 0)
 		time.Sleep(time.Millisecond * 10)
-		_ = handler.commands[resp.CommandID].Process.Kill()
+		_ = handler.commands[resp.CommandID].(*command).Process.Kill()
 	})
 	t.Run("invalid-command", func(t *testing.T) {
 		_, err := client.StartCommand(context.Background(),
@@ -112,7 +112,7 @@ func TestHandler_StartCommand(t *testing.T) {
 				Commands: []string{},
 				Dir:      "/tmp",
 			})
-		assert.ErrorContains(t, err, "no command provided")
+		assert.ErrorContains(t, err, "no command or script provided")
 	})
 	t.Run("workdir", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
@@ -183,6 +183,41 @@ func TestHandler_StartCommand(t *testing.T) {
 			log, err := executorpb.ReadAllFromCommandLog(commandLogResp)
 			assert.NilError(t, err)
 			assert.Equal(t, log, username+"\n")
+		})
+	})
+	t.Run("starlark", func(t *testing.T) {
+		var dir string
+		script := `
+if platform_system() == "Linux":
+   process_run(["echo","hello"])
+if platform_system() == "Darwin":
+   process_run(["echo","hello"])
+elif platform_system() == "Windows":
+   process_run(["powershell","-Command","Write-Host hello"])
+`
+		resp, err := client.StartCommand(context.Background(),
+			&executorpb.StartCommandRequest{
+				Script: script,
+				Dir:    dir,
+			})
+		assert.NilError(t, err)
+		assert.NilError(t, err)
+		commandID := resp.CommandID
+		assert.Assert(t, resp.Status.Pid > 0)
+		t.Run("get_log", func(t *testing.T) {
+			// Wait for the command to finish to fetch full log.
+			_, err := client.WaitCommand(context.Background(), &executorpb.WaitCommandRequest{
+				CommandID: commandID,
+				Timeout:   int64(time.Second * 2),
+			})
+			assert.NilError(t, err)
+			commandLogResp, err := client.GetCommandLog(context.Background(), &executorpb.GetCommandLogRequest{
+				CommandID: commandID,
+			})
+			assert.NilError(t, err)
+			log, err := executorpb.ReadAllFromCommandLog(commandLogResp)
+			assert.NilError(t, err)
+			assert.Assert(t, strings.Contains(log, "hello"), log)
 		})
 	})
 }
@@ -309,7 +344,7 @@ func TestSetCommandMockRandomString(t *testing.T) {
 	// Execute normally.
 	t.Run("normal_execute", func(t *testing.T) {
 		h := &Handler{
-			commands: make(map[string]*command),
+			commands: make(map[string]Command),
 		}
 
 		originalRandomStringFunc := randomStringFunc
@@ -325,7 +360,7 @@ func TestSetCommandMockRandomString(t *testing.T) {
 	// Successfully set commandID after conflict occurs.
 	t.Run("set_commandID_after_conflict", func(t *testing.T) {
 		h := &Handler{
-			commands: make(map[string]*command),
+			commands: make(map[string]Command),
 		}
 
 		originalRandomStringFunc := randomStringFunc
@@ -351,7 +386,7 @@ func TestSetCommandMockRandomString(t *testing.T) {
 	// After 10 conflicts, commandID failed to be set.
 	t.Run("fail_to_set_commandID", func(t *testing.T) {
 		h := &Handler{
-			commands: make(map[string]*command),
+			commands: make(map[string]Command),
 		}
 
 		originalRandomStringFunc := randomStringFunc
@@ -376,10 +411,10 @@ func Test_newCommand(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skip on windows")
 	}
-	cmd := exec.Command("python3", "-m", "non-exists")
 	rb := lib.NewRingBuffer(defaultRingBufferSize)
-	c := newCommand(cmd, rb)
-	err := c.Start()
+	c, err := newCommand([]string{"python3", "-m", "non-exists"}, rb, rb, "", []string{}, "")
+	assert.NilError(t, err)
+	err = c.Start()
 	assert.NilError(t, err)
 	c.Wait()
 }

@@ -37,6 +37,7 @@ message StartCommandRequest {
   string dir = 2;
   repeated string env = 3;
   string username = 4;
+  string script = 5;
 }
 
 message StartCommandResponse {
