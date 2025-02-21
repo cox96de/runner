@@ -69,24 +69,6 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error)
 	if err != nil {
 		return errors.WithMessage(err, "failed to get executor")
 	}
-	getRuntimeInfoResp, err := executor.GetRuntimeInfo(ctx, &executorpb.GetRuntimeInfoRequest{})
-	if err != nil {
-		return errors.WithMessage(err, "failed to get runtime info")
-	}
-	var (
-		commands []string
-		script   string
-	)
-	switch getRuntimeInfoResp.OS {
-	case "windows":
-		commands = getWindowsCommands()
-		script = compileWindowsScript(step.Commands)
-	case "linux", "darwin":
-		commands = getUnixCommands()
-		script = compileUnixScript(step.Commands)
-	default:
-		return errors.Errorf("unsupported os: '%s'", getRuntimeInfoResp.OS)
-	}
 	environment, err := executor.Environment(ctx, &executorpb.EnvironmentRequest{})
 	if err != nil {
 		return errors.WithMessage(err, "failed to get environment")
@@ -108,7 +90,7 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error)
 				return
 			case <-time.After(time.Second * 5):
 				// Use it as ping.
-				getRuntimeInfoResp, err = executor.GetRuntimeInfo(ctx, &executorpb.GetRuntimeInfoRequest{})
+				_, err := executor.GetRuntimeInfo(ctx, &executorpb.GetRuntimeInfoRequest{})
 				if err != nil {
 					logger.Errorf("failed to get runtime info: %v", err)
 					count++
@@ -127,9 +109,9 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error)
 		return key + "=" + value
 	})
 	startCommandResponse, err := executor.StartCommand(ctx, &executorpb.StartCommandRequest{
-		Commands: commands,
+		Commands: step.Commands,
 		Dir:      step.WorkingDirectory,
-		Env:      append(append(environment.Environment, stepEnv...), "RUNNER_SCRIPT="+script),
+		Env:      append(environment.Environment, stepEnv...),
 		Username: step.User,
 	})
 	if err != nil {

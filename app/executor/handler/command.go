@@ -119,7 +119,6 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 		return nil, errors.Errorf("no command provided")
 	}
 	log.Infof("starting command on dir: %s", request.Dir)
-	cmd := exec.Command(request.Commands[0], request.Commands[1:]...)
 	if len(request.Dir) > 0 {
 		stat, err := os.Stat(request.Dir)
 		switch {
@@ -134,17 +133,10 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 			return nil, errors.WithMessagef(err, "failed to stat dir: %s", request.Dir)
 		}
 	}
-	cmd.Dir = request.Dir
-	_, err := setUser(cmd, request.Username)
+	c, err := newCommand(request.Commands, rb, rb, request.Dir, request.Env, request.Username)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessagef(err, "failed to create command: %s", request.Commands)
 	}
-	if len(request.Env) > 0 {
-		cmd.Env = append(cmd.Env, request.Env...)
-	}
-	cmd.Stdout = rb
-	cmd.Stderr = rb
-	c := newCommand(cmd, rb)
 	if err := c.Start(); err != nil {
 		return nil, errors.WithMessage(err, "failed to start command")
 	}
@@ -162,7 +154,7 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 	return &executorpb.StartCommandResponse{
 		CommandID: commandID,
 		Status: &executorpb.ProcessStatus{
-			Pid:   int32(cmd.Process.Pid),
+			Pid:   int32(c.GetPID()),
 			Exit:  false,
 			Error: "",
 		},
@@ -177,6 +169,8 @@ func (h *Handler) WaitCommand(ctx context.Context, request *executorpb.WaitComma
 		return nil, errors.Errorf("command with pid %s not found", request.CommandID)
 	}
 	select {
+	case <-ctx.Done():
+		return nil, errors.New("context is done")
 	case <-time.After(time.Duration(request.Timeout)):
 		return &executorpb.WaitCommandResponse{
 			Status: &executorpb.ProcessStatus{
@@ -206,19 +200,56 @@ func (h *Handler) WaitCommand(ctx context.Context, request *executorpb.WaitComma
 	}
 }
 
+func newCommand(commands []string, stdout io.ReadWriteCloser, stderr io.WriteCloser, workDir string, env []string, username string) (*command, error) {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		script := compileWindowsScript(commands)
+		interpreter, b := lookup([]string{"powershell.exe"})
+		if !b {
+			return nil, errors.New("failed to find powershell")
+		}
+		cmd = exec.Command(interpreter, "-NoProfile", "-NoLogo", "-ExecutionPolicy", "Bypass", "-NonInteractive", "-Command", script)
+	case "linux", "darwin":
+		script := compileUnixScript(commands)
+		interpreter, b := lookup([]string{"bash", "sh"})
+		if !b {
+			return nil, errors.New("failed to find bash or sh")
+		}
+		cmd = exec.Command(interpreter, "-c", "printf '%s' \"$RUNNER_SCRIPT\" | "+interpreter)
+		cmd.Env = append(env, "RUNNER_SCRIPT="+script)
+	default:
+		return nil, errors.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	cmd.Dir = workDir
+	_, err := setUser(cmd, username)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to set user: %s", username)
+	}
+	return &command{
+		Cmd:       cmd,
+		logWriter: stdout,
+		runningCh: make(chan struct{}),
+	}, nil
+}
+
+func lookup(searches []string) (string, bool) {
+	for _, search := range searches {
+		path, err := exec.LookPath(search)
+		if err == nil {
+			return path, true
+		}
+	}
+	return "", false
+}
+
 type command struct {
 	*exec.Cmd
 	logWriter io.ReadWriteCloser
 	runningCh chan struct{}
 	waitError error
-}
-
-func newCommand(cmd *exec.Cmd, logWriter io.ReadWriteCloser) *command {
-	return &command{
-		Cmd:       cmd,
-		logWriter: logWriter,
-		runningCh: make(chan struct{}),
-	}
 }
 
 func (c *command) Start() error {
@@ -235,4 +266,8 @@ func (c *command) Wait() {
 	c.waitError = c.Cmd.Wait()
 	_ = c.logWriter.Close()
 	close(c.runningCh)
+}
+
+func (c *command) GetPID() int {
+	return c.Cmd.Process.Pid
 }

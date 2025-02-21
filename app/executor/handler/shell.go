@@ -1,17 +1,24 @@
-package util
+package handler
 
 import (
 	"bytes"
 	"fmt"
 )
 
-// CompileUnixScript compiles unix commands into a single shell script which can be executed by shell.
-func CompileUnixScript(commands []string) string {
-	return compileUnixScript(commands)
-}
+const shellOptionScript = `
+set -e
 
+`
+
+const traceScript = `
+printf '+ %s\n'
+
+%s
+`
+
+// compileUnixScript compiles unix commands into a single command which can be executed by shell.
 func compileUnixScript(commands []string) string {
-	buf := bytes.NewBufferString(shellHeader)
+	buf := bytes.NewBufferString(shellOptionScript)
 	for _, command := range commands {
 		escaped := encodeCommandLine(command)
 		buf.WriteString(fmt.Sprintf(
@@ -34,21 +41,9 @@ func encodeCommandLine(l string) string {
 			b.WriteRune(r)
 			continue
 		}
-		// Convert character to octal format to avoid problems with special characters.
 		for _, c := range []byte(string(r)) {
 			b.WriteString(fmt.Sprintf(`\%03o`, c))
 		}
 	}
 	return b.String()
 }
-
-const shellHeader = `
-set -e
-
-`
-
-const traceScript = `
-printf '+ %s\n'
-
-%s
-`

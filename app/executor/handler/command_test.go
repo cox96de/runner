@@ -16,7 +16,6 @@ import (
 
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/lib"
-	"github.com/cox96de/runner/util"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -97,14 +96,6 @@ func TestHandler_StartCommand(t *testing.T) {
 		assert.Assert(t, pid > 0)
 		time.Sleep(time.Millisecond * 10)
 		_ = handler.commands[resp.CommandID].Process.Kill()
-	})
-	t.Run("invalid-command", func(t *testing.T) {
-		_, err := client.StartCommand(context.Background(),
-			&executorpb.StartCommandRequest{
-				Commands: []string{"non-exists"},
-				Dir:      "/tmp",
-			})
-		assert.ErrorContains(t, err, "not found")
 	})
 	t.Run("empty_command", func(t *testing.T) {
 		_, err := client.StartCommand(context.Background(),
@@ -193,7 +184,7 @@ func TestHandler_GetCommandLog(t *testing.T) {
 	assert.NilError(t, err)
 	client := executorpb.NewExecutorClient(conn)
 	t.Run("fast", func(t *testing.T) {
-		logs := `go: downloading gotest.tools/v3 v3.4.0
+		expectLogs := `go: downloading gotest.tools/v3 v3.4.0
 go: downloading github.com/google/go-cmp v0.5.5
 ?   	github.com/cox96de/runner/app/executor	[no test files]
 ok  	github.com/cox96de/runner/app/executor/handler	1.053s	coverage: 63.6% of statements in ./...
@@ -202,17 +193,17 @@ ok  	github.com/cox96de/runner/internal/executor	0.028s	coverage: 22.4% of state
 ?   	github.com/cox96de/runner/internal/model	[no test files]
 ?   	github.com/cox96de/runner/util	[no test files]
 `
-		testDir := fs.NewDir(t, "test", fs.WithFile("test.log", logs, fs.WithMode(0o644)))
+		testDir := fs.NewDir(t, "test", fs.WithFile("test.log", expectLogs, fs.WithMode(0o644)))
 		var (
 			dir      string
 			commands []string
 		)
 		if runtime.GOOS == "windows" {
 			dir = "c:\\"
-			commands = []string{"powershell", "-Command", "Get-Content", "-Path", testDir.Join("test.log")}
+			commands = []string{"Get-Content -Path " + testDir.Join("test.log")}
 		} else {
 			dir = "/tmp"
-			commands = []string{"cat", testDir.Join("test.log")}
+			commands = []string{"cat " + testDir.Join("test.log")}
 		}
 		resp, err := client.StartCommand(context.Background(), &executorpb.StartCommandRequest{
 			Commands: commands,
@@ -228,17 +219,16 @@ ok  	github.com/cox96de/runner/internal/executor	0.028s	coverage: 22.4% of state
 		if runtime.GOOS == "windows" {
 			log = strings.Replace(log, "\r\n", "\n", -1)
 		}
-		assert.DeepEqual(t, log, logs)
+		assert.Assert(t, strings.Contains(log, expectLogs), log)
 	})
 	t.Run("slow", func(t *testing.T) {
 		if runtime.GOOS == "windows" {
 			t.Skip("skip slow test on windows")
 		}
 		commands := []string{"echo 1", "sleep 1", "echo 2"}
-		commandsEnv := util.CompileUnixScript(commands)
 		resp, err := client.StartCommand(context.Background(), &executorpb.StartCommandRequest{
-			Commands: []string{"/bin/sh", "-c", "printf '%s' \"$COMMANDS\" | /bin/sh"},
-			Env:      []string{"COMMANDS=" + commandsEnv},
+			Commands: commands,
+			Env:      os.Environ(),
 		})
 		assert.Assert(t, err)
 		getLogResp, err := client.GetCommandLog(context.Background(), &executorpb.GetCommandLogRequest{
@@ -258,12 +248,7 @@ func TestHandler_WaitCommand(t *testing.T) {
 	assert.NilError(t, err)
 	client := executorpb.NewExecutorClient(conn)
 	t.Run("wait", func(t *testing.T) {
-		var commands []string
-		if runtime.GOOS == "windows" {
-			commands = []string{"powershell", "-Command", "sleep 1"}
-		} else {
-			commands = []string{"sleep", "1"}
-		}
+		commands := []string{"sleep 1"}
 		resp, err := client.StartCommand(context.Background(), &executorpb.StartCommandRequest{
 			Commands: commands,
 			Dir:      os.TempDir(),
@@ -287,7 +272,7 @@ func TestHandler_WaitCommand(t *testing.T) {
 			t.Skip("skip on windows")
 		}
 		resp, err := client.StartCommand(context.Background(), &executorpb.StartCommandRequest{
-			Commands: []string{"bash", "-c", "exit 2"},
+			Commands: []string{"exit 2"},
 			Dir:      os.TempDir(),
 		})
 		assert.NilError(t, err)
@@ -376,10 +361,10 @@ func Test_newCommand(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skip on windows")
 	}
-	cmd := exec.Command("python3", "-m", "non-exists")
 	rb := lib.NewRingBuffer(defaultRingBufferSize)
-	c := newCommand(cmd, rb)
-	err := c.Start()
+	c, err := newCommand([]string{"python3", "-m", "non-exists"}, rb, rb, "", os.Environ(), "")
+	assert.NilError(t, err)
+	err = c.Start()
 	assert.NilError(t, err)
 	c.Wait()
 }
