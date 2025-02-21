@@ -156,10 +156,10 @@ message StepDSL {
   string user = 6;
   string container = 7;
   repeated string depends_on = 8;
-  //@gotags: validate:"required,min=1,max=32,dive"
   repeated string commands = 9;
   map<string, string> env_var = 10;
   string if = 11;
+  string script = 12;
 }
 
 message Step {
@@ -175,6 +175,7 @@ message Step {
   map<string, string> env_var = 10;
   repeated StepExecution executions = 11;
   StepExecution execution = 12;
+  string Script = 13;
   google.protobuf.Timestamp created_at = 101;
   google.protobuf.Timestamp updated_at = 102;
 }

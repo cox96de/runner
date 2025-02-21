@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/cox96de/runner/engine"
+	"github.com/cox96de/runner/util"
 )
 
 func NewNopLogProvider() engine.LogProvider {
@@ -14,17 +15,9 @@ func NewNopLogProvider() engine.LogProvider {
 type logProvider struct{}
 
 func (l *logProvider) CreateLogWriter(ctx context.Context, logName string) io.WriteCloser {
-	return &nopCloser{Writer: io.Discard}
+	return util.NopCloser(io.Discard)
 }
 
 func (l *logProvider) GetDefaultLogWriter(ctx context.Context) io.WriteCloser {
-	return &nopCloser{Writer: io.Discard}
-}
-
-type nopCloser struct {
-	io.Writer
-}
-
-func (n *nopCloser) Close() error {
-	return nil
+	return util.NopCloser(io.Discard)
 }

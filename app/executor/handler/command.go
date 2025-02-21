@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cox96de/runner/app/executor/starlark"
+
 	"github.com/cockroachdb/errors"
 	"github.com/cox96de/runner/app/executor/executorpb"
 	"github.com/cox96de/runner/lib"
@@ -22,7 +24,19 @@ const (
 	flushLogInterval      = time.Millisecond * 100
 )
 
-var randomStringFunc = util.RandomString
+var (
+	randomStringFunc         = util.RandomString
+	_                Command = (*command)(nil)
+	_                Command = (*starlark.Command)(nil)
+)
+
+type Command interface {
+	Read(buf []byte) (int, error)
+	GetPID() int
+	Wait() <-chan error
+	ExitCode() int
+	Start() error
+}
 
 func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server executorpb.Executor_GetCommandLogServer) error {
 	h.commandLock.RLock()
@@ -41,8 +55,8 @@ func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server
 		default:
 
 		}
-		n, readErr := c.logWriter.Read(logBuf)
-		if readErr != nil {
+		n, readErr := c.Read(logBuf)
+		if n == 0 && readErr != nil {
 			if errors.Is(readErr, io.EOF) {
 				return nil
 			}
@@ -61,10 +75,10 @@ func (h *Handler) GetCommandLog(request *executorpb.GetCommandLogRequest, server
 	}
 }
 
-func (h *Handler) setCommand(c *command) (string, error) {
+func (h *Handler) setCommand(c Command) (string, error) {
 	h.commandLock.Lock()
 	defer h.commandLock.Unlock()
-	for i := 0; i < 10; i++ { // If the commandID still conflits after trying 10 times, raise error.
+	for i := 0; i < 10; i++ { // If the commandID still conflict after trying 10 times, raise error.
 		commandID := randomStringFunc(10)
 		if _, ok := h.commands[commandID]; ok {
 			continue
@@ -115,11 +129,10 @@ func setHomeEnv(cmd *exec.Cmd, user *user.User) {
 
 func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCommandRequest) (*executorpb.StartCommandResponse, error) {
 	rb := lib.NewRingBuffer(defaultRingBufferSize)
-	if len(request.Commands) == 0 {
-		return nil, errors.Errorf("no command provided")
+	if len(request.Commands) == 0 && len(request.Script) == 0 {
+		return nil, errors.Errorf("no command or script provided")
 	}
 	log.Infof("starting command on dir: %s", request.Dir)
-	cmd := exec.Command(request.Commands[0], request.Commands[1:]...)
 	if len(request.Dir) > 0 {
 		stat, err := os.Stat(request.Dir)
 		switch {
@@ -134,17 +147,18 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 			return nil, errors.WithMessagef(err, "failed to stat dir: %s", request.Dir)
 		}
 	}
-	cmd.Dir = request.Dir
-	_, err := setUser(cmd, request.Username)
+	var (
+		c   Command
+		err error
+	)
+	if len(request.Script) > 0 {
+		c, err = starlark.NewCommand(request.Script, rb, rb, request.Dir, request.Env, request.Username)
+	} else {
+		c, err = newCommand(request.Commands, rb, rb, request.Dir, request.Env, request.Username)
+	}
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessagef(err, "failed to create command: %s", request.Commands)
 	}
-	if len(request.Env) > 0 {
-		cmd.Env = append(cmd.Env, request.Env...)
-	}
-	cmd.Stdout = rb
-	cmd.Stderr = rb
-	c := newCommand(cmd, rb)
 	if err := c.Start(); err != nil {
 		return nil, errors.WithMessage(err, "failed to start command")
 	}
@@ -153,16 +167,10 @@ func (h *Handler) StartCommand(ctx context.Context, request *executorpb.StartCom
 	if err != nil {
 		return nil, err
 	}
-
-	logger := log.ExtractLogger(ctx)
-	go func() {
-		c.Wait()
-		logger.Infof("process %d exited", c.Process.Pid)
-	}()
 	return &executorpb.StartCommandResponse{
 		CommandID: commandID,
 		Status: &executorpb.ProcessStatus{
-			Pid:   int32(cmd.Process.Pid),
+			Pid:   int32(c.GetPID()),
 			Exit:  false,
 			Error: "",
 		},
@@ -177,27 +185,29 @@ func (h *Handler) WaitCommand(ctx context.Context, request *executorpb.WaitComma
 		return nil, errors.Errorf("command with pid %s not found", request.CommandID)
 	}
 	select {
+	case <-ctx.Done():
+		return nil, errors.New("context is done")
 	case <-time.After(time.Duration(request.Timeout)):
 		return &executorpb.WaitCommandResponse{
 			Status: &executorpb.ProcessStatus{
-				Pid:      int32(c.Process.Pid),
+				Pid:      int32(c.GetPID()),
 				ExitCode: 0,
 				Exit:     false,
 				Error:    "",
 			},
 		}, nil
-	case <-c.runningCh:
+	case waitError := <-c.Wait():
 		s := &executorpb.WaitCommandResponse{
 			Status: &executorpb.ProcessStatus{
-				Pid:      int32(c.Process.Pid),
-				ExitCode: int32(c.ProcessState.ExitCode()),
+				Pid:      int32(c.GetPID()),
+				ExitCode: int32(c.ExitCode()),
 				// Don't use c.ProcessState.Exit().
 				// It's false if process is terminated by signal.
 				Exit: true,
 			},
 		}
-		if c.waitError != nil {
-			s.Status.Error = c.waitError.Error()
+		if waitError != nil {
+			s.Status.Error = waitError.Error()
 		}
 		// Here, we keep the command id.
 		// It's a leak, but it's not a big deal. The executor will be ended soon.
@@ -206,19 +216,30 @@ func (h *Handler) WaitCommand(ctx context.Context, request *executorpb.WaitComma
 	}
 }
 
+func newCommand(commands []string, stdout io.ReadWriteCloser, stderr io.WriteCloser, workDir string, env []string, username string) (*command, error) {
+	cmd := exec.Command(commands[0], commands[1:]...)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	cmd.Dir = workDir
+	_, err := setUser(cmd, username)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "failed to set user: %s", username)
+	}
+	if len(env) > 0 {
+		cmd.Env = append(cmd.Env, env...)
+	}
+	return &command{
+		Cmd:       cmd,
+		logWriter: stdout,
+		runningCh: make(chan error),
+	}, nil
+}
+
 type command struct {
 	*exec.Cmd
 	logWriter io.ReadWriteCloser
-	runningCh chan struct{}
+	runningCh chan error
 	waitError error
-}
-
-func newCommand(cmd *exec.Cmd, logWriter io.ReadWriteCloser) *command {
-	return &command{
-		Cmd:       cmd,
-		logWriter: logWriter,
-		runningCh: make(chan struct{}),
-	}
 }
 
 func (c *command) Start() error {
@@ -226,13 +247,32 @@ func (c *command) Start() error {
 	if err != nil {
 		close(c.runningCh)
 		_ = c.logWriter.Close()
+		return err
 	}
+	go func() {
+		c.waitError = c.Cmd.Wait()
+		_ = c.logWriter.Close()
+		if c.waitError != nil {
+			c.runningCh <- c.waitError
+		}
+		close(c.runningCh)
+	}()
 	return err
 }
 
+func (c *command) Read(buf []byte) (int, error) {
+	return c.logWriter.Read(buf)
+}
+
 // Wait waits for the command to exit.
-func (c *command) Wait() {
-	c.waitError = c.Cmd.Wait()
-	_ = c.logWriter.Close()
-	close(c.runningCh)
+func (c *command) Wait() <-chan error {
+	return c.runningCh
+}
+
+func (c *command) GetPID() int {
+	return c.Cmd.Process.Pid
+}
+
+func (c *command) ExitCode() int {
+	return c.ProcessState.ExitCode()
 }
