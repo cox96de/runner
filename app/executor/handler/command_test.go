@@ -373,6 +373,9 @@ func TestSetCommandMockRandomString(t *testing.T) {
 }
 
 func Test_newCommand(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skip on windows")
+	}
 	cmd := exec.Command("python3", "-m", "non-exists")
 	rb := lib.NewRingBuffer(defaultRingBufferSize)
 	c := newCommand(cmd, rb)

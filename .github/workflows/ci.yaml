@@ -115,6 +115,7 @@ jobs:
         run: make build
       - name: Test
         run: |
+          $env:CGO_ENABLED=1
           $packages = go list ./... | Where-Object { $_ -notmatch "/kube|/zombies|/runtime" }
           go test -race -coverprofile cover.out  $packages
 

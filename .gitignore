@@ -19,5 +19,7 @@
 
 # Go workspace file
 go.work
-
+*.qcow2
+*.iso
+*.sock
 output/
