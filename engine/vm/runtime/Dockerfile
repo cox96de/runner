@@ -1,7 +1,7 @@
 FROM golang:1.23 AS builder
 COPY . /src
 WORKDIR /src
-RUN go env -w GOPROXY=https://goproxy.cn,direct
+RUN go env -w GOPROXY=https://goproxy.io,direct
 RUN cd /src/engine/vm/runtime && CGO_ENABLED=0 go build -o /src/output/runtime .
 RUN cd /src && make build_executor build_executor_win
 FROM cox96de/qemu-static:8.0.2

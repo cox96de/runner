@@ -5,6 +5,9 @@ import (
 	"io"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
+	"github.com/hashicorp/go-multierror"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -21,11 +24,14 @@ func (e *Execution) updateStepExecution(ctx context.Context, step *api.Step, sta
 	if !ok {
 		return errors.Errorf("step execution not found: %d", step.ID)
 	}
-	_, err := e.client.UpdateStepExecution(ctx, &api.UpdateStepExecutionRequest{
-		StepExecutionID: stepExecution.ID,
-		Status:          status,
-		ExitCode:        exitCode,
-	})
+	err := backoff.Retry(func() error {
+		_, err := e.client.UpdateStepExecution(ctx, &api.UpdateStepExecutionRequest{
+			StepExecutionID: stepExecution.ID,
+			Status:          status,
+			ExitCode:        exitCode,
+		})
+		return err
+	}, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 3))
 	if err != nil {
 		return err
 	}
@@ -51,7 +57,9 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error)
 		if closeErr := collector.Close(); closeErr != nil {
 			logger.Errorf("failed to close log collector: %v", closeErr)
 		}
-		// TODO: update to failed.
+		if updateStepError := e.updateStepExecution(ctx, step, lo.ToPtr(api.StatusFailed), lo.ToPtr(uint32(1))); updateStepError != nil {
+			err = multierror.Append(err, errors.WithMessage(updateStepError, "failed to update step jobExecution"))
+		}
 	}()
 	continueExecute, err := e.preStep(step)
 	if err != nil {
@@ -145,9 +153,6 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error)
 	logCh := make(chan struct{})
 	go func() {
 		defer func() {
-			if err := collector.Close(); err != nil {
-				logger.Errorf("failed to close log collector: %v", err)
-			}
 			close(logCh)
 		}()
 		for {
@@ -212,7 +217,6 @@ func (e *Execution) executeStep(ctx context.Context, step *api.Step) (err error)
 		logger.Warnf("log collector is not closed in time")
 	}
 	if err = e.updateStepExecution(ctx, step, &stepStatus, lo.ToPtr(uint32(exitCode))); err != nil {
-		// TODO: retry if failed.
 		return errors.WithMessage(err, "failed to update step jobExecution")
 	}
 	logger.Infof("command is completed, exit code: %+v", exitCode)
