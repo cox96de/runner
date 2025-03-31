@@ -131,6 +131,7 @@ func checkError(err error) {
 }
 
 func RunAgent(config *Config) error {
+	log.SetReportCaller(true)
 	engine, err := ComposeEngine(config)
 	if err != nil {
 		return errors.WithMessage(err, "failed to compose engine")
