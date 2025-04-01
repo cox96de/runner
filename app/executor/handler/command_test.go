@@ -188,12 +188,12 @@ func TestHandler_StartCommand(t *testing.T) {
 	t.Run("starlark", func(t *testing.T) {
 		var dir string
 		script := `
-if platform_system() == "Linux":
-   process_run(["echo","hello"])
-if platform_system() == "Darwin":
-   process_run(["echo","hello"])
-elif platform_system() == "Windows":
-   process_run(["powershell","-Command","Write-Host hello"])
+if platform.system() == "Linux":
+   subprocess.run(["echo","hello"])
+if platform.system() == "Darwin":
+   subprocess.run(["echo","hello"])
+elif platform.system() == "Windows":
+   subprocess.run(["powershell","-Command","Write-Host hello"])
 `
 		resp, err := client.StartCommand(context.Background(),
 			&executorpb.StartCommandRequest{

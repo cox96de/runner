@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -31,28 +32,26 @@ const (
 )
 
 type App struct {
-	ghClient         *ghclient.Client
-	runnerServer     *server.App
-	baseURL          string
-	db               *db.Client
-	cloneStep        []string
-	cloneStepWindows []string
-	vms              map[string]*VMMeta
+	ghClient     *ghclient.Client
+	runnerServer *server.App
+	baseURL      string
+	db           *db.Client
+	cloneScript  string
+	vms          map[string]*VMMeta
 }
 
 func (h *App) Send(ctx context.Context, event event.Event) protocol.Result {
 	return h.handleCloudEvents(ctx, event)
 }
 
-func NewApp(ghClient *ghclient.Client, baseURL string, dbCli *db.Client, cloneStep []string, cloneStepWindows []string,
+func NewApp(ghClient *ghclient.Client, baseURL string, dbCli *db.Client, cloneScript string,
 	vms []*VMMeta,
 ) *App {
 	return &App{
-		ghClient:         ghClient,
-		baseURL:          baseURL,
-		db:               dbCli,
-		cloneStep:        cloneStep,
-		cloneStepWindows: cloneStepWindows,
+		ghClient:    ghClient,
+		baseURL:     baseURL,
+		db:          dbCli,
+		cloneScript: cloneScript,
 		vms: lo.SliceToMap(vms, func(item *VMMeta) (string, *VMMeta) {
 			return item.Image, item
 		}),
@@ -129,15 +128,15 @@ func (h *App) handleCheckSuite(ctx context.Context, event *github.CheckSuiteEven
 	}
 	// Append clone step.
 	for jobID, job := range pipelineDSL.Jobs {
-		cloneStep := h.cloneStep
-		meta, ok := h.getImageMeta(job.RunsOn.Image)
-		if ok && meta.OS == api.WindowsOS {
-			cloneStep = h.cloneStepWindows
-		}
+		cloneScript := fmt.Sprintf(`
+clone_url="%s"
+ref="%s"
+%s
+`, event.Repo.GetCloneURL(), event.CheckSuite.GetAfterSHA(), h.cloneScript)
 		job.Steps = append([]*dsl.Step{
 			{
-				Name: "clone",
-				Run:  cloneStep,
+				Name:   "clone",
+				Script: cloneScript,
 				Env: map[string]string{
 					CloneURLEnvKey: event.Repo.GetCloneURL(),
 					RefEnvKey:      event.CheckSuite.GetAfterSHA(),
@@ -275,6 +274,7 @@ func (h *App) createPipeline(ctx context.Context, repoName string, p *dsl.Pipeli
 			stepDSL := &api.StepDSL{
 				Name:             strconv.Itoa(idx),
 				Commands:         step.Run,
+				Script:           step.Script,
 				WorkingDirectory: workdir,
 				EnvVar:           step.Env,
 			}

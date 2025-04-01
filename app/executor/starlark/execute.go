@@ -2,29 +2,13 @@ package starlark
 
 import (
 	"io"
-	"os/exec"
-	"runtime"
 
 	"github.com/cox96de/runner/log"
 	"github.com/samber/lo"
 
-	"github.com/cockroachdb/errors"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
-
-func platformSystem(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	switch runtime.GOOS {
-	case "windows":
-		return starlark.String("Windows"), nil
-	case "darwin":
-		return starlark.String("Darwin"), nil
-	case "linux":
-		return starlark.String("Linux"), nil
-	default:
-		return starlark.String("Unknown"), nil
-	}
-}
 
 const contextKey = "context"
 
@@ -34,34 +18,6 @@ type context struct {
 	workdir  string
 	env      []string
 	username string
-}
-
-func subprocessRun(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	var (
-		arg   starlark.Value
-		shell                = false
-		cwd   starlark.Value = starlark.None
-	)
-	c := thread.Local(contextKey).(*context)
-	err := starlark.UnpackArgs(fn.Name(), args, kwargs, "args", &arg, "shell?", &shell, "cwd?", &cwd)
-	if err != nil {
-		return nil, errors.WithMessage(err, "parse args")
-	}
-	if args.Len() != 1 {
-		return starlark.None, errors.New("expected 1 argument")
-	}
-	list := arg.(*starlark.List)
-	var argsList []string
-	for i := 0; i < list.Len(); i++ {
-		s, _ := starlark.AsString(list.Index(i))
-		argsList = append(argsList, s)
-	}
-	command := exec.Command(argsList[0], argsList[1:]...)
-	command.Dir = c.workdir
-	command.Env = c.env
-	command.Stdout = c.stdout
-	command.Stderr = c.stderr
-	return starlark.None, command.Run()
 }
 
 type Command struct {
@@ -115,14 +71,14 @@ func (s *Command) run() error {
 		env:      s.context.env,
 		username: s.context.username,
 	})
-	dict := starlark.StringDict{
-		"platform_system": starlark.NewBuiltin("platform_system", platformSystem),
-		"process_run":     starlark.NewBuiltin("process_run", subprocessRun),
+	functions, err := NewFunctions(thread)
+	if err != nil {
+		return err
 	}
 	resultDict, err := starlark.ExecFileOptions(&syntax.FileOptions{
 		Set:             true,
 		TopLevelControl: true,
-	}, thread, "starlark", s.script, dict)
+	}, thread, "starlark", s.script, functions)
 	if err != nil {
 		return err
 	}
