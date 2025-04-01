@@ -66,7 +66,7 @@ func main() {
 	runnerDB, err := ComposeDB(config.RunnerServer.DB)
 	checkError(err)
 	dbCli := db.NewClient(db.Dialect(dbConn.Dialector.Name()), dbConn)
-	a = app.NewApp(ghClient, config.ExportURL, dbCli, config.CloneStep.Unix, config.CloneStep.Windows, config.VMs)
+	a = app.NewApp(ghClient, config.ExportURL, dbCli, config.CloneStep.Script, config.VMs)
 	var logPersistent server.LogPersistentStorage
 	if config.RunnerServer.LogArchiveS3 != nil {
 		s3, err := composer.ComposeS3(config.RunnerServer.LogArchiveS3)

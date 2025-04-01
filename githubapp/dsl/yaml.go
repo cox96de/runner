@@ -19,8 +19,9 @@ type RunsOn struct {
 }
 
 type Step struct {
-	Name string   `yaml:"name"`
-	Run  []string `yaml:"run"`
+	Name   string   `yaml:"name"`
+	Run    []string `yaml:"run"`
+	Script string   `yaml:"-"`
 	// Don't open this feature now.
 	Env map[string]string `yaml:"-"`
 }

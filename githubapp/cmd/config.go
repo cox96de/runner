@@ -22,8 +22,7 @@ type Config struct {
 }
 
 type CloneStep struct {
-	Unix    []string `yaml:"unix"`
-	Windows []string `yaml:"windows"`
+	Script string `yaml:"script"`
 }
 
 type RunnerServer struct {
